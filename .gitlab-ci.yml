@@ -4,8 +4,7 @@ docs:
   stage: test
   script:
   - pip install -U sphinx
-  - cd docs/
-  - make html
+  - sphinx-build -b html docs/source docs/build
   only:
   - branches
   except:
@@ -15,8 +14,7 @@ docs-pages:
   stage: deploy
   script:
   - pip install -U sphinx
-  - cd docs/
-  - make html
+  - sphinx-build -b html docs/source docs/build
   artifacts:
     paths:
     - docs/build/html
