@@ -10,7 +10,7 @@ docs:
   except:
   - master
 
-docs-pages:
+pages:
   stage: deploy
   script:
   - pip install -U sphinx
