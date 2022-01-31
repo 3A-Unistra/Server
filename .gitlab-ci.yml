@@ -1,6 +1,6 @@
 image: python:3.7-alpine
 
-docs:
+pages:
   stage: test
   script:
   - pip install -U sphinx
@@ -8,7 +8,7 @@ docs:
   only:
   - branches
   except:
-  - master
+  - main
 
 pages:
   stage: deploy
@@ -19,5 +19,5 @@ pages:
     paths:
     - docs/build/html
   only:
-  - master
+  - main
 
