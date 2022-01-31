@@ -17,7 +17,7 @@ pages:
   - sphinx-build -b html docs/source docs/build
   artifacts:
     paths:
-    - docs/build/html
+    - docs/build
   only:
   - main
 
