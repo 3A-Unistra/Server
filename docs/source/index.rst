@@ -10,6 +10,7 @@ Welcome to monopoly-server's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   pages/packets.rst
 
 
 Indices and tables
