@@ -68,6 +68,7 @@ Envoyé lorque le client a appuyé sur le bouton pour lancer le dé. Si le serve
 GameStartDiceResults
 --------------------
 Paquet contenant le résultat du lancer de dé du joueur.
+Si plusieurs joueurs de la partie ont un même résultat, il faut renvoyer un paquet *GameStartDice* à tout le monde.
 
 **contenu du paquet :**
  * identifiant du joueur
@@ -75,9 +76,22 @@ Paquet contenant le résultat du lancer de dé du joueur.
 
 RoundStart
 ----------
+Notifie les clients que la partie peut débuter.
+
+*ce paquet ne contient pas d'informations*
 
 RoundDiceThrow
 --------------
+(*envoyé par le client*). Envoyé lorque le client à qui c'est le tout appuye sur le bouton pour lancer le dé.
+
+**contenu du paquet :**
+ * identifiant du joueur.
+
 
 RoundDiceResults
 ----------------
+Paquet contenant le résultat du lancer de dé du joueur.
+
+**contenu du paquet :**
+ * identifiant du joueur
+ * résultat du lancer de dé
