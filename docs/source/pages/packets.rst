@@ -3,8 +3,6 @@ Packets
 
 Le contenu des paquets est au format JSON.
 
-Voici la structure abstraite d'un paquet :
-
 .. code-block:: json
     :caption: Structure abstraite d'un paquet
 
