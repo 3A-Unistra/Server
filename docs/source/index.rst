@@ -12,6 +12,7 @@ Welcome to monopoly-server's documentation!
 
    pages/errors.rst
    pages/packets.rst
+   pages/schemas.rst
 
 
 Indices and tables
