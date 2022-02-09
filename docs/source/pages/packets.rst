@@ -3,6 +3,13 @@ Packets
 
 Le contenu des paquets est au format JSON.
 
+.. code-block:: json
+    :caption: Structure abstraite d'un paquet
+
+    {
+    "packet_name": "testpacket123"
+    }
+
 AppletPrepare
 -------------
 
