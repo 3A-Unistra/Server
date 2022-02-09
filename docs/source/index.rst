@@ -10,6 +10,8 @@ Welcome to monopoly-server's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   pages/errors.rst
+   pages/packets.rst
 
 
 Indices and tables
@@ -18,3 +20,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+* :ref:`packets`
