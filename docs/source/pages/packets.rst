@@ -49,8 +49,9 @@ PlayerConnect
 Lorsqu'un joueur se connecte, ou un bot en début de partie.
 
 **contenu du paquet :**
- * indiquer si c'est un bot + niveau de difficultés du bot
- * identifiant du joueur si c'est un joueur (sinon -1)
+ * indiquer si c'est un bot (*is_bot*)
+ * niveau de difficulté du bot (*level_bot*, valeur par défaut -1)
+ * identifiant du joueur si c'est un joueur (*id_player*, valeur par défaut -1)
 
 .. code-block:: json
     :caption: exemple Paquet PlayerConnect
@@ -86,7 +87,7 @@ Envoyé lorque le client a appuyé sur le bouton pour lancer le dé. Si le serve
  ce paquet après un timeout du paquet *GameStartDice*, le serveur lance le dé automatiquement.
 
 **contenu du paquet :**
- * identifiant du joueur
+ * identifiant du joueur (*id_player*)
 
 
 GameStartDiceResults
@@ -95,8 +96,8 @@ Paquet contenant le résultat du lancer de dé du joueur.
 Si plusieurs joueurs de la partie ont un même résultat, il faut renvoyer un paquet *GameStartDice* à tout le monde.
 
 **contenu du paquet :**
- * identifiant du joueur
- * résultat du lancer de dé
+ * identifiant du joueur (*id_player*)
+ * résultat du lancer de dé (*dice_result*)
 
 RoundStart
 ^^^^^^^^^^
@@ -109,7 +110,7 @@ RoundDiceThrow
 (*envoyé par le client*). Envoyé lorque le client à qui c'est le tout appuye sur le bouton pour lancer le dé.
 
 **contenu du paquet :**
- * identifiant du joueur.
+ * identifiant du joueur. (*id_player*)
 
 
 RoundDiceResults
@@ -117,10 +118,10 @@ RoundDiceResults
 Paquet contenant le résultat du lancer de dé du joueur. Envoyé à tout les joueurs, le résultat des lancers de dés étant publique.
 
 **contenu du paquet :**
- * identifiant du joueur
- * résultat du lancer de dé
+ * identifiant du joueur (*id_player*)
+ * résultat du lancer de dé (*dice_result*)
 
-Paquet tour
+Paquet début tour
 -----------
 
 RoundDiceChoice
@@ -130,4 +131,46 @@ Paquet indiquant au serveur que le joueur souhaite lancer un dé, en début de t
 Seul le joueur dont c'est le tour peut envoyer ce paquet.
 
 **contenu du paquet :**
- * identifiant du joueur
+ * identifiant du joueur (*id_player*)
+
+
+PlayerMove
+^^^^^^^^^^
+Indique aux clients qu'un des joueurs se déplace.
+
+**contenu du paquet : **
+ * id du joueur qui se déplace (*id_moving_player*)
+ * case de destination (*destination_case*)
+
+RoundRandomCard
+^^^^^^^^^^^^^^^
+
+Si le joueur tombe sur une case communautaire ou une case de chance, ce paquet est envoyé à tout le monde.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * indiquer si c'est une case communautaire ou de chance (*is_communautaire*)
+ * contenu de la carte tiré aléatoirement (*card_content*)
+
+PlayerUpdateBalance
+^^^^^^^^^^^^^^^^^^^
+
+Lorsque la somme d'argent d'un joueur modifie, ce paquet est envoyé à tout les clients pour les notifier de ce changement
+
+**contenu du paquet :**
+ * id du joueur dont la somme a changé (*id_player*)
+ * Somme qu'il avait (*old_balance*)
+ * Nouvel somme (*new_balance*)
+ * raison
+
+PlayerEnterPrison
+^^^^^^^^^^^^^^^^^
+Paquet envoyé lorsque le joueur entre en prison
+
+**contenu du paquet :**
+ * id du joueur allant en prison (*id_player*)
+
+
+PlayonExitPrison
+^^^^^^^^^^^^^^^^
+Paquet envoyé lorsque le joueur sort de pri
