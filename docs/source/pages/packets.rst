@@ -173,4 +173,79 @@ Paquet envoyé lorsque le joueur entre en prison
 
 PlayonExitPrison
 ^^^^^^^^^^^^^^^^
-Paquet envoyé lorsque le joueur sort de pri
+Paquet envoyé lorsque le joueur sort de prison
+
+**contenu du paquet :**
+ * id du joueur allant en prison (*id_player*)
+
+Paquet d'actions durant le tour
+-------------------------------
+Paquets concernant les actions durant le tour. Le tour commmence en instaurant un timeout. Si le joueur ne sélectionne pas d'actions
+ avant la fin du timeout, il est compté comme déconnecté.
+
+Paquet ActionExchange
+^^^^^^^^^^^^^^^^^^^^^
+Paquet envoyé par client lorsque le joueur veut effectuer un échange avec un autre joueur.
+
+**contenu du paquet**
+ * id du joueur (*id_player*)
+
+Paquet ActionExchangePlayerSelect
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+paquet *envoyé par le client* pour la sélection du joueur avec qui on veut faire l'échange. Ce paquet est relayé à tout les clients pour qu'ils puissent suivre l'échange en direct.
+
+**contenu du paquet**
+ * id du joueur qui initialise l'échange (*id_init_request*)
+ * id du joueur avec qui l'échange veut être fait (*id_of_requested*)
+ * contenu de l'échange (*content_trade*, peut être nul)
+
+
+Paquet ActionExchangeTradeSelect
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ce paquet *envoyé par le client* spécifie la nature de l'échange. Il est relayé à tout les clients pour qu'ils puissent suivre l'échange en direct.
+
+**contenu du paquet**
+ * id du joueur qui initialise l'échange (*id_init_request*)
+ * id du joueur avec qui l'échange veut être fait (*id_of_requested*, peut être nul)
+ * contenu de l'échange (*content_trade*)
+
+Paquet ActionExchangeSend
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ce paquet *envoyé par le client* est envoyé pour notifier qu'un échange va avoir lieu. Il est relayé à tout les clients pour
+qu'ils puissent suivre l'échange en direct. Ceux qui ne sont pas concernés par l'échange recevront juste les paquets et montreront
+ les animations nécessaire.
+
+**contenu du paquet**
+  * id du joueur qui initialise l'échange (*id_init_request*)
+  * id du joueur avec qui l'échange veut être fait (*id_of_requested*)
+  * contenu de l'échange (*content_trade*)
+
+Paquet ActionExchangeDecline
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé *par le client* si le joueur avec qui l'échange est censé être effectué refuse. Le paquet est relayé à tout le monde.
+
+*Ce paquet ne contient pas d'informations*
+
+Paquet ActionExchangeCounter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ce paquet est *envoyé par le client* dans le cas où le joueur avec qui l'échange est censé être effectué veut effectuer une contre proposition.
+Le paquet est relayé à tout le monde. Pour la renégotiation de l'échange, le paquet *ActionExchangeTradeSelect* est utilisé.
+
+*Ce paquet ne contient pas d'informations*
+
+Paquet ActionExchangeAccept
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+paquetspaquetspaquets
+Paquet envoyé *par le client* si le joueur avec qui l'échange est censé être effectué accepte. Le paquet est relayé à tout le monde.
+
+*Ce paquet ne contient pas d'informations*
+
+Paquet ActionExchangeCancel
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ce paquet est envoyé à tout le monde. 
