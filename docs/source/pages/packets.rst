@@ -248,4 +248,18 @@ Paquet envoyé *par le client* si le joueur avec qui l'échange est censé être
 Paquet ActionExchangeCancel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Ce paquet est envoyé à tout le monde. 
+Ce paquet est envoyé à tout le monde. Il notifie à tout les clients que l'échange a été annulé, soit parce que les ressources de la personne
+a qui l'échange était demandé ne sont pas suffisantes, soit par demande du joueur qui a initialisé l'échange.
+
+**contenu du paquet :**
+ * raison de l'annulation (*reason*)
+
+
+Paquet PlayerUpdateProperty
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Paquet envoyé à tout le monde lorsqu'un joueur à un changement dans ses propriétés.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * indiquer si c'est une propriétés en + ou en - (*is_added*)
+ * indiquer la nature de la propriétés (*property*)
