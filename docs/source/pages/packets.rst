@@ -310,3 +310,95 @@ Paquet AuctionEnd
 Paquet envoyé à tout le monde si personne n'enchérit pendant un tour d'enchères. Il signifie la fin des enchères.
 
 *Ce paquet ne contient pas d'informations*
+
+
+Paquet ActionBuyProperty
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé *par un client* lorsque le joueur veut acheter une propriété.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * nature de la propriété (*property*)
+
+Paquet ActionBuyPropertySucceed
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé à tout le monde si l'achat de la propriété par un joueur est un succès.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * nature de la propriété (*property*)
+
+Paquet ActionMortgageProperty
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé *par un client* lorsque le joueur veut hypothéquer une propriété.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * nature de la propriété (*property*)
+
+ Paquet ActionMortgageSucceed
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ Paquet envoyé à tout le monde lorsqu'une hypothèque a été couronné de succès.
+
+ **contenu du paquet :**
+  * id du joueur (*id_player*)
+  * nature de la propriété (*property*)
+
+Paquet ActionUnmortgageProperty
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé *par un client* lorsque le joueur veut déshypothéquer une propriété.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * nature de la propriété (*property*)
+
+Paquet ActionUnmortgageSucceed
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé à tout le monde lorsqu'un déshypothèquement a été couronné de succès.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * nature de la propriété (*property*)
+
+
+Paquet ActionBuyHouse
+^^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé *par un client* lorsque le joueur veut acheter une maison
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * id de la maison (*id_house*)
+
+Paquet ActionBuyHouseSucceed
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé à tout le monde lorsque l'achat d'une maison a été couronné de succès.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * id de la maison (*id_house*)
+
+Paquet ActionSellHouse
+^^^^^^^^^^^^^^^^^^^^^^
+
+PAquet envoyé *par un clinet* lorsque le joueur veut vendre une maison.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * id de la maison (*id_house*)
+
+ Paquet ActionSellHouseSucceed
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ Paquet envoyé à tout le monde lorsque la vente d'une maison a été couronné de succès.
+
+ **contenu du paquet :**
+  * id du joueur (*id_player*)
+  * id de la maison (*id_house*)
