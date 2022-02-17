@@ -257,9 +257,56 @@ a qui l'échange était demandé ne sont pas suffisantes, soit par demande du jo
 
 Paquet PlayerUpdateProperty
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Paquet envoyé à tout le monde lorsqu'un joueur à un changement dans ses propriétés.
 
 **contenu du paquet :**
  * id du joueur (*id_player*)
  * indiquer si c'est une propriétés en + ou en - (*is_added*)
  * indiquer la nature de la propriétés (*property*)
+
+Paquet ActionAuctionProperty
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé *par le client* lorsqu'un joueur souhaite vendre une propriété aux enchères.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * nature de la propriétés (*property*)
+ * prix de base (*min_price*)
+
+Paquet AuctionRound
+^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé à tout les clients pour leur indiquer qu'un tour d'enchères va débuter.
+
+**contenu du paquet :**
+ * nature de la propriété mise en enchères (*property*)
+ * id du joueur mettant la propriétés en enchères (*id_seller*)
+ * prix actuel (*current_price*)
+
+Paquet AuctionBid
+^^^^^^^^^^^^^^^^^
+
+Paquet envoyé *par un client* lorsque ce dernier enchérit durant une enchères. Ce paquet est relayé à tout les clients pour
+qu'ils puissent suivre l'enchère en direct.
+
+**contenu du paquet :**
+ * id du joueur (*id_bidder*)
+ * prix proposé (*new_price*)
+
+Paquet AuctionConcede
+^^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé *par un client* lorsque ce dernier ne souhaite pas participer à ce tour d'enchères. Ce paquet est relayé à tout
+le monde pour qu'ils puissent suivre l'enchères en direct.
+
+**contenu du paquet :**
+ * id du joueur (*id_bidder*)
+
+Paquet AuctionEnd
+^^^^^^^^^^^^^^^^^
+
+Paquet envoyé à tout le monde si personne n'enchérit pendant un tour d'enchères. Il signifie la fin des enchères.
+
+*Ce paquet ne contient pas d'informations*
