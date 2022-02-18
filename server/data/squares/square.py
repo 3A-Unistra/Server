@@ -12,7 +12,19 @@ class SquareType(Enum):
     Company = 7
     Property = 8
 
+
 class Square:
-    def __init__(self, name: str, square_type: SquareType):
+    """
+    Attributes:
+        id_     Id
+        name    Display name
+        type    SquareType enum type
+    """
+    id_: int
+    name: str
+    type_: SquareType
+
+    def __init__(self, id_: int, name: str, type_: SquareType):
+        self.id_ = id_
         self.name = name
-        self.square_type = square_type
+        self.type_ = type_

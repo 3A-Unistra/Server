@@ -2,5 +2,5 @@ from . import Square, SquareType
 
 
 class GoToJailSquare(Square):
-    def __init__(self, name: str):
-        super().__init__(name, SquareType.GoToJail)
+    def __init__(self, id_: int, name: str):
+        super().__init__(id_, name, SquareType.GoToJail)

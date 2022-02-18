@@ -2,5 +2,8 @@ from . import Square, SquareType
 
 
 class TaxSquare(Square):
-    def __init__(self, name: str):
-        super().__init__(name, SquareType.Tax)
+    tax_price: int = 0
+
+    def __init__(self, id_: int, name: str, tax_price: int):
+        super().__init__(id_, name, SquareType.Tax)
+        self.tax_price = tax_price
