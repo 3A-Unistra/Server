@@ -15,7 +15,7 @@ test:3.9:
   stage: test
   script:
     - pip install -U tox
-    - tox -e 39
+    - tox
 
 pages:
   stage: test
