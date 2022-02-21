@@ -7,7 +7,7 @@ Le contenu des paquets est au format JSON.
     :caption: Structure abstraite d'un paquet
 
     {
-    "packet_name": "testpacket123"
+    "name": "testpacket123"
     }
 
 Paquets demarrage
@@ -57,7 +57,7 @@ Lorsqu'un joueur se connecte, ou un bot en début de partie.
     :caption: exemple Paquet PlayerConnect
 
     {
-    "packet_name": "PlayerConnect",
+    "name": "PlayerConnect",
     "is_bot" : true,
     "level_bot" : 3,
     "id_player" : -1
