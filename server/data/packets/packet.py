@@ -8,7 +8,7 @@ class Packet:
         self.name = name
 
     def serialize(self) -> str:
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True)
 
     def deserialize(self, obj: object) -> "Packet":
         pass
@@ -17,13 +17,13 @@ class Packet:
     def deserialize_packet(json_str: str) -> "Packet":
         obj = json.loads(json_str)
 
-        if 'packet_name' in obj:
+        if 'name' not in obj:
             raise PacketException('Could not deserialize packet %s' % json_str)
 
-        packet_name = obj['packet_name']
+        packet_name = obj['name']
         packet = Packet(packet_name)
 
-        if packet_name is 'example':
+        if packet_name == 'example':
             pass
 
         return packet
