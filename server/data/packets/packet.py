@@ -10,7 +10,7 @@ class Packet:
     def serialize(self) -> str:
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True)
 
-    def deserialize(self, obj: object) -> "Packet":
+    def deserialize(self, obj: object):
         pass
 
     @staticmethod
@@ -24,6 +24,8 @@ class Packet:
         packet = Packet(packet_name)
 
         if packet_name == 'example':
-            pass
+            print('idk yet')
+
+        packet.deserialize(obj)
 
         return packet
