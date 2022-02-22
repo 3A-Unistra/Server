@@ -23,5 +23,5 @@ class AppletPrepare(Packet) :
     def serialize(self) -> str:
         json.dumps(self.__dict__, skipkeys = True)
 
-    def deserialize(self, obj: object) -> "AppletPrepare":
-        pass
+    def deserialize(self, received:str):
+        json.loads(received)
