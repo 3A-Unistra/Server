@@ -20,6 +20,7 @@ class Square:
         name    Display name
         type    SquareType enum type
     """
+
     id_: int
     name: str
     type_: SquareType

@@ -17,14 +17,14 @@ class Packet:
     def deserialize_packet(json_str: str) -> "Packet":
         obj = json.loads(json_str)
 
-        if 'name' not in obj:
-            raise PacketException('Could not deserialize packet %s' % json_str)
+        if "name" not in obj:
+            raise PacketException("Could not deserialize packet %s" % json_str)
 
-        packet_name = obj['name']
+        packet_name = obj["name"]
         packet = Packet(packet_name)
 
-        if packet_name == 'example':
-            print('idk yet')
+        if packet_name == "example":
+            print("idk yet")
 
         packet.deserialize(obj)
 
