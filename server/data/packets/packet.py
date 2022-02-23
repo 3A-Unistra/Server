@@ -161,25 +161,31 @@ class GameStart(Packet):
 
 
 class PlayerDisconnect(Packet):
+    id_player: str
+    reason: str
+
     def __init__(self, name: str, id_player: str, reason: str):
         super(PlayerDisconnect, self).__init__(name)
         self.id_player = id_player
         self.reason = reason
 
     def deserialize(self, obj: object):
-        self.id_player = str(obj["id_player"])
-        self.reason = str(obj["reason"])
+        self.id_player = obj["id_player"]
+        self.reason = obj["reason"]
 
 
 class PlayerReconnect(Packet):
+    id_player: str
+    reason: str
+
     def __init__(self, name: str, id_player: str, reason: str):
         super(PlayerReconnect, self).__init__(name)
         self.id_player = id_player
         self.reason = reason
 
     def deserialize(self, obj: object):
-        self.id_player = str(obj["id_player"])
-        self.reason = str(obj["reason"])
+        self.id_player = obj["id_player"]
+        self.reason = obj["reason"]
 
 
 class GameStartDice(Packet):
@@ -188,23 +194,28 @@ class GameStartDice(Packet):
 
 
 class GameStartDiceThrow(Packet):
+    id_player: str
+
     def __init__(self, name: str, id_player: str):
         super(GameStartDiceThrow, self).__init__(name)
         self.id_player = id_player
 
     def deserialize(self, obj: object):
-        self.id_player = str(obj["id_player"])
+        self.id_player = obj["id_player"]
 
 
 class GameStartDiceResults(Packet):
+    id_player: str
+    dice_result: int
+
     def __init__(self, name: str, id_player: str, dice_result: int):
         super(GameStartDiceResults, self).__init__(name)
         self.id_player = id_player
         self.dice_result = dice_result
 
     def deserialize(self, obj: object):
-        self.id_player = str(obj["id_player"])
-        self.dice_result = int(obj["reason"])
+        self.id_player = obj["id_player"]
+        self.dice_result = int(obj["reason"]
 
 
 class RoundStart(Packet):
@@ -213,24 +224,31 @@ class RoundStart(Packet):
 
 
 class RoundDiceThrow(Packet):
+    id-player: str
+
     def __init__(self, name: str, id_player: str):
         super(RoundDiceThrow, self).__init__(name)
         self.id_player = id_player
 
     def deserialize(self, obj: object):
-        self.id_player = str(obj["id_player"])
+        self.id_player = obj["id_player"]
 
 
 class RoundDiceChoice(Packet):
+    id_player: str
+
     def __init__(self, name: str, id_player: str):
         super(RoundDiceChoice, self).__init__(name)
         self.id_player = id_player
 
     def deserialize(self, obj: object):
-        self.id_player = str(obj["id_player"])
+        self.id_player = obj["id_player"]
 
 
 class PlayerMove(Packet):
+    id_moving_player: str
+    destination_case: int
+
     def __init__(self, name: str, id_moving_player: str,
                  destination_case: int):
         super(PlayerMove, self).__init__(name)
@@ -238,11 +256,15 @@ class PlayerMove(Packet):
         self.destination_case = destination_case
 
     def deserialize(self, obj: object):
-        self.id_moving_player = str(obj["id_moving_player"])
-        self.destination_case = int(obj["destination_case"])
+        self.id_moving_player = obj["id_moving_player"]
+        self.destination_case = obj["destination_case"]
 
 
 class RoundRandomCard(Packet):
+    id_player: str
+    is_communautaire: bool
+    card_content: str
+
     def __init__(
         self, name: str, id_player: str, is_communautaire: bool,
         card_content: str
@@ -259,6 +281,11 @@ class RoundRandomCard(Packet):
 
 
 class PlayerUpdateBalance(Packet):
+    id_player: str
+    old_balance: int
+    new_balance: int
+    reason: str
+
     def __init__(
         self, name: str, id_player: str, old_balance: int, new_balance: int,
         reason: str
@@ -277,6 +304,8 @@ class PlayerUpdateBalance(Packet):
 
 
 class PlayerEnterPrison(Packet):
+    id_player: str
+
     def __init__(self, name: str, id_player: str):
         super(PlayerEnterPrison, self).__init__(name)
         self.id_player = id_player
@@ -286,6 +315,8 @@ class PlayerEnterPrison(Packet):
 
 
 class PlayerExitPrison(Packet):
+    id_player: str
+
     def __init__(self, name: str, id_player: str):
         super(PlayerExitPrison, self).__init__(name)
         self.id_player = id_player
@@ -295,6 +326,8 @@ class PlayerExitPrison(Packet):
 
 
 class ActionExchange(Packet):
+    id_player: str
+
     def __init__(self, name: str, id_player: str):
         super(ActionExchange, self).__init__(name)
         self.id_player = id_player
@@ -304,6 +337,10 @@ class ActionExchange(Packet):
 
 
 class ActionExchangePlayerSelect(Packet):
+    id_init_request: str
+    id_of_requested: str
+    content_trade: str
+
     def __init__(
         self, name: str, id_init_request: str, id_of_requested: str,
         content_trade: str
@@ -320,6 +357,10 @@ class ActionExchangePlayerSelect(Packet):
 
 
 class ActionExchangeTradeSelect(Packet):
+    id_init_request: str
+    id_of_requested: str
+    content_trade: str
+
     def __init__(
         self, name: str, id_init_request: str, id_of_requested: str,
         content_trade: str
@@ -336,6 +377,10 @@ class ActionExchangeTradeSelect(Packet):
 
 
 class ActionExchangeSend(Packet):
+    id_init_request: str
+    id_of_requested: str
+    content_trade: str
+
     def __init__(
         self, name: str, id_init_request: str, id_of_requested: str,
         content_trade: str
@@ -362,6 +407,8 @@ class ActionExchangeCounter(Packet):
 
 
 class ActionExchangeCancel(Packet):
+    reason: str
+
     def __init__(self, name: str, reason: str):
         super(ActionExchangeCancel, self).__init__(name)
         self.reason = reason
@@ -371,6 +418,10 @@ class ActionExchangeCancel(Packet):
 
 
 class PlayerUpdateProperty(Packet):
+    id_player: str
+    is_added: bool
+    property: str
+
     def __init__(self, name: str, id_player: str, is_added: bool,
                  property: str):
         super(PlayerUpdateProperty, self).__init__(name)
@@ -385,6 +436,10 @@ class PlayerUpdateProperty(Packet):
 
 
 class ActionAuctionProperty(Packet):
+    id_player: str
+    property: str
+    min_price: int
+
     def __init__(self, name: str, id_player: str,
                  property: str, min_price: int):
         super(ActionAuctionProperty, self).__init__(name)
@@ -399,6 +454,10 @@ class ActionAuctionProperty(Packet):
 
 
 class AuctionRound(Packet):
+    property: str
+    id_seller: str
+    current_price: int
+
     def __init__(self, name: str, property: str, id_seller: str,
                  curent_price: int):
         super(AuctionRound, self).__init__(name)
@@ -413,6 +472,10 @@ class AuctionRound(Packet):
 
 
 class AuctionBid(Packet):
+    property: str
+    id_bidder: str
+    new_price: int
+
     def __init__(self, name: str, id_bidder: str, new_price: int):
         super(AuctionBid, self).__init__(name)
         self.id_bidder = id_bidder
@@ -424,6 +487,8 @@ class AuctionBid(Packet):
 
 
 class AuctionConcede(Packet):
+    id_player: str
+
     def __init__(self, name: str, id_player: str):
         super(AuctionConcede, self).__init__(name)
         self.id_player = id_player
@@ -438,6 +503,9 @@ class AuctionEnd(Packet):
 
 
 class AuctionBuyProperty(Packet):
+    id_player: str
+    property: str
+
     def __init__(self, name: str, id_player: str, property: str):
         super(AuctionBuyProperty, self).__init__(name)
         self.id_player = id_player
@@ -449,6 +517,9 @@ class AuctionBuyProperty(Packet):
 
 
 class AuctionBuyPropertySucceed(Packet):
+    id_player: str
+    property: str
+
     def __init__(self, name: str, id_player: str, property: str):
         super(AuctionBuyPropertySucceed, self).__init__(name)
         self.id_player = id_player
@@ -460,6 +531,9 @@ class AuctionBuyPropertySucceed(Packet):
 
 
 class ActionMortgageProperty(Packet):
+    id_player: str
+    property: str
+
     def __init__(self, name: str, id_player: str, property: str):
         super(ActionMortgageProperty, self).__init__(name)
         self.id_player = id_player
@@ -471,6 +545,9 @@ class ActionMortgageProperty(Packet):
 
 
 class ActionMortgageSucceed(Packet):
+    id_player: str
+    property: str
+
     def __init__(self, name: str, id_player: str, property: str):
         super(ActionMortgageSucceed, self).__init__(name)
         self.id_player = id_player
@@ -482,6 +559,9 @@ class ActionMortgageSucceed(Packet):
 
 
 class ActionUnmortgageProperty(Packet):
+    id_player: str
+    property: str
+
     def __init__(self, name: str, id_player: str, property: str):
         super(ActionUnmortgageProperty, self).__init__(name)
         self.id_player = id_player
@@ -493,6 +573,9 @@ class ActionUnmortgageProperty(Packet):
 
 
 class ActionUnmortgageSucceed(Packet):
+    id_player: str
+    property: str
+
     def __init__(self, name: str, id_player: str, property: str):
         super(ActionUnmortgageSucceed, self).__init__(name)
         self.id_player = id_player
@@ -504,6 +587,9 @@ class ActionUnmortgageSucceed(Packet):
 
 
 class ActionBuyHouse(Packet):
+    id_player: str
+    id_house: str
+
     def __init__(self, name: str, id_player: str, id_house: str):
         super(ActionBuyHouse, self).__init__(name)
         self.id_player = id_player
@@ -515,6 +601,9 @@ class ActionBuyHouse(Packet):
 
 
 class ActionBuyHouseSucceed(Packet):
+    id_player: str
+    id_house: str
+
     def __init__(self, name: str, id_player: str, id_house: str):
         super(ActionBuyHouseSucceed, self).__init__(name)
         self.id_player = id_player
@@ -526,6 +615,9 @@ class ActionBuyHouseSucceed(Packet):
 
 
 class ActionSellHouse(Packet):
+    id_player: str
+    id_house: str
+
     def __init__(self, name: str, id_player: str, id_house: str):
         super(ActionSellHouse, self).__init__(name)
         self.id_player = id_player
@@ -537,6 +629,9 @@ class ActionSellHouse(Packet):
 
 
 class ActionSellHouseSucceed(Packet):
+    id_player: str
+    id_house: str
+
     def __init__(self, name: str, id_player: str, id_house: str):
         super(ActionSellHouseSucceed, self).__init__(name)
         self.id_player = id_player
