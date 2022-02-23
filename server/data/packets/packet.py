@@ -215,7 +215,7 @@ class GameStartDiceResults(Packet):
 
     def deserialize(self, obj: object):
         self.id_player = obj["id_player"]
-        self.dice_result = int(obj["reason"]
+        self.dice_result = obj["reason"]
 
 
 class RoundStart(Packet):
@@ -224,7 +224,7 @@ class RoundStart(Packet):
 
 
 class RoundDiceThrow(Packet):
-    id-player: str
+    id_player: str
 
     def __init__(self, name: str, id_player: str):
         super(RoundDiceThrow, self).__init__(name)
