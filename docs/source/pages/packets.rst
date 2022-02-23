@@ -331,7 +331,7 @@ Paquet envoyé *par un client* lorsque le joueur veut hypothéquer une propriét
  * nature de la propriété (*property*)
 
 Paquet ActionMortgageSucceed
- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Paquet envoyé à tout le monde lorsqu'une hypothèque a été couronné de succès.
 
@@ -349,7 +349,7 @@ Paquet envoyé *par un client* lorsque le joueur veut déshypothéquer une propr
  * nature de la propriété (*property*)
 
 Paquet ActionUnmortgageSucceed
- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Paquet envoyé à tout le monde lorsqu'un déshypothèquement a été couronné de succès.
 
@@ -386,7 +386,7 @@ PAquet envoyé *par un clinet* lorsque le joueur veut vendre une maison.
  * id de la maison (*id_house*)
 
 Paquet ActionSellHouseSucceed
- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Paquet envoyé à tout le monde lorsque la vente d'une maison a été couronné de succès.
 
