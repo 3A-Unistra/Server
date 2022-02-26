@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from server.data.packets import Packet
+from server.apps.game_handler.data.packets import Packet
 
 
 class TestPacket(TestCase):
