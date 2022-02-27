@@ -1,6 +1,6 @@
 import json
 
-from server.apps.game_handler.data.exceptions import PacketException
+from .exceptions import PacketException
 
 
 class Packet:
