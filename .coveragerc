@@ -1,0 +1,4 @@
+[run]
+source = server/
+omit = setup.py
+       .tox/*

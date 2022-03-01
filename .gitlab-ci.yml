@@ -1,25 +1,42 @@
-image: python:3.7-alpine
+image: python:3.9-alpine
+
+stages:
+  - style
+  - test
+  - deploy
+
+style:flake8:
+  stage: style
+  script:
+    - pip install -U tox
+    - tox -e flake8
+
+test:3.9:
+  stage: test
+  script:
+    - pip install -U tox
+    - tox
 
 pages:
   stage: test
   script:
-  - pip install -U sphinx
-  - pip install -U sphinx_rtd_theme
-  - sphinx-build -b html docs/source public
+    - pip install -U sphinx
+    - pip install -U sphinx_rtd_theme
+    - sphinx-build -b html docs/source public
   only:
-  - branches
+    - branches
   except:
   - main
 
 pages:
   stage: deploy
   script:
-  - pip install -U sphinx
-  - pip install -U sphinx_rtd_theme
-  - sphinx-build -b html docs/source public
+    - pip install -U sphinx
+    - pip install -U sphinx_rtd_theme
+    - sphinx-build -b html docs/source public
   artifacts:
     paths:
-    - public
+      - public
   only:
-  - main
+    - main
 

@@ -7,7 +7,7 @@ Le contenu des paquets est au format JSON.
     :caption: Structure abstraite d'un paquet
 
     {
-    "packet_name": "testpacket123"
+    "name": "testpacket123"
     }
 
 Paquets demarrage
