@@ -43,26 +43,6 @@ Lorsque tous les joueurs sont prêts et ont chargé le jeu.
 *ce paquet ne contient pas d'informations*
 
 
-PlayerConnect
-^^^^^^^^^^^^^
-
-Lorsqu'un joueur se connecte, ou un bot en début de partie.
-
-**contenu du paquet :**
- * indiquer si c'est un bot (*is_bot*)
- * niveau de difficulté du bot (*level_bot*, valeur par défaut -1)
- * identifiant du joueur si c'est un joueur (*id_player*, valeur par défaut -1)
-
-.. code-block:: json
-    :caption: exemple Paquet PlayerConnect
-
-    {
-    "packet_name": "PlayerConnect",
-    "is_bot" : true,
-    "level_bot" : 3,
-    "id_player" : -1
-    }
-
 
 PlayerDisconnect
 ^^^^^^^^^^^^^^^^
@@ -73,6 +53,17 @@ Lorsqu'un joueur se déconnecte, crash ou timeout.
 **contenu du paquet :**
  * identifiant du joueur
  * raison de la deconnexion
+
+PlayerReconnect
+^^^^^^^^^^^^^^^^
+
+Lorsqu'un joueur se reconnecte après un crash ou timeout.
+*si ce paquet est reçu, il faut remettre le joueur à la place du bot*
+
+**contenu du paquet :**
+ * identifiant du joueur
+ * raison de la deconnexion
+
 
 GameStartDice
 ^^^^^^^^^^^^^
@@ -171,7 +162,7 @@ Paquet envoyé lorsque le joueur entre en prison
  * id du joueur allant en prison (*id_player*)
 
 
-PlayonExitPrison
+PlayerExitPrison
 ^^^^^^^^^^^^^^^^
 Paquet envoyé lorsque le joueur sort de prison
 
@@ -339,14 +330,14 @@ Paquet envoyé *par un client* lorsque le joueur veut hypothéquer une propriét
  * id du joueur (*id_player*)
  * nature de la propriété (*property*)
 
- Paquet ActionMortgageSucceed
- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Paquet ActionMortgageSucceed
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
- Paquet envoyé à tout le monde lorsqu'une hypothèque a été couronné de succès.
+Paquet envoyé à tout le monde lorsqu'une hypothèque a été couronné de succès.
 
- **contenu du paquet :**
-  * id du joueur (*id_player*)
-  * nature de la propriété (*property*)
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * nature de la propriété (*property*)
 
 Paquet ActionUnmortgageProperty
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -358,7 +349,7 @@ Paquet envoyé *par un client* lorsque le joueur veut déshypothéquer une propr
  * nature de la propriété (*property*)
 
 Paquet ActionUnmortgageSucceed
- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Paquet envoyé à tout le monde lorsqu'un déshypothèquement a été couronné de succès.
 
@@ -394,11 +385,11 @@ PAquet envoyé *par un clinet* lorsque le joueur veut vendre une maison.
  * id du joueur (*id_player*)
  * id de la maison (*id_house*)
 
- Paquet ActionSellHouseSucceed
- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Paquet ActionSellHouseSucceed
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
- Paquet envoyé à tout le monde lorsque la vente d'une maison a été couronné de succès.
+Paquet envoyé à tout le monde lorsque la vente d'une maison a été couronné de succès.
 
- **contenu du paquet :**
-  * id du joueur (*id_player*)
-  * id de la maison (*id_house*)
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * id de la maison (*id_house*)
