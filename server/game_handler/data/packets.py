@@ -14,11 +14,10 @@ class Packet:
         pass
 
     @staticmethod
-    def deserialize_packet(json_str: str) -> "Packet":
-        obj = json.loads(json_str)
+    def deserialize_packet(obj: dict) -> "Packet":
 
         if "name" not in obj:
-            raise PacketException("Could not deserialize packet %s" % json_str)
+            raise PacketException("Could not deserialize packet")
 
         packet_name = obj["name"]
         packet = Packet(packet_name)
