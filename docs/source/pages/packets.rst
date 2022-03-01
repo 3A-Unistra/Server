@@ -112,8 +112,15 @@ Paquet contenant le résultat du lancer de dé du joueur. Envoyé à tout les jo
  * identifiant du joueur (*id_player*)
  * résultat du lancer de dé (*dice_result*)
 
+Exception
+^^^^^^^^^
+Paquet envoyé lorsque une erreur a lieu. Les codes d'erreurs seront spécifiés dans l'index d'erreurs.
+
+**contenu du paquet :**
+ * code d'erreurs (*error_code*)
+
 Paquet début tour
------------
+-----------------
 
 RoundDiceChoice
 ^^^^^^^^^^^^^^^
