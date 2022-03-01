@@ -1,3 +1,8 @@
 from django.db import models
 
-# Create your models here.
+# User model (ref BDD)
+from django.db.models import Model
+
+
+class User(Model):
+    pass
