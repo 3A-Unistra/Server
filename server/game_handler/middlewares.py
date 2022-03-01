@@ -8,25 +8,32 @@ from django.db import close_old_connections
 from jwt import InvalidTokenError
 
 from server.game_handler.models import User
-
-"""
-Middleware for WebSocket connections.
-Check jwt's token validity before connection.
-"""
+from django.conf import settings
 
 
 class JWTAuthMiddleware:
+    """
+    Middleware for WebSocket connections.
+    Check jwt's token validity before connection.
+
+    -> key: private key for jwt encryption
+    """
+
     def __init__(self, app):
         self.app = app
+        self.key = getattr(settings, "JWT_KEY", None)
 
     async def __call__(self, scope, receive, send):
         close_old_connections()
         try:
             # get token from url
-            if (jwt_token_list := parse_qs(scope["query_string"].decode("utf8")).get('token', None)) is not None:
+            query = scope["query_string"].decode("utf8")
+            token = parse_qs(query).get('token', None)
+
+            if (jwt_token_list := token) is not None:
                 jwt_token = jwt_token_list[0]
                 # decode jwt and get jti
-                encoded = jwt.decode(jwt_token, "todefineinenv",
+                encoded = jwt.decode(jwt_token, self.key,
                                      algorithms=["HS256"])
                 # get user from db
                 user = await self.get_user(token=encoded.get('jti'))
