@@ -1,6 +1,7 @@
 import traceback
 from urllib.parse import parse_qs
 
+import jwt
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import AnonymousUser, User
 from django.db import close_old_connections
@@ -15,15 +16,15 @@ class JWTAuthMiddleware:
         try:
             if (jwt_token_list := parse_qs(scope["query_string"].decode("utf8")).get('token', None)) is not None:
                 jwt_token = jwt_token_list[0]
-                validated_token = JWTTokenUserAuthentication().get_validated_token(
-                    raw_token=jwt_token
-                )
-                user = await self.get_logged_in_user(token=validated_token)
-                scope['user'] = user
+                encoded = jwt.decode(jwt_token, "todefineinenv",
+                                     algorithms=["HS256"])
+
+                # user = await self.get_logged_in_user(token=validated_token)
+                scope['user'] = None  # user
             else:
                 scope['user'] = AnonymousUser()
                 return None
-        except (InvalidToken, KeyError):
+        except (TokenExc, KeyError):
             traceback.print_exc()
             scope['user'] = AnonymousUser()
             return None
