@@ -4,7 +4,7 @@ from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .data.exceptions import PacketException
-from .data.packets import Packet
+from .data.packets import PacketUtils
 
 log = logging.getLogger(__name__)
 
@@ -23,24 +23,41 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
     """
 
     async def receive_json(self, content, **kwargs):
+        """
+        1. Deserializing packet
+        2. Check packet validity
+        3. Process local player packets
+        4. Reserialize to send only relevant variables
+        5. Send to game_engine consumer
+        """
+
         try:
-            packet = Packet.deserialize_packet(content)
+            packet = PacketUtils.deserialize_packet(content)
         except PacketException:
             # send error packet (or ignore)
             return
 
-    async def disconnect(self, code):
-        pass
+        # process packets here
 
+        # send to game engine worker
+        await self.channel_layer.send(
+            'game_engine',
+            {
+                'type': 'game.process',
+                'packet': packet.serialize()
+            }
+        )
 
-class GameConsumer(SyncConsumer):
-    """
-    Consumer between Game Worker and PlayerConsumer
-    """
+        async def disconnect(self, code):
+            pass
 
-    def __init__(self):
-        pass
+    class GameConsumer(SyncConsumer):
+        """
+        Consumer between Game Worker and PlayerConsumer
+        """
 
-    def game_process(self, packet):
+        def __init__(self):
+            pass
 
-        pass
+        def game_process(self, packet):
+            pass
