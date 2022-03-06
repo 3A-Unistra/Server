@@ -90,5 +90,5 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
             :param content: JSON received from LobbyConsumer
             """
 
-            # TODO: Maybe process new type of packets here [only lobby packets]?
+            # TODO: Maybe process new type of lobby packets here?
             pass
