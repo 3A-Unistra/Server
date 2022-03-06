@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -44,7 +45,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'server.wsgi.application'
+# WSGI_APPLICATION = 'server.wsgi.application'
+ASGI_APPLICATION = 'server.asgi.application'
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -87,3 +89,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # JWT Private KEy
 JWT_KEY = '@xxw!3fx@wjfi+%t-#m5^m4n&r#(-gz$nz2o24tij%9a&w'
+
+# django channels layers
+
+REDIS_HOST = os.getenv('REDIS_HOST')
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+REDIS_PORT = os.getenv('REDIS_PORT')
+REDIS_CONNECTION_STRING = "redis://:%s@%s:%s/0" % (
+    REDIS_PASSWORD, REDIS_HOST, REDIS_PORT)
+
+CHANNEL_LAYERS = {
+    'default': {
+        # Method 2: Via local Redis
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [REDIS_CONNECTION_STRING],
+        },
+        # Method 3: Via In-memory channel layer
+        # Using this method.
+        # "BACKEND": "channels.layers.InMemoryChannelLayer"
+    },
+}

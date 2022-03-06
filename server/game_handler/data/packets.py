@@ -1,9 +1,10 @@
 import json
 
-from .exceptions import PacketException
+from server.game_handler.data.exceptions import PacketException
 
 
 class Packet:
+
     def __init__(self, name):
         self.name = name
 
@@ -13,136 +14,10 @@ class Packet:
     def deserialize(self, obj: object):
         pass
 
-    @staticmethod
-    def deserialize_packet(json_str: str) -> "Packet":
-        obj = json.loads(json_str)
 
-        if "name" not in obj:
-            raise PacketException("Could not deserialize packet %s" % json_str)
-
-        packet_name = obj["name"]
-        packet = Packet(packet_name)
-
-        if packet_name == "AppletPrepare":
-            packet = AppletPrepare()
-
-        elif packet_name == "AppletReady":
-            packet = AppletReady()
-
-        elif packet_name == "GameStart":
-            packet = GameStart()
-
-        elif packet_name == "PlayerDisconnect":
-            packet = PlayerDisconnect()
-
-        elif packet_name == "PlayerReconnect":
-            packet = PlayerReconnect()
-
-        elif packet_name == "GameStartDice":
-            packet = GameStartDice()
-
-        elif packet_name == "GameStartDiceThrow":
-            packet = GameStartDiceThrow()
-
-        elif packet_name == "GameStartDiceResults":
-            packet = GameStartDiceResults()
-
-        elif packet_name == "RoundStart":
-            packet = RoundStart()
-
-        elif packet_name == "RoundDiceThrow":
-            packet = RoundDiceThrow()
-
-        elif packet_name == "RoundDiceChoice":
-            packet = RoundDiceChoice()
-
-        elif packet_name == "PlayerMove":
-            packet = PlayerMove()
-
-        elif packet_name == "RoundRandomCard":
-            packet = RoundRandomCard()
-
-        elif packet_name == "PlayerUpdateBalance":
-            packet = PlayerUpdateBalance()
-
-        elif packet_name == "PlayerEnterPrison":
-            packet = PlayerEnterPrison()
-
-        elif packet_name == "PlayerExitPrison":
-            packet = PlayerExitPrison()
-
-        elif packet_name == "ActionExchange":
-            packet = ActionExchange()
-
-        elif packet_name == "ActionExchangePlayerSelect":
-            packet = ActionExchangePlayerSelect()
-
-        elif packet_name == "ActionExchangeTradeSelect":
-            packet = ActionExchangeTradeSelect()
-
-        elif packet_name == "ActionExchangeSend":
-            packet = ActionExchangeSend()
-
-        elif packet_name == "ActionExchangeDecline":
-            packet = ActionExchangeDecline()
-
-        elif packet_name == "ActionExchangeCounter":
-            packet = ActionExchangeCounter()
-
-        elif packet_name == "ActionExchangeCancel":
-            packet = ActionExchangeCancel()
-
-        elif packet_name == "PlayerUpdateProperty":
-            packet = PlayerUpdateProperty()
-
-        elif packet_name == "ActionAuctionProperty":
-            packet = ActionAuctionProperty()
-
-        elif packet_name == "AuctionRound":
-            packet = AuctionRound()
-
-        elif packet_name == "AuctionBid":
-            packet = AuctionBid()
-
-        elif packet_name == "AuctionConcede":
-            packet = AuctionConcede()
-
-        elif packet_name == "AuctionEnd":
-            packet = AuctionEnd()
-
-        elif packet_name == "AuctionBuyProperty":
-            packet = AuctionBuyProperty()
-
-        elif packet_name == "AuctionBuyPropertySucceed":
-            packet = AuctionBuyPropertySucceed()
-
-        elif packet_name == "ActionMortgageProperty":
-            packet = ActionMortgageProperty()
-
-        elif packet_name == "ActionMortgageSucceed":
-            packet = ActionMortgageSucceed()
-
-        elif packet_name == "ActionUnmortgageProperty":
-            packet = ActionUnmortgageProperty()
-
-        elif packet_name == "ActionUnmortgageSucceed":
-            packet = ActionUnmortgageSucceed()
-
-        elif packet_name == "ActionBuyHouse":
-            packet = ActionBuyHouse()
-
-        elif packet_name == "ActionBuyHouseSucceed":
-            packet = ActionBuyHouseSucceed()
-
-        elif packet_name == "ActionSellHouse":
-            packet = ActionSellHouse()
-
-        elif packet_name == "ActionSellHouseSucceed":
-            packet = ActionSellHouseSucceed()
-
-        packet.deserialize(obj)
-
-        return packet
+class ExceptionPacket(Packet):
+    def __init__(self):
+        super(ExceptionPacket, self).__init__("Exception")
 
 
 class AppletPrepare(Packet):
@@ -644,3 +519,69 @@ class ActionSellHouseSucceed(Packet):
     def deserialize(self, obj: object):
         self.id_player = obj["id_player"]
         self.id_house = obj["id_house"]
+
+
+class PacketUtils:
+    packets: dict = {
+        "Exception": ExceptionPacket,
+        "AppletPrepare": AppletPrepare,
+        "AppletReady": AppletReady,
+        "GameStart": GameStart,
+        "PlayerDisconnect": PlayerDisconnect,
+        "PlayerReconnect": PlayerReconnect,
+        "GameStartDice": GameStartDice,
+        "GameStartDiceThrow": GameStartDiceThrow,
+        "GameStartDiceResults": GameStartDiceResults,
+        "RoundStart": RoundStart,
+        "RoundDiceThrow": RoundDiceThrow,
+        "RoundDiceChoice": RoundDiceChoice,
+        "PlayerMove": PlayerMove,
+        "RoundRandomCard": RoundRandomCard,
+        "PlayerUpdateBalance": PlayerUpdateBalance,
+        "PlayerEnterPrison": PlayerEnterPrison,
+        "PlayerExitPrison": PlayerExitPrison,
+        "ActionExchange": ActionExchange,
+        "ActionExchangePlayerSelect": ActionExchangePlayerSelect,
+        "ActionExchangeTradeSelect": ActionExchangeTradeSelect,
+        "ActionExchangeSend": ActionExchangeSend,
+        "ActionExchangeDecline": ActionExchangeDecline,
+        "ActionExchangeCounter": ActionExchangeCounter,
+        "ActionExchangeCancel": ActionExchangeCancel,
+        "PlayerUpdateProperty": PlayerUpdateProperty,
+        "ActionAuctionProperty": ActionAuctionProperty,
+        "AuctionRound": AuctionRound,
+        "AuctionBid": AuctionBid,
+        "AuctionConcede": AuctionConcede,
+        "AuctionEnd": AuctionEnd,
+        "AuctionBuyProperty": AuctionBuyProperty,
+        "AuctionBuyPropertySucceed": AuctionBuyPropertySucceed,
+        "ActionMortgageProperty": ActionMortgageProperty,
+        "ActionMortgageSucceed": ActionMortgageSucceed,
+        "ActionUnmortgageProperty": ActionUnmortgageProperty,
+        "ActionUnmortgageSucceed": ActionUnmortgageSucceed,
+        "ActionBuyHouse": ActionBuyHouse,
+        "ActionBuyHouseSucceed": ActionBuyHouseSucceed,
+        "ActionSellHouse": ActionSellHouse,
+        "ActionSellHouseSucceed": ActionSellHouseSucceed,
+    }
+
+    @staticmethod
+    def is_packet(obj: dict) -> bool:
+        return "name" in obj
+
+    @staticmethod
+    def deserialize_packet(obj: dict) -> "Packet":
+        if not PacketUtils.is_packet(obj):
+            raise PacketException("Could not deserialize packet")
+
+        packet_name = obj["name"]
+
+        if packet_name not in PacketUtils.packets:
+            raise PacketException("Invalid packet")
+
+        # create a new instance
+        packet = PacketUtils.packets[packet_name]()
+        # deserialize missing values
+        packet.deserialize(obj)
+
+        return packet
