@@ -1,6 +1,10 @@
+import uuid
 from enum import Enum
-
+from threading import Thread
+from queue import Queue
 from channels.layers import get_channel_layer
+
+from server.game_handler.data import Board
 
 """
 States:
@@ -20,6 +24,25 @@ class GameState(Enum):
 
 
 class Game:
+    uid: str
+    state: GameState
+    board: Board
+    queue: Queue
 
-    def __init__(self):
+    def __init__(self, uid: str = str(uuid.uuid4())):
         self.channel_layer = get_channel_layer()
+        self.uid = uid
+        self.state = GameState.WAITING_PLAYERS
+
+
+class Engine(Thread):
+    games: [Game]
+
+    def __init__(self, **kwargs):
+        super(Engine, self).__init__(daemon=True, name="GameEngine", **kwargs)
+
+    def add_game(self, game: Game):
+        pass
+
+    def remove_game(self, game: Game):
+        pass
