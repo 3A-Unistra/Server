@@ -5,6 +5,7 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .data.exceptions import PacketException
 from .data.packets import PacketUtils
+from .engine import Engine
 
 log = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
     """
     Consumer between Client and Server
     """
-    room_token: str
+    game_token: str
 
     async def connect(self):
         pass
@@ -43,21 +44,51 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         await self.channel_layer.send(
             'game_engine',
             {
-                'type': 'game.process',
-                'packet': packet.serialize()
+                'type': 'process.packets',
+                'content': packet.serialize(),
+                'game_token': self.game_token
             }
         )
 
         async def disconnect(self, code):
             pass
 
-    class GameConsumer(SyncConsumer):
+    class GameEngineConsumer(SyncConsumer):
         """
-        Consumer between Game Worker and PlayerConsumer
+        Consumer between Game Engine Worker and PlayerConsumer
+        starts consumer when first request is made to game consumer
         """
+        engine: Engine
 
         def __init__(self):
-            pass
+            self.engine = Engine()
+            log.info("Starting engine thread")
 
-        def game_process(self, packet):
+        def process_packets(self, content):
+            """
+            Only packets for existing games are processed here
+            :param content: JSON received from PlayerConsumer
+            """
+            try:
+                packet = PacketUtils.deserialize_packet(content)
+            except PacketException:
+                # send error packet (or ignore)
+                return
+
+            # Check if packet is None and game token exists
+            if packet is None or 'game_token' not in content:
+                return
+
+            game_token = content['game_token']
+
+            # Send packet to game thread
+            self.engine.send_packet(game_uid=game_token, packet=packet)
+
+        def process_game_management(self, content):
+            """
+            Only actions from Lobby Worker are received here
+            :param content: JSON received from LobbyConsumer
+            """
+
+            # TODO: Maybe process new type of packets here [only lobby packets]?
             pass
