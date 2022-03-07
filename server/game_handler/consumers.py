@@ -4,7 +4,7 @@ from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .data.exceptions import PacketException
-from .data.packets import PacketUtils
+from .data.packets import PacketUtils, LobbyPacket, GameStart
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
                 # send error packet (or ignore)
                 return
 
-            # Check if packet is None and game token exists
+            # Check if packet is not None and game token exists
             if packet is None or 'game_token' not in content:
                 return
 
@@ -89,6 +89,25 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
             Only actions from Lobby Worker are received here
             :param content: JSON received from LobbyConsumer
             """
+            try:
+                packet = PacketUtils.deserialize_packet(content)
+            except PacketException:
+                # send error packet (or ignore)
+                return
+
+            # Check if packet is not None
+            if packet is None:
+                return
+
+            # Check if packet is a lobby packet
+            if not isinstance(packet, LobbyPacket):
+                return
+
+            # Process start packet
+
+            if isinstance(packet, GameStart):
+                # Check if packet is gamestart
+                pass
 
             # TODO: Maybe process new type of lobby packets here?
             pass
