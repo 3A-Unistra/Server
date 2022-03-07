@@ -1,5 +1,7 @@
 from enum import Enum
 
+from server.game_handler.models import User
+
 
 class PlayerState(Enum):
     Paying = 0
@@ -16,6 +18,7 @@ class Player:
     money: int = 0
     jail_turns: int = 0
     state: PlayerState
+    user: User
 
     def __init__(self, id_: int, name: str):
         self.id_ = id_

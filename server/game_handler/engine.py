@@ -79,6 +79,8 @@ class Game(Thread):
         # Unblock
         self.packets_queue.task_done()
 
+        # Do logic here
+
     def process_packet(self, packet: Packet):
         pass
 
