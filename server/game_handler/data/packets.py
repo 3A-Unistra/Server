@@ -14,11 +14,15 @@ class Packet:
     def deserialize(self, obj: object):
         pass
 
+
 """
 Lobby packet => inherits Packet
 """
+
+
 class LobbyPacket(Packet):
     pass
+
 
 class ExceptionPacket(Packet):
     def __init__(self):
