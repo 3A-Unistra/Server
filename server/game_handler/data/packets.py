@@ -14,6 +14,11 @@ class Packet:
     def deserialize(self, obj: object):
         pass
 
+"""
+Lobby packet => inherits Packet
+"""
+class LobbyPacket(Packet):
+    pass
 
 class ExceptionPacket(Packet):
     def __init__(self):
@@ -521,6 +526,13 @@ class ActionSellHouseSucceed(Packet):
         self.id_house = obj["id_house"]
 
 
+# Lobby packets
+# TODO:
+
+class CreateGame(LobbyPacket):
+    pass
+
+
 class PacketUtils:
     packets: dict = {
         "Exception": ExceptionPacket,
@@ -563,6 +575,8 @@ class PacketUtils:
         "ActionBuyHouseSucceed": ActionBuyHouseSucceed,
         "ActionSellHouse": ActionSellHouse,
         "ActionSellHouseSucceed": ActionSellHouseSucceed,
+        # Lobby packets
+        "GameStart": GameStart
     }
 
     @staticmethod
