@@ -1,3 +1,4 @@
+from datetime import datetime
 import time
 import uuid
 from enum import Enum
@@ -38,6 +39,7 @@ class Game(Thread):
     packets_queue: Queue
     current_tick: int
     timeout: int
+    start_date: datetime
     CONFIG: {}
 
     def __init__(self, uid: str = str(uuid.uuid4()), **kwargs):
@@ -54,8 +56,10 @@ class Game(Thread):
     def run(self) -> None:
         # Starting game thread
         self.state = GameState.WAITING_PLAYERS
+        # Set start date
+        self.start_date = datetime.now()
 
-        # while state isnt stop thread
+        # while state is not stop thread
         while self.state is not GameState.STOP_THREAD:
             # get unix time in seconds before tick processing
             start = time.time()
