@@ -5,6 +5,7 @@ from threading import Thread
 from queue import Queue
 from channels.layers import get_channel_layer
 from django.conf import settings
+import pause
 
 from server.game_handler.data import Board
 from server.game_handler.data.exceptions.exceptions import \
@@ -48,6 +49,7 @@ class Game(Thread):
         self.current_tick = 0
         self.timeout = 0
         self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
+        self.tick_duration = 1.0 / self.CONFIG.get('TICK_RATE')
 
     def run(self) -> None:
         # Starting game thread
@@ -55,11 +57,15 @@ class Game(Thread):
 
         # while state isnt stop thread
         while self.state is not GameState.STOP_THREAD:
-            # game tick
+            # get unix time in seconds before tick processing
+            start = time.time()
+
+            # process game tick
             self.tick()
 
-            # sleep x ticks per second
-            time.sleep(1 / self.CONFIG.get('TICK_RATE'))
+            # sleep until(start + tick_duration)
+            # To reduce tick loss if tick processing is too long
+            pause.until(start + self.tick_duration)
 
         # execute last func before stop
         self.proceed_stop()
@@ -72,12 +78,20 @@ class Game(Thread):
         # Blocking queue
         self.packets_queue.join()
 
-        # Process all packets in queue
+        # Store all packets in temp array
+        # If packet processing is taking too much time,
+        # The queue will be locked for a too long period
+        packets = []
+
         while not self.packets_queue.empty():
-            self.process_packet(self.packets_queue.get(block=False))
+            packets.append(self.packets_queue.get(block=False))
 
         # Unblock
         self.packets_queue.task_done()
+
+        # Process all packets in queue
+        for packet in packets:
+            self.process_packet(packet)
 
         # Do logic here
 
