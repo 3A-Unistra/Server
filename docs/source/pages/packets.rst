@@ -13,6 +13,27 @@ Le contenu des paquets est au format JSON.
 Paquets demarrage
 -----------------
 
+
+LaunchGame
+^^^^^^^^^^
+Paquet envoyé *par le client* lorsque le host du lobby lance la partie.
+
+**contenu du paquet :**
+ * id du joueur lançant la partie (*id_player*)
+
+GetInRoom
+ ^^^^^^^^^
+Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+ * id de la salle (*id_room*)
+ * booleen indiquant si la salle comporte un mot de passe (*is_protected*)
+ * mot de passe (*password*)
+
+
+
+
 AppletPrepare
 ^^^^^^^^^^^^^
 
@@ -20,7 +41,9 @@ Paquet envoyé par le serveur au WebSocket du lobby, voir **Paquets démarrage**
 A partir de ce moment là, la partie web devra démarrer l'applet unity et se déconnecter du WebSocket "lobby".
 L'applet unity webgl devra se connecter au WebSocket de la partie et envoyer le paquet AppletReady.
 
-*ce paquet ne contient pas d'informations*
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+
 
 AppletReady
 ^^^^^^^^^^^
@@ -33,6 +56,7 @@ Quand le serveur a recu tous les AppletReady nécessaire il envoie le paquet Gam
 
 Paquets début de jeu
 --------------------
+
 
 GameStart
 ^^^^^^^^^
