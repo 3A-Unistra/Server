@@ -14,7 +14,7 @@ style:flake8:
 test:3.9:
   stage: test
   script:
-    - apt-get install python-dev
+    - apk add python-dev
     - pip install -U tox
     - tox
 
