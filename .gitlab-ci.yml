@@ -10,6 +10,8 @@ style:flake8:
   script:
     - pip install -U tox
     - tox -e flake8
+  tags:
+    - gitlab-org
 
 test:3.9:
   stage: test
@@ -17,6 +19,8 @@ test:3.9:
     - apk add python3-dev gcc libc-dev libffi-dev
     - pip install -U tox
     - tox
+  tags:
+    - gitlab-org
 
 pages:
   stage: test
@@ -27,7 +31,9 @@ pages:
   only:
     - branches
   except:
-  - main
+    - main
+  tags:
+    - gitlab-org
 
 pages:
   stage: deploy
@@ -40,4 +46,6 @@ pages:
       - public
   only:
     - main
+  tags:
+    - gitlab-org
 
