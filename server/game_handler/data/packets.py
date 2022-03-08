@@ -14,11 +14,13 @@ class Packet:
     def deserialize(self, obj: object):
         pass
 
-"""
-Lobby packet => inherits Packet
-"""
+
 class LobbyPacket(Packet):
+    """
+    Lobby packet => inherits Packet
+    """
     pass
+
 
 class ExceptionPacket(Packet):
     def __init__(self):
@@ -538,7 +540,6 @@ class PacketUtils:
         "Exception": ExceptionPacket,
         "AppletPrepare": AppletPrepare,
         "AppletReady": AppletReady,
-        "GameStart": GameStart,
         "PlayerDisconnect": PlayerDisconnect,
         "PlayerReconnect": PlayerReconnect,
         "GameStartDice": GameStartDice,
