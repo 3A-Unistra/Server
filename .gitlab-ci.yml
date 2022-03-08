@@ -14,7 +14,7 @@ style:flake8:
 test:3.9:
   stage: test
   script:
-    - apk add python3-dev gcc libc-dev
+    - apk add python3-dev gcc libc-dev libffi-dev
     - pip install -U tox
     - tox
 
