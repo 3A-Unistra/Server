@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, Optional
 
 from . import Card, Player
 from .squares import Square
@@ -27,13 +27,13 @@ class Board:
         self.bots_nb = 0
         self.bot_names: []
 
-    def get_player(self, uid: str):
+    def get_player(self, uid: str) -> Optional[Player]:
         for player in self.players:
             if player.id_ == uid:
                 return player
         return None
 
-    def player_exists(self, uid: str):
+    def player_exists(self, uid: str) -> bool:
         return self.get_player(uid) is not None
 
     def add_player(self, player: Player):

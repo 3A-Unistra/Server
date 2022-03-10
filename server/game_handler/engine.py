@@ -13,7 +13,8 @@ import pause
 from server.game_handler.data import Board, Player
 from server.game_handler.data.exceptions.exceptions import \
     GameNotExistsException
-from server.game_handler.data.packets import Packet, GameStart, AppletReady
+from server.game_handler.data.packets import Packet, GameStart, AppletReady, \
+    PlayerPacket
 
 """
 States:
@@ -104,6 +105,12 @@ class Game(Thread):
         self.process_logic()
 
     def process_packet(self, packet: Packet):
+        # check player validity
+        if isinstance(packet, PlayerPacket):
+            if not self.board.player_exists(packet.player_token):
+                # TODO: Get player channel_token
+                return
+
         if self.state is GameState.LOBBY:
             if isinstance(packet, GameStart):
                 # set state to waiting players
@@ -115,7 +122,14 @@ class Game(Thread):
         if self.state is GameState.WAITING_PLAYERS:
             # WebGL app is ready to play
             if isinstance(packet, AppletReady):
-                pass
+                # TODO: here cant send msg to player if no
+                player = self.board.get_player(packet.player_token)
+                if player is None:
+                    # self.send_packet_to_player()
+                    # Send error
+                    pass
+                else:
+                    player.connect()
 
     def proceed_stop(self):
         pass
