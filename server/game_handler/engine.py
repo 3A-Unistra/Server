@@ -52,6 +52,7 @@ class Game(Thread):
         self.timeout = 0
         self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
         self.tick_duration = 1.0 / self.CONFIG.get('TICK_RATE')
+        self.board = Board()
 
     def run(self) -> None:
         # Starting game thread
@@ -98,12 +99,25 @@ class Game(Thread):
             self.process_packet(packet)
 
         # Do logic here
+        self.process_logic()
 
     def process_packet(self, packet: Packet):
         pass
 
     def proceed_stop(self):
         pass
+
+    def process_logic(self):
+        # State is waiting that players connecting and send AppletReady
+        if self.state is GameState.WAITING_PLAYERS:
+            if self.board.get_online_players_count() == self.board.players_nb:
+                # We can start the game
+                pass
+            else:
+                # Check if timeout
+                pass
+
+
 
 
 class Engine:
