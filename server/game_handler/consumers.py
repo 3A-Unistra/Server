@@ -1,10 +1,12 @@
 import logging
+from urllib.parse import parse_qs
 
 from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .data.exceptions import PacketException
-from .data.packets import PacketUtils, LobbyPacket, GameStart, PlayerPacket
+from .data.packets import PacketUtils, LobbyPacket, GameStart, PlayerPacket, \
+    ExceptionPacket, InternalCheckPlayerValidity, PlayerValid
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -16,15 +18,52 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
     """
     game_token: str
     player_token: str
+    valid: bool
 
     async def connect(self):
 
         # User is anonymous
         if self.scope["user"] is None:
             # Reject the connection
-            return await self.close()
+            return await self.close(code=4000)
 
-        # TODO: Handle connection
+        self.valid = False
+
+        query = parse_qs(self.scope["query_string"].decode("utf8"))
+        game_token = None
+
+        if 'game_token' in self.scope['url_route']['kwargs']:
+            game_token = self.scope['url_route']['kwargs']['game_token']
+
+        player_token = query.get('player_token', None)
+
+        if game_token is None:
+            return await self.close(code=4001)
+
+        if player_token is None:
+            return await self.close(code=4002)
+
+        player_token = player_token[0]
+
+        """
+        Player connects -> send internal check player validity to server
+        Server respond with same packet
+        If not valid, connection is closed
+        If valid, packet PlayerValid is sent to WebSocket
+        """
+
+        packet = InternalCheckPlayerValidity(player_token=player_token)
+
+        # send to game engine worker
+        await self.channel_layer.send(
+            'game_engine',
+            {
+                'type': 'process.packets',
+                'content': packet.serialize(),
+                'game_token': self.game_token,
+                'channel_name': self.channel_name
+            }
+        )
 
     """
     Receiving packets from client, checking if packet is valid.
@@ -38,6 +77,10 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         4. Reserialize to send only relevant variables
         5. Send to game_engine consumer
         """
+
+        # Refuse if connection is not valid
+        if not self.valid:
+            return
 
         try:
             packet = PacketUtils.deserialize_packet(content)
@@ -55,7 +98,8 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
             {
                 'type': 'process.packets',
                 'content': packet.serialize(),
-                'game_token': self.game_token
+                'game_token': self.game_token,
+                'channel_name': self.channel_name
             }
         )
 
@@ -79,8 +123,15 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
             return
 
         # TODO: Manage errors that closes WebSocket
-        if isinstance(packet, PacketException):
-            pass
+        if isinstance(packet, ExceptionPacket):
+            # Player invalid closing connection
+            self.valid = False
+            if packet.code is 4100:
+                return await self.close(code=4100)
+
+        if isinstance(packet, InternalCheckPlayerValidity):
+            if packet.valid:
+                packet = PlayerValid()
 
         # Send packet to front/cli
         await self.send(packet.serialize())
@@ -126,8 +177,13 @@ class GameEngineConsumer(SyncConsumer):
 
         game_token = content['game_token']
 
+        # get channel name
+        channel_name = content[
+            'channel_name'] if 'channel_name' in content else ''
+
         # Send packet to game thread
-        self.engine.send_packet(game_uid=game_token, packet=packet)
+        self.engine.send_packet(game_uid=game_token, packet=packet,
+                                channel_name=channel_name)
 
     def process_game_management(self, content):
         """

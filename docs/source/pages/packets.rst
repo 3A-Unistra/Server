@@ -13,6 +13,16 @@ Le contenu des paquets est au format JSON.
 Paquets demarrage
 -----------------
 
+PlayerValid
+^^^^^^^^^^^
+
+Paquet envoyé lorsque le joueur a été validé par le serveur.
+Lorsqu'on se connecte au WebSocket Game, on doit attendre ce paquet, avant de pouvoir envoyer d'autres
+paquets (pendant ce temps les données échangées seront refusées par le serveur).
+
+Si le client reçoit ce message, alors la connexion est valide.
+Dans le cas contraire, le serveur ferme la connexion WebSocket avec le client.
+
 AppletPrepare
 ^^^^^^^^^^^^^
 

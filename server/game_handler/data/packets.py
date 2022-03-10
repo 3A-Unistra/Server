@@ -35,9 +35,35 @@ class PlayerPacket(Packet):
     def deserialize(self, obj: object):
         self.player_token = obj["player_token"]
 
-class ExceptionPacket(Packet):
+
+class InternalCheckPlayerValidity(PlayerPacket):
+    valid: bool
+
+    def __init__(self, player_token: str, valid: bool = False):
+        super(InternalCheckPlayerValidity, self).__init__(
+            name=self.__class__.__name__,
+            player_token=player_token)
+        self.valid = valid
+
+    def deserialize(self, obj: object):
+        super().deserialize(obj)
+        self.valid = bool(obj['valid'])
+
+
+class PlayerValid(Packet):
     def __init__(self):
+        super().__init__(self.__class__.__name__)
+
+
+class ExceptionPacket(Packet):
+    code: int
+
+    def __init__(self, code: int):
         super(ExceptionPacket, self).__init__("Exception")
+        self.code = code
+
+    def deserialize(self, obj: object):
+        self.code = int(obj["code"])
 
 
 class AppletPrepare(Packet):

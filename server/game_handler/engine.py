@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 import time
 import uuid
@@ -14,7 +15,7 @@ from server.game_handler.data import Board, Player
 from server.game_handler.data.exceptions.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import Packet, GameStart, AppletReady, \
-    PlayerPacket
+    PlayerPacket, ExceptionPacket, InternalCheckPlayerValidity
 
 """
 States:
@@ -36,6 +37,12 @@ class GameState(Enum):
     START_DICE = 3
 
 
+@dataclass
+class QueuePacket:
+    packet: Packet
+    channel_name: str
+
+
 class Game(Thread):
     uid: str
     state: GameState
@@ -45,6 +52,8 @@ class Game(Thread):
     timeout: datetime
     start_date: datetime
     CONFIG: {}
+    # reference to games dict
+    games: {}
 
     def __init__(self, uid: str = str(uuid.uuid4()), **kwargs):
         super(Game, self).__init__(daemon=True, name="Game_%s" % uid, **kwargs)
@@ -104,11 +113,17 @@ class Game(Thread):
         # Do logic here
         self.process_logic()
 
-    def process_packet(self, packet: Packet):
+    def process_packet(self, queue_packet: QueuePacket):
+        packet: Packet = queue_packet.packet
+
         # check player validity
-        if isinstance(packet, PlayerPacket):
-            if not self.board.player_exists(packet.player_token):
-                # TODO: Get player channel_token
+        if isinstance(packet, InternalCheckPlayerValidity):
+            exists = self.board.player_exists(packet.player_token)
+            self.send_packet(
+                channel_name=queue_packet.channel_name,
+                packet=InternalCheckPlayerValidity(player_token='',
+                                                   valid=exists))
+            if not exists:
                 return
 
         if self.state is GameState.LOBBY:
@@ -118,21 +133,30 @@ class Game(Thread):
                 self.state = GameState.WAITING_PLAYERS
                 self.timeout = datetime.now() + timedelta(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
+        else:
+            # If state is not lobby
+            # Check for packet validity
+            if isinstance(packet, PlayerPacket):
+                if not self.board.player_exists(packet.player_token):
+                    return self.send_packet(
+                        channel_name=queue_packet.channel_name,
+                        packet=ExceptionPacket(code=4100))
 
         if self.state is GameState.WAITING_PLAYERS:
             # WebGL app is ready to play
             if isinstance(packet, AppletReady):
-                # TODO: here cant send msg to player if no
                 player = self.board.get_player(packet.player_token)
+
                 if player is None:
-                    # self.send_packet_to_player()
-                    # Send error
-                    pass
+                    return self.send_packet(
+                        channel_name=queue_packet.channel_name,
+                        packet=ExceptionPacket(code=4100))
                 else:
                     player.connect()
 
     def proceed_stop(self):
-        pass
+        # Delete game
+        del self.games[self.uid]
 
     def process_logic(self):
         # State is waiting that players connecting and send AppletReady
@@ -141,12 +165,11 @@ class Game(Thread):
                 # We can start the game
                 self.start_game()
             elif self.timeout < datetime.now():  # Check timeout
-
-                # Special conditions, if no one is connected
-                # Stop the game??
-                # TODO:
                 if self.board.get_online_real_players_count() == 0:
-                    pass
+                    # After timeout, if no one is connected
+                    # Stop game
+                    self.state = GameState.STOP_THREAD
+                    return
                 else:
                     self.start_game()
 
@@ -164,11 +187,21 @@ class Game(Thread):
         )
 
     def send_packet_to_player(self, player: Player, packet: Packet):
-        if player.bot is True or player.channel_name is None:
+        if player.bot is True:
+            return
+        self.send_packet(player.channel_name, packet)
+
+    def send_packet(self, channel_name: str, packet: Packet):
+        """
+        Send packet to channel layer
+        :param channel_name: Channel to send packet to
+        :param packet: Packet to send
+        """
+        if channel_name is None:
             return
 
         async_to_sync(self.channel_layer.send)(
-            player.channel_name, {
+            channel_name, {
                 'type': 'player.callback',
                 'packet': packet.serialize()
             })
@@ -187,6 +220,9 @@ class Engine:
         """
         if game.uid in self.games:
             return
+
+        # Reference to games dict (delete game)
+        game.games = self.games
 
         self.games[game.uid] = game
 
@@ -213,15 +249,18 @@ class Engine:
 
         del self.games[uid]
 
-    def send_packet(self, game_uid: str, packet: Packet):
+    def send_packet(self, game_uid: str, packet: Packet,
+                    channel_name: str = None):
         """
         Add packet to game packets queue
         Blocking thread until packet is added to queue
         :param game_uid: UUID of an existing game
         :param packet: Packet to send
+        :param channel_name: Channel name (to contact player)
         """
         if game_uid not in self.games:
             raise GameNotExistsException()
 
         # Blocking function that adds packet to queue
-        self.games[game_uid].packets_queue.put(packet)
+        self.games[game_uid].packets_queue.put(
+            QueuePacket(packet=packet, channel_name=channel_name))
