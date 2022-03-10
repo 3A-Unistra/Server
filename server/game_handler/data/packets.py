@@ -22,6 +22,19 @@ class LobbyPacket(Packet):
     pass
 
 
+class PlayerPacket(Packet):
+    """
+    Packet containing player_token to identify Player
+    """
+    player_token: str
+
+    def __init__(self, name: str, player_token: str):
+        super().__init__(name)
+        self.player_token = player_token
+
+    def deserialize(self, obj: object):
+        self.player_token = obj["player_token"]
+
 class ExceptionPacket(Packet):
     def __init__(self):
         super(ExceptionPacket, self).__init__("Exception")
@@ -32,9 +45,10 @@ class AppletPrepare(Packet):
         super(AppletPrepare, self).__init__(self.__class__.__name__)
 
 
-class AppletReady(Packet):
-    def __init__(self):
-        super(AppletReady, self).__init__(self.__class__.__name__)
+class AppletReady(PlayerPacket):
+    def __init__(self, player_token: str):
+        super(AppletReady, self).__init__(name=self.__class__.__name__,
+                                          player_token=player_token)
 
 
 class GameStart(Packet):

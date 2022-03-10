@@ -13,7 +13,7 @@ import pause
 from server.game_handler.data import Board, Player
 from server.game_handler.data.exceptions.exceptions import \
     GameNotExistsException
-from server.game_handler.data.packets import Packet, GameStart
+from server.game_handler.data.packets import Packet, GameStart, AppletReady
 
 """
 States:
@@ -112,6 +112,11 @@ class Game(Thread):
                 self.timeout = datetime.now() + timedelta(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
 
+        if self.state is GameState.WAITING_PLAYERS:
+            # WebGL app is ready to play
+            if isinstance(packet, AppletReady):
+                pass
+
     def proceed_stop(self):
         pass
 
@@ -135,6 +140,8 @@ class Game(Thread):
         # Set bot names to all players
         self.board.set_bot_names()
         self.state = GameState.STARTING
+        self.timeout = datetime.now() + timedelta(
+            seconds=self.CONFIG.get('GAME_STARTING_TIMEOUT'))
         self.broadcast_packet(GameStart())
 
     def broadcast_packet(self, packet: Packet):

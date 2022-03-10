@@ -4,7 +4,7 @@ from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .data.exceptions import PacketException
-from .data.packets import PacketUtils, LobbyPacket, GameStart
+from .data.packets import PacketUtils, LobbyPacket, GameStart, PlayerPacket
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -15,6 +15,7 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
     Consumer between Client and Server
     """
     game_token: str
+    player_token: str
 
     async def connect(self):
 
@@ -45,6 +46,8 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
             return
 
         # process packets here
+        if isinstance(packet, PlayerPacket):
+            packet.player_token = self.player_token
 
         # send to game engine worker
         await self.channel_layer.send(
