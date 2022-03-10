@@ -1,17 +1,19 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import uuid
 from enum import Enum
 from threading import Thread
 from queue import Queue
+
+from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
 import pause
 
-from server.game_handler.data import Board
+from server.game_handler.data import Board, Player
 from server.game_handler.data.exceptions.exceptions import \
     GameNotExistsException
-from server.game_handler.data.packets import Packet
+from server.game_handler.data.packets import Packet, GameStart
 
 """
 States:
@@ -27,9 +29,10 @@ States:
 class GameState(Enum):
     STOP_THREAD = -2
     OFFLINE = -1
-    WAITING_PLAYERS = 0
-    STARTING = 1
-    START_DICE = 2
+    LOBBY = 0
+    WAITING_PLAYERS = 1
+    STARTING = 2
+    START_DICE = 3
 
 
 class Game(Thread):
@@ -38,7 +41,7 @@ class Game(Thread):
     board: Board
     packets_queue: Queue
     current_tick: int
-    timeout: int
+    timeout: datetime
     start_date: datetime
     CONFIG: {}
 
@@ -49,7 +52,6 @@ class Game(Thread):
         self.state = GameState.WAITING_PLAYERS
         self.packets_queue = Queue()
         self.current_tick = 0
-        self.timeout = 0
         self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
         self.tick_duration = 1.0 / self.CONFIG.get('TICK_RATE')
         self.board = Board()
@@ -102,7 +104,13 @@ class Game(Thread):
         self.process_logic()
 
     def process_packet(self, packet: Packet):
-        pass
+        if self.state is GameState.LOBBY:
+            if isinstance(packet, GameStart):
+                # set state to waiting players
+                # the server will wait AppletReady packets.
+                self.state = GameState.WAITING_PLAYERS
+                self.timeout = datetime.now() + timedelta(
+                    seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
 
     def proceed_stop(self):
         pass
@@ -112,12 +120,37 @@ class Game(Thread):
         if self.state is GameState.WAITING_PLAYERS:
             if self.board.get_online_players_count() == self.board.players_nb:
                 # We can start the game
-                pass
-            else:
-                # Check if timeout
-                pass
+                self.start_game()
+            elif self.timeout < datetime.now():  # Check timeout
 
+                # Special conditions, if no one is connected
+                # Stop the game??
+                # TODO:
+                if self.board.get_online_real_players_count() == 0:
+                    pass
+                else:
+                    self.start_game()
 
+    def start_game(self):
+        # Set bot names to all players
+        self.board.set_bot_names()
+        self.state = GameState.STARTING
+        self.broadcast_packet(GameStart())
+
+    def broadcast_packet(self, packet: Packet):
+        async_to_sync(self.channel_layer.group_send)(
+            self.uid, {"type": "game_update", "packet": packet.serialize()}
+        )
+
+    def send_packet_to_player(self, player: Player, packet: Packet):
+        if player.bot is True or player.channel_name is None:
+            return
+
+        async_to_sync(self.channel_layer.send)(
+            player.channel_name, {
+                'type': 'player.callback',
+                'packet': packet.serialize()
+            })
 
 
 class Engine:
