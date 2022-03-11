@@ -70,7 +70,32 @@ GameStart
 Lorsque tous les joueurs sont prêts et ont chargé le jeu.
 -> Enleve l'écran d'attente des joueurs
 
-*ce paquet ne contient pas d'informations*
+**contenu du paquet :**
+
+.. code-block:: json
+    :caption: Informations dans la variable players du paquet GameStart
+    {
+      "name": "GameStart",
+      "game_name": "GameExample",
+      "players": [
+        {
+          "player_token": "",
+          "name": "",
+          "bot": false,
+          "money": 0,
+          "position": 0,
+          "jail_turns": 0,
+          "jail_cards": {
+            "chance": false,
+            "community": false
+          },
+          "in_jail": false,
+          "bankrupt": false,
+          "piece": 0
+        }
+      ]
+    }
+
 
 
 
@@ -107,18 +132,20 @@ GameStartDiceThrow
 Envoyé lorque le client a appuyé sur le bouton pour lancer le dé. Si le serveur ne reçoit pas
  ce paquet après un timeout du paquet *GameStartDice*, le serveur lance le dé automatiquement.
 
+Ce paquet est un ping-pong, le client l'envoie au serveur, puis le serveur renvoie en broadcast,
+le paquet à tous les autres clients. (cela permet de voir qui a commencé de lancer les dés)
+
 **contenu du paquet :**
- * identifiant du joueur (*id_player*)
+ * identifiant du joueur (*player_token*)
 
 
 GameStartDiceResults
 ^^^^^^^^^^^^^^^^^^^^
-Paquet contenant le résultat du lancer de dé du joueur.
+Paquet contenant le résultat du lancer de dé de tout les joueurs.
 Si plusieurs joueurs de la partie ont un même résultat, il faut renvoyer un paquet *GameStartDice* à tout le monde.
 
 **contenu du paquet :**
- * identifiant du joueur (*id_player*)
- * résultat du lancer de dé (*dice_result*)
+ * résultat du lancer de dé (*dice_result*) : liste de [{"player_token": bla, "dice1": 1, "dice2": 2, win: false}]
 
 RoundStart
 ^^^^^^^^^^

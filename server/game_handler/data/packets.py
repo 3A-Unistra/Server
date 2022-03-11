@@ -33,7 +33,8 @@ class PlayerPacket(Packet):
         self.player_token = player_token
 
     def deserialize(self, obj: object):
-        self.player_token = obj["player_token"]
+        if 'player_token' in obj:
+            self.player_token = obj["player_token"]
 
 
 class InternalCheckPlayerValidity(PlayerPacket):
@@ -116,8 +117,16 @@ class AppletReady(PlayerPacket):
 
 
 class GameStart(Packet):
-    def __init__(self):
+    """
+    Contains all informations of current state
+    """
+    game_name: str
+    players: []
+
+    def __init__(self, game_name: str = "", players: [] = None):
         super(GameStart, self).__init__(self.__class__.__name__)
+        self.game_name = game_name
+        self.players = [] if players is None else players
 
 
 class PlayerDisconnect(Packet):
@@ -153,29 +162,43 @@ class GameStartDice(Packet):
         super(GameStartDice, self).__init__(self.__class__.__name__)
 
 
-class GameStartDiceThrow(Packet):
-    id_player: str
-
-    def __init__(self, id_player: str = ""):
-        super(GameStartDiceThrow, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+class GameStartDiceThrow(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(self.__class__.__name__, player_token=player_token)
 
 
 class GameStartDiceResults(Packet):
-    id_player: str
-    dice_result: int
+    dice_result: []
 
-    def __init__(self, id_player: str = "", dice_result: int = 0):
+    def __init__(self, dice_result: [] = None):
         super(GameStartDiceResults, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.dice_result = dice_result
+        self.dice_result = [] if dice_result is None else dice_result
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.dice_result = obj["reason"]
+        if 'dice_result' not in obj:
+            return
+        for o in obj['dice_result']:
+            self.dice_result.append({
+                'player_token': o['player_token'],
+                'dice1': int(o['dice1']),
+                'dice2': int(o['dice2']),
+                'win': bool(o['win'])
+            })
+
+    def add_dice_result(self, player_token: str, dice1: int, dice2: int,
+                        win: bool = False):
+        """
+        :param player_token: Player Token
+        :param dice1: Result dice 1
+        :param dice2: Result dice 2
+        :param win: Player has win the start dice
+        """
+        self.dice_result.append({
+            'player_token': player_token,
+            'dice1': dice1,
+            'dice2': dice2,
+            'win': win
+        })
 
 
 class RoundStart(Packet):
@@ -654,8 +677,12 @@ class PacketUtils:
         "ActionBuyHouseSucceed": ActionBuyHouseSucceed,
         "ActionSellHouse": ActionSellHouse,
         "ActionSellHouseSucceed": ActionSellHouseSucceed,
+        "GameStart": GameStart,
+        "PlayerValid": PlayerValid,
         # Lobby packets
-        "GameStart": GameStart
+        "GetInRoom": GetInRoom,
+        # Internal packets
+        "CheckPlayerValidity": InternalCheckPlayerValidity
     }
 
     @staticmethod

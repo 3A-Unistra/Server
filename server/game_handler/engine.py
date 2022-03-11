@@ -14,8 +14,9 @@ import pause
 from server.game_handler.data import Board, Player
 from server.game_handler.data.exceptions.exceptions import \
     GameNotExistsException
-from server.game_handler.data.packets import Packet, GameStart, AppletReady, \
-    PlayerPacket, ExceptionPacket, InternalCheckPlayerValidity
+from server.game_handler.data.packets import PlayerPacket, Packet, \
+    InternalCheckPlayerValidity, GameStart, ExceptionPacket, AppletReady, \
+    GameStartDice, GameStartDiceThrow, GameStartDiceResults
 
 """
 States:
@@ -35,6 +36,8 @@ class GameState(Enum):
     WAITING_PLAYERS = 1
     STARTING = 2
     START_DICE = 3
+    START_DICE_REROLL = 4
+    ROUND_START_WAIT = 5
 
 
 @dataclass
@@ -131,7 +134,7 @@ class Game(Thread):
                 # set state to waiting players
                 # the server will wait AppletReady packets.
                 self.state = GameState.WAITING_PLAYERS
-                self.timeout = datetime.now() + timedelta(
+                self.set_timeout(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
         else:
             # If state is not lobby
@@ -158,13 +161,19 @@ class Game(Thread):
         # Delete game
         del self.games[self.uid]
 
+    def set_timeout(self, seconds: int):
+        self.timeout = datetime.now() + timedelta(seconds=seconds)
+
+    def timeout_expired(self) -> bool:
+        return self.timeout < datetime.now()
+
     def process_logic(self):
         # State is waiting that players connecting and send AppletReady
         if self.state is GameState.WAITING_PLAYERS:
             if self.board.get_online_players_count() == self.board.players_nb:
                 # We can start the game
                 self.start_game()
-            elif self.timeout < datetime.now():  # Check timeout
+            elif self.timeout_expired():  # Check timeout
                 if self.board.get_online_real_players_count() == 0:
                     # After timeout, if no one is connected
                     # Stop game
@@ -173,13 +182,75 @@ class Game(Thread):
                 else:
                     self.start_game()
 
+        if self.timeout_expired():
+            if self.state is GameState.STARTING:
+                # x Seconds timeout before game start
+                self.start_begin_dice()
+
+            if self.state is GameState.START_DICE:
+                self.check_start_dice()
+
+            if self.state is GameState.START_DICE_REROLL:
+                self.start_begin_dice()
+
+            if self.state is GameState.ROUND_START_WAIT:
+                self.start_round()
+
     def start_game(self):
+        """
+        Set game in "game" mode, (game starting timeout)
+        """
         # Set bot names to all players
         self.board.set_bot_names()
         self.state = GameState.STARTING
-        self.timeout = datetime.now() + timedelta(
-            seconds=self.CONFIG.get('GAME_STARTING_TIMEOUT'))
-        self.broadcast_packet(GameStart())
+        self.set_timeout(seconds=self.CONFIG.get('GAME_STARTING_TIMEOUT'))
+
+        # send coherent informations to all players
+        players = []
+        for player in self.board.get_online_players():
+            players.append(player.get_coherent_infos())
+
+        self.broadcast_packet(GameStart(players=players))
+
+    def start_begin_dice(self):
+        """
+        After starting timeout is expired,
+        Start with game start dice.
+        """
+        self.state = GameState.START_DICE
+        self.broadcast_packet(GameStartDice())
+        self.set_timeout(seconds=self.CONFIG.get('START_DICE_WAIT'))
+
+        for player in self.board.get_online_players():
+            player.roll_dices()
+            # The bot should send a packet here (GameStartDiceThrow)
+            if player.bot:
+                self.broadcast_packet(
+                    GameStartDiceThrow(player_token=player.public_id))
+
+    def check_start_dice(self):
+        highest = self.board.get_highest_dice()
+
+        # Two players have the same dice score, reroll!
+        if highest is None:
+            self.state = GameState.START_DICE_REROLL
+            self.set_timeout(seconds=self.CONFIG.get('START_DICE_REROLL_WAIT'))
+            return
+
+        dice_packet = GameStartDiceResults()
+
+        for player in self.board.get_online_players():
+            dice_packet.add_dice_result(player_token=player.public_id,
+                                        dice1=player.current_dices[0],
+                                        dice2=player.current_dices[1],
+                                        win=player.id_ is highest.id_)
+
+        self.broadcast_packet(dice_packet)
+        self.state = GameState.ROUND_START_WAIT
+        self.set_timeout(seconds=self.CONFIG.get('ROUND_START_WAIT'))
+
+    def start_round(self):
+        pass
 
     def broadcast_packet(self, packet: Packet):
         async_to_sync(self.channel_layer.group_send)(

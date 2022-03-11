@@ -110,3 +110,12 @@ CHANNEL_LAYERS = {
         # "BACKEND": "channels.layers.InMemoryChannelLayer"
     },
 }
+
+ENGINE_CONFIG = {
+    'TICK_RATE': 20,
+    'WAITING_PLAYERS_TIMEOUT': 30,
+    'GAME_STARTING_TIMEOUT': 3,
+    'START_DICE_WAIT': 5,
+    'START_DICE_REROLL_WAIT': 3,
+    'ROUND_START_WAIT': 5
+}
