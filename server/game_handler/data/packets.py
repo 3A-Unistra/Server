@@ -167,7 +167,30 @@ class GameStartDiceResults(Packet):
         self.dice_result = [] if dice_result is None else dice_result
 
     def deserialize(self, obj: object):
-        self.dice_result = obj["reason"]
+        if 'dice_result' not in obj:
+            return
+        for o in obj['dice_result']:
+            self.dice_result.append({
+                'player_token': o['player_token'],
+                'dice1': int(o['dice1']),
+                'dice2': int(o['dice2']),
+                'win': bool(o['win'])
+            })
+
+    def add_dice_result(self, player_token: str, dice1: int, dice2: int,
+                        win: bool = False):
+        """
+        :param player_token: Player Token
+        :param dice1: Result dice 1
+        :param dice2: Result dice 2
+        :param win: Player has win the start dice
+        """
+        self.dice_result.append({
+            'player_token': player_token,
+            'dice1': dice1,
+            'dice2': dice2,
+            'win': win
+        })
 
 
 class RoundStart(Packet):

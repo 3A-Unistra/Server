@@ -16,7 +16,7 @@ from server.game_handler.data.exceptions.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import PlayerPacket, Packet, \
     InternalCheckPlayerValidity, GameStart, ExceptionPacket, AppletReady, \
-    GameStartDice, GameStartDiceThrow
+    GameStartDice, GameStartDiceThrow, GameStartDiceResults
 
 """
 States:
@@ -37,6 +37,7 @@ class GameState(Enum):
     STARTING = 2
     START_DICE = 3
     START_DICE_REROLL = 4
+    ROUND_START_WAIT = 5
 
 
 @dataclass
@@ -192,6 +193,9 @@ class Game(Thread):
             if self.state is GameState.START_DICE_REROLL:
                 self.start_begin_dice()
 
+            if self.state is GameState.ROUND_START_WAIT:
+                self.start_round()
+
     def start_game(self):
         """
         Set game in "game" mode, (game starting timeout)
@@ -226,6 +230,21 @@ class Game(Thread):
             self.state = GameState.START_DICE_REROLL
             self.set_timeout(seconds=self.CONFIG.get('START_DICE_REROLL_WAIT'))
             return
+
+        dice_packet = GameStartDiceResults()
+
+        for player in self.board.get_online_players():
+            dice_packet.add_dice_result(player_token=player.public_id,
+                                        dice1=player.current_dices[0],
+                                        dice2=player.current_dices[1],
+                                        win=player.id_ is highest.id_)
+
+        self.broadcast_packet(dice_packet)
+        self.state = GameState.ROUND_START_WAIT
+        self.set_timeout(seconds=self.CONFIG.get('ROUND_START_WAIT'))
+
+    def start_round(self):
+        pass
 
     def broadcast_packet(self, packet: Packet):
         async_to_sync(self.channel_layer.group_send)(
