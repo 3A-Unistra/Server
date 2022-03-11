@@ -185,31 +185,3 @@ class GameEngineConsumer(SyncConsumer):
         # Send packet to game thread
         self.engine.send_packet(game_uid=game_token, packet=packet,
                                 channel_name=channel_name)
-
-    def process_game_management(self, content):
-        """
-        Only actions from Lobby Worker are received here
-        :param content: JSON received from LobbyConsumer
-        """
-        try:
-            packet = PacketUtils.deserialize_packet(content)
-        except PacketException:
-            # send error packet (or ignore)
-            return
-
-        # Check if packet is not None
-        if packet is None:
-            return
-
-        # Check if packet is a lobby packet
-        if not isinstance(packet, LobbyPacket):
-            return
-
-        # Process start packet
-
-        if isinstance(packet, GameStart):
-            # Check if packet is gamestart
-            pass
-
-        # TODO: Maybe process new type of lobby packets here?
-        pass
