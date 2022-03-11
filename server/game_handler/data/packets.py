@@ -33,7 +33,8 @@ class PlayerPacket(Packet):
         self.player_token = player_token
 
     def deserialize(self, obj: object):
-        self.player_token = obj["player_token"]
+        if 'player_token' in obj:
+            self.player_token = obj["player_token"]
 
 
 class InternalCheckPlayerValidity(PlayerPacket):
@@ -153,28 +154,19 @@ class GameStartDice(Packet):
         super(GameStartDice, self).__init__(self.__class__.__name__)
 
 
-class GameStartDiceThrow(Packet):
-    id_player: str
-
-    def __init__(self, id_player: str = ""):
-        super(GameStartDiceThrow, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+class GameStartDiceThrow(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(self.__class__.__name__, player_token=player_token)
 
 
 class GameStartDiceResults(Packet):
-    id_player: str
-    dice_result: int
+    dice_result: []
 
-    def __init__(self, id_player: str = "", dice_result: int = 0):
+    def __init__(self, dice_result: [] = None):
         super(GameStartDiceResults, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.dice_result = dice_result
+        self.dice_result = [] if dice_result is None else dice_result
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
         self.dice_result = obj["reason"]
 
 

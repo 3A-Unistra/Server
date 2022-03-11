@@ -11,7 +11,7 @@ class Board:
     chance_deck: List[Card]
     prison_square: int
     board_money: int
-    players: [Player]
+    players: List[Player]
     players_nb: int
     bots_nb: int
     bot_names: []
@@ -55,7 +55,7 @@ class Board:
         return sum(1 for player in self.players if (
                 player.online and not player.bot))
 
-    def get_offline_players(self) -> []:
+    def get_offline_players(self) -> List[Player]:
         """
         :return: Offline players (bots that are not connected)
         """
@@ -94,7 +94,7 @@ class Board:
         for player in self.players:
             player.bot_name = self.get_random_bot_name()
 
-    def get_online_players(self):
+    def get_online_players(self) -> List[Player]:
         """
         :return: Online players, bots included
         """
@@ -103,3 +103,25 @@ class Board:
             if player.online is True:
                 players.append(player)
         return players
+
+    def get_highest_dice(self) -> Optional[Player]:
+        """
+        Returns the highest dice score player in game
+        If two players have the same dice score, then None is returned
+        """
+        players = self.get_online_players()
+        player: Player = players.pop(0)
+
+        for comp in players:
+            if comp.dices_value() > player.dices_value():
+                player = comp
+
+        # Check for uniqueness
+        for comp in self.get_online_players():
+            if comp.id_ is player.id_:
+                continue
+
+            if comp.dices_value() == player.dices_value():
+                return None
+
+        return player
