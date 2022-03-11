@@ -29,13 +29,14 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
 
         self.valid = False
 
-        query = parse_qs(self.scope["query_string"].decode("utf8"))
         game_token = None
+        player_token = None
 
         if 'game_token' in self.scope['url_route']['kwargs']:
             game_token = self.scope['url_route']['kwargs']['game_token']
 
-        player_token = query.get('player_token', None)
+        if 'player_token' in self.scope['url_route']['kwargs']:
+            player_token = self.scope['url_route']['kwargs']['player_token']
 
         if game_token is None:
             return await self.close(code=4001)
