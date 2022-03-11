@@ -55,6 +55,38 @@ class PlayerValid(Packet):
         super().__init__(self.__class__.__name__)
 
 
+class GetInRoom(Packet):
+    id_player: str
+    id_room: str
+    is_protected: bool
+    password: str
+
+    def __init__(self, id_player: str = "", id_room: str = "",
+                 is_protected: bool = False, password: str = ""):
+        super(GetInRoom, self).__init__(self.__class__.__name__)
+        self.id_player = id_player
+        self.id_room = id_room
+        self.is_protected = is_protected
+        self.password = password
+
+    def deserialize(self, obj: object):
+        self.id_player = obj["id_player"]
+        self.id_room = obj["id_room"]
+        self.is_protected = obj["is_protected"]
+        self.password = obj["password"]
+
+
+class LaunchGame(Packet):
+    id_player: str
+
+    def __init__(self, id_player: str = ""):
+        super(LaunchGame, self).__init__(self.__class__.__name__)
+        self.id_player = id_player
+
+    def deserialize(self, obj: object):
+        self.id_player = obj["id_player"]
+
+
 class ExceptionPacket(Packet):
     code: int
 
@@ -67,8 +99,14 @@ class ExceptionPacket(Packet):
 
 
 class AppletPrepare(Packet):
-    def __init__(self):
+    id_player: str
+
+    def __init__(self, id_player: str = ""):
         super(AppletPrepare, self).__init__(self.__class__.__name__)
+        self.id_player = id_player
+
+    def deserialize(self, obj: object):
+        self.id_player = obj["id_player"]
 
 
 class AppletReady(PlayerPacket):
