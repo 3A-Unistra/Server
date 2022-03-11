@@ -8,6 +8,12 @@ Pour installer les dépendances :
 pip install -r requirements.txt
 ```
 
+Important !! Si vous utilisez windows, installez :
+
+```
+pip install twisted-iocpsupport==1.0.2
+```
+
 ## Documentation technique
 
 La documentation technique de l'application "server" se trouve à l'adresse suivante :

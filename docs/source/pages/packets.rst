@@ -13,6 +13,15 @@ Le contenu des paquets est au format JSON.
 Paquets demarrage
 -----------------
 
+PlayerValid
+^^^^^^^^^^^
+
+Paquet envoyé lorsque le joueur a été validé par le serveur.
+Lorsqu'on se connecte au WebSocket Game, on doit attendre ce paquet, avant de pouvoir envoyer d'autres
+paquets (pendant ce temps les données échangées seront refusées par le serveur).
+
+Si le client reçoit ce message, alors la connexion est valide.
+Dans le cas contraire, le serveur ferme la connexion WebSocket avec le client.
 
 LaunchGame
 ^^^^^^^^^^
@@ -22,7 +31,7 @@ Paquet envoyé *par le client* lorsque le host du lobby lance la partie.
  * id du joueur lançant la partie (*id_player*)
 
 GetInRoom
- ^^^^^^^^^
+^^^^^^^^^
 Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
 
 **contenu du paquet :**
@@ -30,9 +39,6 @@ Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
  * id de la salle (*id_room*)
  * booleen indiquant si la salle comporte un mot de passe (*is_protected*)
  * mot de passe (*password*)
-
-
-
 
 AppletPrepare
 ^^^^^^^^^^^^^
@@ -410,7 +416,7 @@ Paquet envoyé à tout le monde lorsque l'achat d'une maison a été couronné d
 Paquet ActionSellHouse
 ^^^^^^^^^^^^^^^^^^^^^^
 
-PAquet envoyé *par un clinet* lorsque le joueur veut vendre une maison.
+Paquet envoyé *par un clinet* lorsque le joueur veut vendre une maison.
 
 **contenu du paquet :**
  * id du joueur (*id_player*)

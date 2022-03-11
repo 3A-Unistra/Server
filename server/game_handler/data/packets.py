@@ -15,13 +15,44 @@ class Packet:
         pass
 
 
-"""
-Lobby packet => inherits Packet
-"""
-
-
 class LobbyPacket(Packet):
+    """
+    Lobby packet => inherits Packet
+    """
     pass
+
+
+class PlayerPacket(Packet):
+    """
+    Packet containing player_token to identify Player
+    """
+    player_token: str
+
+    def __init__(self, name: str, player_token: str):
+        super().__init__(name)
+        self.player_token = player_token
+
+    def deserialize(self, obj: object):
+        self.player_token = obj["player_token"]
+
+
+class InternalCheckPlayerValidity(PlayerPacket):
+    valid: bool
+
+    def __init__(self, player_token: str, valid: bool = False):
+        super(InternalCheckPlayerValidity, self).__init__(
+            name=self.__class__.__name__,
+            player_token=player_token)
+        self.valid = valid
+
+    def deserialize(self, obj: object):
+        super().deserialize(obj)
+        self.valid = bool(obj['valid'])
+
+
+class PlayerValid(Packet):
+    def __init__(self):
+        super().__init__(self.__class__.__name__)
 
 
 class GetInRoom(Packet):
@@ -57,8 +88,14 @@ class LaunchGame(Packet):
 
 
 class ExceptionPacket(Packet):
-    def __init__(self):
+    code: int
+
+    def __init__(self, code: int = 4000):
         super(ExceptionPacket, self).__init__("Exception")
+        self.code = code
+
+    def deserialize(self, obj: object):
+        self.code = int(obj["code"])
 
 
 class AppletPrepare(Packet):
@@ -72,9 +109,10 @@ class AppletPrepare(Packet):
         self.id_player = obj["id_player"]
 
 
-class AppletReady(Packet):
-    def __init__(self):
-        super(AppletReady, self).__init__(self.__class__.__name__)
+class AppletReady(PlayerPacket):
+    def __init__(self, player_token: str):
+        super(AppletReady, self).__init__(name=self.__class__.__name__,
+                                          player_token=player_token)
 
 
 class GameStart(Packet):
@@ -580,7 +618,6 @@ class PacketUtils:
         "Exception": ExceptionPacket,
         "AppletPrepare": AppletPrepare,
         "AppletReady": AppletReady,
-        "GameStart": GameStart,
         "PlayerDisconnect": PlayerDisconnect,
         "PlayerReconnect": PlayerReconnect,
         "GameStartDice": GameStartDice,
