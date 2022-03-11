@@ -23,3 +23,10 @@ Trois arguments sont attendus pour se connecter au WebSocket du game engine.
     :caption: Comment se connecter au websocket du game engine
 
     let socket = new WebSocket("wss://localhost/ws/game/<game_id>?player_token=<player_token>&jwt=<jwt>");
+
+
+Echange pour valider la connexion
+---------------------------------
+
+.. image:: ../images/connect_game_socket.png
+  :alt: Schema

@@ -58,7 +58,7 @@ class PlayerValid(Packet):
 class ExceptionPacket(Packet):
     code: int
 
-    def __init__(self, code: int):
+    def __init__(self, code: int = 4000):
         super(ExceptionPacket, self).__init__("Exception")
         self.code = code
 

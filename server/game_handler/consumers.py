@@ -125,10 +125,11 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         # TODO: Manage errors that closes WebSocket
         if isinstance(packet, ExceptionPacket):
             # Player invalid closing connection
-            self.valid = False
-            if packet.code is 4100:
+            if packet.code == 4100:
+                self.valid = False
                 return await self.close(code=4100)
 
+        # Send validity token
         if isinstance(packet, InternalCheckPlayerValidity):
             if packet.valid:
                 packet = PlayerValid()
