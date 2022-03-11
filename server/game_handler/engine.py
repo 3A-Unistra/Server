@@ -204,7 +204,13 @@ class Game(Thread):
         self.board.set_bot_names()
         self.state = GameState.STARTING
         self.set_timeout(seconds=self.CONFIG.get('GAME_STARTING_TIMEOUT'))
-        self.broadcast_packet(GameStart())
+
+        # send coherent informations to all players
+        players = []
+        for player in self.board.get_online_players():
+            players.append(player.get_coherent_infos())
+
+        self.broadcast_packet(GameStart(players=players))
 
     def start_begin_dice(self):
         """

@@ -26,7 +26,7 @@ Trois arguments sont attendus pour se connecter au WebSocket du game engine.
 
 
 Echange pour valider la connexion
----------------------------------
++++++++++++++++++++++++++++++++++
 
 .. image:: ../images/connect_game_socket.png
   :alt: Schema

@@ -70,7 +70,32 @@ GameStart
 Lorsque tous les joueurs sont prêts et ont chargé le jeu.
 -> Enleve l'écran d'attente des joueurs
 
-*ce paquet ne contient pas d'informations*
+**contenu du paquet :**
+
+.. code-block:: json
+    :caption: Informations dans la variable players du paquet GameStart
+    {
+      "name": "GameStart",
+      "game_name": "GameExample",
+      "players": [
+        {
+          "player_token": "",
+          "name": "",
+          "bot": false,
+          "money": 0,
+          "position": 0,
+          "jail_turns": 0,
+          "jail_cards": {
+            "chance": false,
+            "community": false
+          },
+          "in_jail": false,
+          "bankrupt": false,
+          "piece": 0
+        }
+      ]
+    }
+
 
 
 

@@ -1,15 +1,8 @@
 import random
 import uuid
-from enum import Enum
 from typing import Optional, Tuple
 
 from server.game_handler.models import User
-
-
-class PlayerState(Enum):
-    Paying = 0
-    Jail = 1
-    Bankrupt = 2
 
 
 class Player:
@@ -24,16 +17,25 @@ class Player:
     public_id: str
     name: str
     bot_name: str = None
+    user: Optional[User]
+    channel_name: str
+    online: bool = False
+
     position: int = 0
     score: int = 0
     money: int = 0
     jail_turns: int = 0
-    state: PlayerState
-    user: Optional[User]
+    doubles: int = 0
+    jail_cards = {
+        'chance': False,
+        'community': False
+    }
+    in_jail: bool = False
+    bankrupt: bool = False
     bot: bool = True
-    online: bool = False
-    channel_name: str
     current_dices: Tuple[int, int]
+
+    piece: int = 0
 
     def __init__(self, id_: str, name: str, channel_name: str = None,
                  bot: bool = True,
@@ -91,3 +93,17 @@ class Player:
 
     def dices_value(self) -> int:
         return sum(self.current_dices)
+
+    def get_coherent_infos(self) -> dict:
+        return {
+            'player_token': self.public_id,
+            'name': self.get_name(),
+            'bot': self.bot,
+            'money': self.money,
+            'position': self.position,
+            'jail_turns': self.jail_turns,
+            'jail_cards': self.jail_cards,
+            'in_jail': self.in_jail,
+            'bankrupt': self.bankrupt,
+            'piece': self.piece
+        }

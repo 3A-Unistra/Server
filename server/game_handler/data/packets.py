@@ -117,8 +117,16 @@ class AppletReady(PlayerPacket):
 
 
 class GameStart(Packet):
-    def __init__(self):
+    """
+    Contains all informations of current state
+    """
+    game_name: str
+    players: []
+
+    def __init__(self, game_name: str = "", players: [] = None):
         super(GameStart, self).__init__(self.__class__.__name__)
+        self.game_name = game_name
+        self.players = [] if players is None else players
 
 
 class PlayerDisconnect(Packet):
@@ -669,8 +677,12 @@ class PacketUtils:
         "ActionBuyHouseSucceed": ActionBuyHouseSucceed,
         "ActionSellHouse": ActionSellHouse,
         "ActionSellHouseSucceed": ActionSellHouseSucceed,
+        "GameStart": GameStart,
+        "PlayerValid": PlayerValid,
         # Lobby packets
-        "GameStart": GameStart
+        "GetInRoom": GetInRoom,
+        # Internal packets
+        "CheckPlayerValidity": InternalCheckPlayerValidity
     }
 
     @staticmethod
