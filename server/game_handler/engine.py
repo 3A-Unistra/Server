@@ -16,7 +16,7 @@ from server.game_handler.data.exceptions.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import PlayerPacket, Packet, \
     InternalCheckPlayerValidity, GameStart, ExceptionPacket, AppletReady, \
-    GameStartDice, GameStartDiceThrow, GameStartDiceResults
+    GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart
 
 """
 States:
@@ -37,7 +37,8 @@ class GameState(Enum):
     STARTING = 2
     START_DICE = 3
     START_DICE_REROLL = 4
-    ROUND_START_WAIT = 5
+    FIRST_ROUND_START_WAIT = 5
+    ROUND_START_WAIT = 6
 
 
 @dataclass
@@ -51,7 +52,6 @@ class Game(Thread):
     state: GameState
     board: Board
     packets_queue: Queue
-    current_tick: int
     timeout: datetime
     start_date: datetime
     CONFIG: {}
@@ -64,7 +64,6 @@ class Game(Thread):
         self.uid = uid
         self.state = GameState.WAITING_PLAYERS
         self.packets_queue = Queue()
-        self.current_tick = 0
         self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
         self.tick_duration = 1.0 / self.CONFIG.get('TICK_RATE')
         self.board = Board()
@@ -193,6 +192,9 @@ class Game(Thread):
             if self.state is GameState.START_DICE_REROLL:
                 self.start_begin_dice()
 
+            if self.state is GameState.FIRST_ROUND_START_WAIT:
+                self.start_round(first=True)
+
             if self.state is GameState.ROUND_START_WAIT:
                 self.start_round()
 
@@ -246,11 +248,19 @@ class Game(Thread):
                                         win=player.id_ is highest.id_)
 
         self.broadcast_packet(dice_packet)
-        self.state = GameState.ROUND_START_WAIT
+        self.state = GameState.FIRST_ROUND_START_WAIT
         self.set_timeout(seconds=self.CONFIG.get('ROUND_START_WAIT'))
+        self.board.set_current_player(highest)
 
-    def start_round(self):
-        pass
+    def start_round(self, first: bool = False):
+        if not first:
+            self.board.next_player()
+
+        # Get current player
+        current_player = self.board.get_current_player()
+        current_player.roll_dices()
+        packet = RoundStart()
+        self.broadcast_packet(packet)
 
     def broadcast_packet(self, packet: Packet):
         async_to_sync(self.channel_layer.group_send)(

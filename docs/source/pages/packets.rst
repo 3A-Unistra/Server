@@ -149,9 +149,10 @@ Si plusieurs joueurs de la partie ont un même résultat, il faut renvoyer un pa
 
 RoundStart
 ^^^^^^^^^^
-Notifie les clients que la partie peut débuter.
+Notifie les clients qu'une nouvelle manche démarre.
 
-*ce paquet ne contient pas d'informations*
+**contenu du paquet :**
+ * identifiant du joueur qui joue. (*current_player*)
 
 RoundDiceThrow
 ^^^^^^^^^^^^^^

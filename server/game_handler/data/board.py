@@ -15,6 +15,8 @@ class Board:
     players_nb: int
     bots_nb: int
     bot_names: []
+    current_player_index: int
+    round: int
 
     def __init__(self):
         self.board = []
@@ -25,7 +27,49 @@ class Board:
         self.players = []
         self.players_nb = 0
         self.bots_nb = 0
+        self.current_player_index = 0
         self.bot_names: []
+        self.round = 0
+
+    def next_player(self) -> Player:
+        """
+        Setting next player (if player is bankrupt, goto next)
+        :return: Next player playing
+        """
+        i = 0
+        curr_idx = self.current_player_index
+
+        while i < self.players_nb:
+            curr_idx = (curr_idx + 1) % self.players_nb
+
+            if not self.players[curr_idx].bankrupt:
+                self.current_player_index = curr_idx
+                break
+
+            i += 1
+
+        return self.players[self.current_player_index]
+
+    def get_player_idx(self, player: Player) -> int:
+        for i in range(0, self.players_nb):
+            if self.players[i].id_ == player.id_:
+                return i
+        return -1
+
+    def set_current_player(self, player: Player) -> int:
+        """
+        Set current playing player
+        :param player: Player
+        :return: -1 if player not found, idx if found
+        """
+        idx = self.get_player_idx(player)
+        if idx == -1:
+            return -1
+        self.current_player_index = idx
+        return idx
+
+    def get_current_player(self) -> Player:
+        return self.players[self.current_player_index]
 
     def get_player(self, uid: str) -> Optional[Player]:
         for player in self.players:
@@ -41,6 +85,9 @@ class Board:
             return
 
         self.players.append(player)
+
+    def remove_player(self, player: Player):
+        self.players.remove(player)
 
     def get_online_players_count(self) -> int:
         """
