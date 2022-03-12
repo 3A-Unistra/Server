@@ -27,6 +27,7 @@ incremental==21.3.0
 iniconfig==1.1.1
 mccabe==0.6.1
 msgpack==1.0.3
+names==0.3.0
 oauthlib==3.2.0
 packaging==21.3
 packet==0.5
@@ -54,6 +55,7 @@ toml==0.10.2
 tomli==2.0.1
 tox==3.24.5
 Twisted==22.1.0
+twisted-iocpsupport==1.0.2
 txaio==22.2.1
 typing_extensions==4.1.1
 tzdata==2021.5

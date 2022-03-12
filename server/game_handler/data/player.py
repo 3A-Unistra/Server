@@ -13,9 +13,7 @@ class Player:
     To check if this Player is a "real" bot (not disconnected player bot),
     compare bot and online bool, if they are both True it is a "real" bot.
     """
-    id_: str
     public_id: str
-    name: str
     bot_name: str = None
     user: Optional[User]
     channel_name: str
@@ -37,16 +35,13 @@ class Player:
 
     piece: int = 0
 
-    def __init__(self, id_: str, name: str, channel_name: str = None,
+    def __init__(self, user: Optional[User] = None, channel_name: str = None,
                  bot: bool = True,
                  bot_name: str = None):
         """
-        :param id_: Id of the Player
-        :param name: Name of the Player
         :param bot: If this Player is a "real" bot
         """
-        self.id_ = id_
-        self.name = name
+        self.user = user
         self.bot = bot
         self.bot_name = bot_name
         self.user = None
@@ -76,10 +71,10 @@ class Player:
         :return: Name of the Player
         """
         if self.bot:
-            if self.name is None:
+            if self.user is None or self.user.name is None:
                 return self.bot_name
             return 'Bot %s' % self.bot_name
-        return self.name
+        return self.user.name
 
     def roll_dices(self) -> int:
         """

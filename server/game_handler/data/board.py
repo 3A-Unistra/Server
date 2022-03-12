@@ -1,6 +1,8 @@
 import random
 from typing import List, Optional
 
+import names
+
 from . import Card, Player
 from .squares import Square
 
@@ -52,7 +54,7 @@ class Board:
 
     def get_player_idx(self, player: Player) -> int:
         for i in range(0, self.players_nb):
-            if self.players[i].id_ == player.id_:
+            if self.players[i].public_id == player.public_id:
                 return i
         return -1
 
@@ -73,7 +75,7 @@ class Board:
 
     def get_player(self, uid: str) -> Optional[Player]:
         for player in self.players:
-            if player.id_ == uid:
+            if player.public_id == uid:
                 return player
         return None
 
@@ -81,7 +83,7 @@ class Board:
         return self.get_player(uid) is not None
 
     def add_player(self, player: Player):
-        if self.player_exists(player.id_):
+        if self.player_exists(player.public_id):
             return
 
         self.players.append(player)
@@ -122,17 +124,14 @@ class Board:
         """
         :return: Random bot name not
         """
-        name: str = 'Bot'
-        names_count = len(self.bot_names)
-        i = names_count
-
+        i = 50  # Max 50 tries
         while i > 0:
-            name = self.bot_names[random.randint(0, names_count)]
+            name = names.get_first_name()
             if self.bot_name_used(name) is False:
-                break
+                return 'Bot %s' % name
             i -= 1
-
-        return '%s #%s' % (name, str(random.randint(1, 9)))
+        # If above code fails, then we generate a name like: Bot #<random>
+        return 'Bot #%d' % random.randint(1, 9)
 
     def set_bot_names(self):
         """
@@ -165,7 +164,7 @@ class Board:
 
         # Check for uniqueness
         for comp in self.get_online_players():
-            if comp.id_ is player.id_:
+            if comp.public_id is player.public_id:
                 continue
 
             if comp.dices_value() == player.dices_value():

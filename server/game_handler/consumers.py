@@ -16,9 +16,8 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
     """
     Consumer between Client and Server
     """
-    game_token: str
-    player_token: str
-    valid: bool
+    game_token: str = None
+    valid: bool = False
 
     async def connect(self):
         # User is anonymous
@@ -28,22 +27,11 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
 
         self.valid = False
 
-        game_token = None
-        player_token = None
-
         if 'game_token' in self.scope['url_route']['kwargs']:
-            game_token = self.scope['url_route']['kwargs']['game_token']
+            self.game_token = self.scope['url_route']['kwargs']['game_token']
 
-        if 'player_token' in self.scope['url_route']['kwargs']:
-            player_token = self.scope['url_route']['kwargs']['player_token']
-
-        if game_token is None:
+        if self.game_token is None:
             return await self.close(code=4001)
-
-        if player_token is None:
-            return await self.close(code=4002)
-
-        player_token = player_token[0]
 
         """
         Player connects -> send internal check player validity to server
@@ -52,7 +40,8 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         If valid, packet PlayerValid is sent to WebSocket
         """
 
-        packet = InternalCheckPlayerValidity(player_token=player_token)
+        packet = InternalCheckPlayerValidity(
+            player_token=self.scope['user'].id)
 
         # send to game engine worker
         await self.channel_layer.send(
@@ -90,7 +79,7 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
 
         # process packets here
         if isinstance(packet, PlayerPacket):
-            packet.player_token = self.player_token
+            packet.player_token = self.scope['user'].id
 
         # send to game engine worker
         await self.channel_layer.send(

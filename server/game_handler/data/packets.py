@@ -99,9 +99,9 @@ class ExceptionPacket(Packet):
         self.code = int(obj["code"])
 
 
-class PingPacket(Packet):
-    def __init__(self):
-        super().__init__("Ping")
+class PingPacket(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__("Ping", player_token=player_token)
 
 
 class AppletPrepare(Packet):

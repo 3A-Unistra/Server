@@ -16,7 +16,8 @@ from server.game_handler.data.exceptions.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import PlayerPacket, Packet, \
     InternalCheckPlayerValidity, GameStart, ExceptionPacket, AppletReady, \
-    GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart
+    GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
+    PingPacket
 
 """
 States:
@@ -53,6 +54,7 @@ class Game(Thread):
     board: Board
     packets_queue: Queue
     timeout: datetime
+    timeout_heartbeat: datetime
     start_date: datetime
     CONFIG: {}
     # reference to games dict
@@ -117,6 +119,9 @@ class Game(Thread):
 
     def process_packet(self, queue_packet: QueuePacket):
         packet: Packet = queue_packet.packet
+
+        if isinstance(packet, PingPacket):
+            pass  # packet.player_token
 
         # check player validity
         if isinstance(packet, InternalCheckPlayerValidity):
@@ -242,10 +247,11 @@ class Game(Thread):
         dice_packet = GameStartDiceResults()
 
         for player in self.board.get_online_players():
+            is_winner = player.public_id is highest.public_id
             dice_packet.add_dice_result(player_token=player.public_id,
                                         dice1=player.current_dices[0],
                                         dice2=player.current_dices[1],
-                                        win=player.id_ is highest.id_)
+                                        win=is_winner)
 
         self.broadcast_packet(dice_packet)
         self.state = GameState.FIRST_ROUND_START_WAIT

@@ -111,6 +111,9 @@ CHANNEL_LAYERS = {
     },
 }
 
+# If server is localhost then SERVER_OFFLINE should be True
+SERVER_OFFLINE = False
+
 ENGINE_CONFIG = {
     'TICK_RATE': 20,
     'WAITING_PLAYERS_TIMEOUT': 30,
