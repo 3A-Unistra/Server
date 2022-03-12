@@ -259,7 +259,7 @@ class Game(Thread):
         # Get current player
         current_player = self.board.get_current_player()
         current_player.roll_dices()
-        packet = RoundStart()
+        packet = RoundStart(current_player=current_player.public_id)
         self.broadcast_packet(packet)
 
     def broadcast_packet(self, packet: Packet):

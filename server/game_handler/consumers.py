@@ -5,7 +5,7 @@ from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .data.exceptions import PacketException
-from .data.packets import PacketUtils, LobbyPacket, GameStart, PlayerPacket, \
+from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid
 from .engine import Engine
 
@@ -21,7 +21,6 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
     valid: bool
 
     async def connect(self):
-
         # User is anonymous
         if self.scope["user"] is None:
             # Reject the connection

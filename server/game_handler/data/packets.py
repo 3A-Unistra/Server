@@ -99,6 +99,11 @@ class ExceptionPacket(Packet):
         self.code = int(obj["code"])
 
 
+class PingPacket(Packet):
+    def __init__(self):
+        super().__init__("Ping")
+
+
 class AppletPrepare(Packet):
     id_player: str
 
@@ -202,8 +207,14 @@ class GameStartDiceResults(Packet):
 
 
 class RoundStart(Packet):
-    def __init__(self):
+    current_player: str
+
+    def __init__(self, current_player: str = ""):
         super(RoundStart, self).__init__(self.__class__.__name__)
+        self.current_player = current_player
+
+    def deserialize(self, obj: object):
+        self.current_player = obj['current_player']
 
 
 class RoundDiceThrow(Packet):

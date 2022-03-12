@@ -13,6 +13,14 @@ Le contenu des paquets est au format JSON.
 Paquets demarrage
 -----------------
 
+PlayerPing
+^^^^^^^^^^
+
+Paquet heartbeat, envoyé toutes les 10 secondes.
+C'est un paquet ping-pong, le serveur envoie, le client reçoit.
+Si le serveur ne reçoit pas de paquet en retour après 10 secondes,
+il ferme la connexion (broadcast PlayerDisconnect)
+
 PlayerValid
 ^^^^^^^^^^^
 
