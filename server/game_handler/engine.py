@@ -40,6 +40,7 @@ class GameState(Enum):
     START_DICE_REROLL = 4
     FIRST_ROUND_START_WAIT = 5
     ROUND_START_WAIT = 6
+    ROUND_DICE_WAIT = 7
 
 
 @dataclass
@@ -288,8 +289,19 @@ class Game(Thread):
         # Get current player
         current_player = self.board.get_current_player()
         current_player.roll_dices()
+
+        # TODO : AI should randomly do some actions
+        # Check if player is in prison -> random between :
+        # -> buy if he can or trie to dice
+        # maybe execute AI random timeouts.
+
+        # broadcast packet to all players
         packet = RoundStart(current_player=current_player.get_id())
         self.broadcast_packet(packet)
+
+        # set timeout
+        self.state = GameState.ROUND_DICE_WAIT
+        self.set_timeout(seconds=self.CONFIG.get('ROUND_DICE_WAIT'))
 
     def proceed_heartbeat(self):
         """
