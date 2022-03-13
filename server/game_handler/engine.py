@@ -63,7 +63,7 @@ class Game(Thread):
         super(Game, self).__init__(daemon=True, name="Game_%s" % uid, **kwargs)
         self.channel_layer = get_channel_layer()
         self.uid = uid
-        self.state = GameState.WAITING_PLAYERS
+        self.state = GameState.OFFLINE
         self.packets_queue = Queue()
         self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
         self.tick_duration = 1.0 / self.CONFIG.get('TICK_RATE')
@@ -71,7 +71,7 @@ class Game(Thread):
 
     def run(self) -> None:
         # Starting game thread
-        self.state = GameState.WAITING_PLAYERS
+        self.state = GameState.LOBBY
         # Set start date
         self.start_date = datetime.now()
 
