@@ -17,7 +17,7 @@ from server.game_handler.data.exceptions.exceptions import \
 from server.game_handler.data.packets import PlayerPacket, Packet, \
     InternalCheckPlayerValidity, GameStart, ExceptionPacket, AppletReady, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
-    PingPacket
+    PingPacket, PlayerDisconnect, InternalPlayerDisconnect
 
 """
 States:
@@ -54,7 +54,6 @@ class Game(Thread):
     board: Board
     packets_queue: Queue
     timeout: datetime
-    timeout_heartbeat: datetime
     start_date: datetime
     CONFIG: {}
     # reference to games dict
@@ -120,17 +119,29 @@ class Game(Thread):
     def process_packet(self, queue_packet: QueuePacket):
         packet: Packet = queue_packet.packet
 
-        if isinstance(packet, PingPacket):
-            pass  # packet.player_token
+        if self.state > GameState.LOBBY:
+            # Heartbeat only in "game"
+            if isinstance(packet, PingPacket):
+                player = self.board.get_player(packet.player_token)
+                if player is None:
+                    return
+
+                player.ping = True
+                return
+
+            if isinstance(packet, InternalPlayerDisconnect):
+                # TODO: HANDLE CLIENT SIDE DISCONNECT
+                pass
 
         # check player validity
         if isinstance(packet, InternalCheckPlayerValidity):
-            exists = self.board.player_exists(packet.player_token)
+            # Only accept connection, if player exists and game is started
+            valid = self.board.player_exists(
+                packet.player_token) and self.state > GameState.LOBBY
             self.send_packet(
                 channel_name=queue_packet.channel_name,
-                packet=InternalCheckPlayerValidity(player_token='',
-                                                   valid=exists))
-            if not exists:
+                packet=InternalCheckPlayerValidity(valid=valid))
+            if not valid:
                 return
 
         if self.state is GameState.LOBBY:
@@ -140,6 +151,7 @@ class Game(Thread):
                 self.state = GameState.WAITING_PLAYERS
                 self.set_timeout(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
+
         else:
             # If state is not lobby
             # Check for packet validity
@@ -161,6 +173,11 @@ class Game(Thread):
                 else:
                     player.connect()
 
+                    # init ping heartbeat
+                    player.ping = True
+                    player.ping_timeout = datetime.now() + timedelta(
+                        seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
+
     def proceed_stop(self):
         # Delete game
         del self.games[self.uid]
@@ -172,6 +189,12 @@ class Game(Thread):
         return self.timeout < datetime.now()
 
     def process_logic(self):
+        # TODO: Check #34 in comments
+
+        # Check pings
+        if self.state > GameState.LOBBY:
+            self.proceed_heartbeat()
+
         # State is waiting that players connecting and send AppletReady
         if self.state is GameState.WAITING_PLAYERS:
             if self.board.get_online_players_count() == self.board.players_nb:
@@ -233,7 +256,7 @@ class Game(Thread):
             # The bot should send a packet here (GameStartDiceThrow)
             if player.bot:
                 self.broadcast_packet(
-                    GameStartDiceThrow(player_token=player.public_id))
+                    GameStartDiceThrow(player_token=player.get_id()))
 
     def check_start_dice(self):
         highest = self.board.get_highest_dice()
@@ -247,8 +270,8 @@ class Game(Thread):
         dice_packet = GameStartDiceResults()
 
         for player in self.board.get_online_players():
-            is_winner = player.public_id is highest.public_id
-            dice_packet.add_dice_result(player_token=player.public_id,
+            is_winner = player.get_id() is highest.get_id()
+            dice_packet.add_dice_result(player_token=player.get_id(),
                                         dice1=player.current_dices[0],
                                         dice2=player.current_dices[1],
                                         win=is_winner)
@@ -265,8 +288,39 @@ class Game(Thread):
         # Get current player
         current_player = self.board.get_current_player()
         current_player.roll_dices()
-        packet = RoundStart(current_player=current_player.public_id)
+        packet = RoundStart(current_player=current_player.get_id())
         self.broadcast_packet(packet)
+
+    def proceed_heartbeat(self):
+        """
+        Checking for all players if timeout expired, and if
+        they have ping=False we force the player to disconnect. (timed out)
+        Otherwise reset timeout, and ping=False
+        """
+
+        for player in self.board.get_online_real_players():
+            if player.ping_timeout < datetime.now():
+                if not player.ping:
+                    self.disconnect_player(player, reason="ping_timeout")
+                    continue
+
+                player.ping = False
+
+                # Set timeout for heartbeat
+                player.ping_timeout = datetime.now() + timedelta(
+                    seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
+
+                self.send_packet_to_player(player, PingPacket())
+
+    def disconnect_player(self, player: Player, reason: str = ""):
+        player.disconnect()
+        # TODO: Maybe handle bot should make actions here? buy etc
+
+        # Send to all players a disconnecting player packet
+        self.broadcast_packet(PlayerDisconnect(
+            reason=reason,
+            player_token=player.get_id()
+        ))
 
     def broadcast_packet(self, packet: Packet):
         async_to_sync(self.channel_layer.group_send)(

@@ -5,7 +5,7 @@ from server.game_handler.data.exceptions import PacketException
 
 class Packet:
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
 
     def serialize(self) -> str:
@@ -37,18 +37,39 @@ class PlayerPacket(Packet):
             self.player_token = obj["player_token"]
 
 
-class InternalCheckPlayerValidity(PlayerPacket):
+class InternalPacket(Packet):
+    """
+    Packet for Internal communication
+    """
+    pass
+
+
+class InternalCheckPlayerValidity(InternalPacket):
+    player_token: str
     valid: bool
 
-    def __init__(self, player_token: str, valid: bool = False):
-        super(InternalCheckPlayerValidity, self).__init__(
-            name=self.__class__.__name__,
-            player_token=player_token)
+    def __init__(self, player_token: str = "", valid: bool = False):
+        super().__init__(name=self.__class__.__name__)
+        self.player_token = player_token
         self.valid = valid
 
     def deserialize(self, obj: object):
-        super().deserialize(obj)
+        self.player_token = obj['player_token']
         self.valid = bool(obj['valid'])
+
+
+class InternalPlayerDisconnect(InternalPacket):
+    player_token: str
+    reason: str
+
+    def __init__(self, player_token: str = "", reason: str = ""):
+        super().__init__(name=self.__class__.__name__)
+        self.player_token = player_token
+        self.reason = reason
+
+    def deserialize(self, obj: object):
+        self.player_token = obj['player_token']
+        self.reason = obj['reason']
 
 
 class PlayerValid(Packet):
@@ -134,17 +155,16 @@ class GameStart(Packet):
         self.players = [] if players is None else players
 
 
-class PlayerDisconnect(Packet):
-    id_player: str
+class PlayerDisconnect(PlayerPacket):
     reason: str
 
-    def __init__(self, id_player: str = "", reason: str = ""):
-        super(PlayerDisconnect, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
+    def __init__(self, player_token: str = "", reason: str = ""):
+        super(PlayerDisconnect, self).__init__(self.__class__.__name__,
+                                               player_token=player_token)
         self.reason = reason
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+        super().deserialize(obj)
         self.reason = obj["reason"]
 
 
@@ -693,7 +713,8 @@ class PacketUtils:
         # Lobby packets
         "GetInRoom": GetInRoom,
         # Internal packets
-        "CheckPlayerValidity": InternalCheckPlayerValidity
+        "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
+        "InternalPlayerDisconnect": InternalPlayerDisconnect
     }
 
     @staticmethod

@@ -6,7 +6,8 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .data.exceptions import PacketException
 from .data.packets import PacketUtils, PlayerPacket, \
-    ExceptionPacket, InternalCheckPlayerValidity, PlayerValid
+    ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
+    PlayerDisconnect, InternalPacket, InternalPlayerDisconnect
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -16,6 +17,7 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
     """
     Consumer between Client and Server
     """
+    player_token: str = None
     game_token: str = None
     valid: bool = False
 
@@ -40,8 +42,10 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         If valid, packet PlayerValid is sent to WebSocket
         """
 
+        self.player_token = self.scope['user'].id
+
         packet = InternalCheckPlayerValidity(
-            player_token=self.scope['user'].id)
+            player_token=self.player_token)
 
         # send to game engine worker
         await self.channel_layer.send(
@@ -77,9 +81,13 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
             # send error packet (or ignore)
             return
 
+        # Internal packets are not accepted
+        if isinstance(packet, InternalPacket):
+            return
+
         # process packets here
         if isinstance(packet, PlayerPacket):
-            packet.player_token = self.scope['user'].id
+            packet.player_token = self.player_token
 
         # send to game engine worker
         await self.channel_layer.send(
@@ -92,8 +100,32 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
             }
         )
 
-        async def disconnect(self, code):
-            pass
+    async def disconnect(self, code):
+        self.valid = False
+
+        if 4100 <= code <= 4101:
+            return
+
+        # Remove player from broadcast group
+        await self.channel_layer.group_discard(self.game_token,
+                                               self.channel_name)
+
+        # Handle client-side errors
+
+        packet = InternalPlayerDisconnect(
+            reason="client",
+            player_token=self.player_token
+        )
+
+        await self.channel_layer.send(
+            'game_engine',
+            {
+                'type': 'process.packets',
+                'content': packet.serialize(),
+                'game_token': self.game_token,
+                'channel_name': self.channel_name
+            }
+        )
 
     async def player_callback(self, content):
         """
@@ -122,6 +154,11 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         if isinstance(packet, InternalCheckPlayerValidity):
             if packet.valid:
                 packet = PlayerValid()
+
+        # If PlayerDisconnect received, force WebSocket close.
+        if isinstance(packet, PlayerDisconnect):
+            if packet.player_token == self.player_token:
+                return await self.close(code=4101)
 
         # Send packet to front/cli
         await self.send(packet.serialize())

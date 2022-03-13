@@ -54,7 +54,7 @@ class Board:
 
     def get_player_idx(self, player: Player) -> int:
         for i in range(0, self.players_nb):
-            if self.players[i].public_id == player.public_id:
+            if self.players[i].get_id() == player.get_id():
                 return i
         return -1
 
@@ -75,7 +75,7 @@ class Board:
 
     def get_player(self, uid: str) -> Optional[Player]:
         for player in self.players:
-            if player.public_id == uid:
+            if player.get_id() == uid:
                 return player
         return None
 
@@ -83,7 +83,7 @@ class Board:
         return self.get_player(uid) is not None
 
     def add_player(self, player: Player):
-        if self.player_exists(player.public_id):
+        if self.player_exists(player.get_id()):
             return
 
         self.players.append(player)
@@ -150,6 +150,16 @@ class Board:
                 players.append(player)
         return players
 
+    def get_online_real_players(self) -> List[Player]:
+        """
+        :return: Online players, bots excluded
+        """
+        players = []
+        for player in self.players:
+            if player.online is True and player.bot is False:
+                players.append(player)
+        return players
+
     def get_highest_dice(self) -> Optional[Player]:
         """
         Returns the highest dice score player in game
@@ -164,7 +174,7 @@ class Board:
 
         # Check for uniqueness
         for comp in self.get_online_players():
-            if comp.public_id is player.public_id:
+            if comp.get_id() is player.get_id():
                 continue
 
             if comp.dices_value() == player.dices_value():

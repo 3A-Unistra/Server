@@ -1,5 +1,6 @@
 import random
 import uuid
+from datetime import datetime, timedelta
 from typing import Optional, Tuple
 
 from server.game_handler.models import User
@@ -13,7 +14,10 @@ class Player:
     To check if this Player is a "real" bot (not disconnected player bot),
     compare bot and online bool, if they are both True it is a "real" bot.
     """
+
+    # Public id is for the id for bots
     public_id: str
+
     bot_name: str = None
     user: Optional[User]
     channel_name: str
@@ -35,6 +39,10 @@ class Player:
 
     piece: int = 0
 
+    # Bool for ping heartbeat, default value=True, for first heartbeat
+    ping: bool = True
+    ping_timeout: datetime
+
     def __init__(self, user: Optional[User] = None, channel_name: str = None,
                  bot: bool = True,
                  bot_name: str = None):
@@ -44,13 +52,12 @@ class Player:
         self.user = user
         self.bot = bot
         self.bot_name = bot_name
-        self.user = None
         self.channel_name = channel_name
         self.current_dices = (0, 0)
-        self.public_id = str(uuid.uuid4())
 
         if bot is True:
             self.online = True
+            self.public_id = str(uuid.uuid4())
 
     def connect(self):
         """
@@ -91,7 +98,7 @@ class Player:
 
     def get_coherent_infos(self) -> dict:
         return {
-            'player_token': self.public_id,
+            'player_token': self.get_id(),
             'name': self.get_name(),
             'bot': self.bot,
             'money': self.money,
@@ -102,3 +109,10 @@ class Player:
             'bankrupt': self.bankrupt,
             'piece': self.piece
         }
+
+    def get_id(self) -> str:
+        """
+        :return: Public_id if bot is a "real" bot, otherwise user.id
+        """
+        return self.public_id if self.bot and self.online else str(
+            self.user.id)
