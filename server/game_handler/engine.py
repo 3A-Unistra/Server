@@ -31,15 +31,34 @@ States:
 
 
 class GameState(Enum):
+    # To stop thread
     STOP_THREAD = -2
+
+    # Server is offline
     OFFLINE = -1
+
+    # Lobby mode
     LOBBY = 0
+
+    # Waiting that all players connecting (AppletReady)
     WAITING_PLAYERS = 1
+
+    # Timeout between WAITING_PLAYERS and START_DICE
     STARTING = 2
+
+    # Timeout, waiting for some time before displaying results
     START_DICE = 3
+
+    # If reroll must be done, waiting some time before start_dice state
     START_DICE_REROLL = 4
+
+    # START_DICE successful, wait some time before starting game
     FIRST_ROUND_START_WAIT = 5
+
+    # Time before a new round is started
     ROUND_START_WAIT = 6
+
+    # Time between start and displaying dice results
     ROUND_DICE_WAIT = 7
 
 
@@ -230,6 +249,7 @@ class Game(Thread):
     def start_game(self):
         """
         Set game in "game" mode, (game starting timeout)
+        state.STARTING -> timeout_expired() -> start_begin_dice()
         """
         # Set bot names to all players
         self.board.set_bot_names()
@@ -247,6 +267,7 @@ class Game(Thread):
         """
         After starting timeout is expired,
         Start with game start dice.
+        state.START_DICE -> timeout_expired() -> check_start_dice()
         """
         self.state = GameState.START_DICE
         self.broadcast_packet(GameStartDice())
