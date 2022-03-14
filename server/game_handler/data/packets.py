@@ -292,19 +292,18 @@ class RoundDiceResults(PlayerPacket):
         self.dice2 = dice2
 
 
-class PlayerMove(Packet):
-    id_moving_player: str
-    destination_case: int
+class PlayerMove(PlayerPacket):
+    destination: int
 
-    def __init__(self, id_moving_player: str = "",
-                 destination_case: int = 0):
-        super(PlayerMove, self).__init__(self.__class__.__name__)
-        self.id_moving_player = id_moving_player
-        self.destination_case = destination_case
+    def __init__(self, player_token: str = "",
+                 destination: int = 0):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.destination = destination
 
     def deserialize(self, obj: object):
-        self.id_moving_player = obj["id_moving_player"]
-        self.destination_case = obj["destination_case"]
+        super().deserialize(obj)
+        self.destination = obj["destination"]
 
 
 class RoundRandomCard(Packet):
@@ -327,50 +326,40 @@ class RoundRandomCard(Packet):
         self.card_content = obj["card_content"]
 
 
-class PlayerUpdateBalance(Packet):
+class PlayerUpdateBalance(PlayerPacket):
     id_player: str
     old_balance: int
     new_balance: int
     reason: str
 
     def __init__(
-            self, id_player: str = "", old_balance: int = 0,
+            self, player_token: str = "", old_balance: int = 0,
             new_balance: int = 0,
             reason: str = ""
     ):
-        super(PlayerUpdateBalance, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
         self.old_balance = old_balance
         self.new_balance = new_balance
         self.reason = reason
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+        super().deserialize(obj)
         self.old_balance = obj["old_balance"]
         self.new_balance = obj["new_balance"]
         self.reason = obj["reason"]
 
 
-class PlayerEnterPrison(Packet):
-    id_player: str
-
-    def __init__(self, id_player: str = ""):
-        super(PlayerEnterPrison, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+class PlayerEnterPrison(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
-class PlayerExitPrison(Packet):
-    id_player: str
-
-    def __init__(self, id_player: str = ""):
-        super(PlayerExitPrison, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+class PlayerExitPrison(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
 class ActionExchange(Packet):

@@ -203,8 +203,8 @@ PlayerMove
 Indique aux clients qu'un des joueurs se déplace.
 
 **contenu du paquet : **
- * id du joueur qui se déplace (*id_moving_player*)
- * case de destination (*destination_case*)
+ * id du joueur qui se déplace (*player_token*)
+ * case de destination (*destination*)
 
 RoundRandomCard
 ^^^^^^^^^^^^^^^
@@ -222,9 +222,9 @@ PlayerUpdateBalance
 Lorsque la somme d'argent d'un joueur modifie, ce paquet est envoyé à tout les clients pour les notifier de ce changement
 
 **contenu du paquet :**
- * id du joueur dont la somme a changé (*id_player*)
- * Somme qu'il avait (*old_balance*)
- * Nouvel somme (*new_balance*)
+ * id du joueur dont la somme a changé (*player_token*)
+ * Balance qu'il avait (*old_balance*)
+ * Nouvelle balance (*new_balance*)
  * raison
 
 PlayerEnterPrison
@@ -232,7 +232,7 @@ PlayerEnterPrison
 Paquet envoyé lorsque le joueur entre en prison
 
 **contenu du paquet :**
- * id du joueur allant en prison (*id_player*)
+ * id du joueur allant en prison (*player_token*)
 
 
 PlayerExitPrison
@@ -240,7 +240,7 @@ PlayerExitPrison
 Paquet envoyé lorsque le joueur sort de prison
 
 **contenu du paquet :**
- * id du joueur allant en prison (*id_player*)
+ * id du joueur allant en prison (*player_token*)
 
 Paquet d'actions durant le tour
 -------------------------------

@@ -100,6 +100,19 @@ class Player:
     def dices_value(self) -> int:
         return sum(self.current_dices)
 
+    def dices_are_double(self) -> bool:
+        return self.current_dices[0] == self.current_dices[1]
+
+    def enter_prison(self):
+        self.doubles = 0
+        self.jail_turns = 0
+        self.in_jail = True
+
+    def exit_prison(self):
+        self.doubles = 0
+        self.jail_turns = 0
+        self.in_jail = False
+
     def get_coherent_infos(self) -> dict:
         return {
             'player_token': self.get_id(),
@@ -120,3 +133,10 @@ class Player:
         """
         return self.public_id if self.bot and self.online else str(
             self.user.id)
+
+    def __eq__(self, other):
+        # For equality: player == other_player
+        # Like: player.get_id() == other_player.get_id()
+        if isinstance(other, Player):
+            return self.get_id() == other.get_id()
+        return False

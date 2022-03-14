@@ -8,7 +8,8 @@ from .squares import Square
 
 
 class Board:
-    board: List[Square]
+    squares: List[Square]
+    cases_count: int
     community_deck: List[Card]
     chance_deck: List[Card]
     prison_square: int
@@ -24,8 +25,9 @@ class Board:
     option_go_case_double_money: bool
     option_auction_enabled: bool
 
-    def __init__(self):
-        self.board = []
+    def __init__(self, squares=None):
+        self.squares = [] if squares is None else squares
+        self.cases_count = len(self.squares)
         self.community_deck = []
         self.chance_deck = []
         self.prison_square = 0
@@ -60,7 +62,7 @@ class Board:
 
     def get_player_idx(self, player: Player) -> int:
         for i in range(0, self.players_nb):
-            if self.players[i].get_id() == player.get_id():
+            if self.players[i] == player:
                 return i
         return -1
 
@@ -180,10 +182,22 @@ class Board:
 
         # Check for uniqueness
         for comp in self.get_online_players():
-            if comp.get_id() is player.get_id():
+            if comp == player:
                 continue
 
             if comp.dices_value() == player.dices_value():
                 return None
 
         return player
+
+    # Cases processing here
+
+    def move_player_with_dices(self, player: Player) -> bool:
+        """
+        :param player: Player to move
+        :return: If player reached "0" (start) case
+        """
+        temp_position = player.position
+        player.position = (player.position
+                           + player.dices_value()) % self.cases_count
+        return player.position < temp_position

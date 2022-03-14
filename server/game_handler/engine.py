@@ -12,12 +12,15 @@ from django.conf import settings
 import pause
 
 from server.game_handler.data import Board, Player
-from server.game_handler.data.exceptions.exceptions import \
+from server.game_handler.data.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import PlayerPacket, Packet, \
     InternalCheckPlayerValidity, GameStart, ExceptionPacket, AppletReady, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
-    PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice
+    PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
+    RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
+    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance
+from server.game_handler.data.squares import GoSquare
 
 """
 States:
@@ -60,6 +63,9 @@ class GameState(Enum):
 
     # Time between start and displaying dice results
     ROUND_DICE_CHOICE_WAIT = 7
+
+    # Time between RoundDiceResults and ActionStart (animations)
+    ACTION_START_WAIT = 8
 
 
 @dataclass
@@ -221,10 +227,103 @@ class Game(Thread):
                 player = self.board.get_player(packet.player_token)
 
                 # Ignore packets sent by players other than current_player
-                if self.board.get_current_player().get_id() != player:
+                if self.board.get_current_player() != player:
                     return
 
-                # TODO: ROUND DICE CHOICE LOGIC HERE
+                if packet.choice.value < 0 or packet.choice.value > 2:
+                    return
+
+                if packet.choice == RoundDiceChoiceResult.ROLL_DICES:
+                    # TODO: add this to a function
+                    # Ignore this packet, cant roll dices if player in jail
+                    # and player.jail_turns >= (3)
+                    if player.in_jail and player.jail_turns >= self.CONFIG.get(
+                            'MAX_JAIL_TURNS'):
+                        return
+
+                    player.roll_dices()
+
+                    # Broadcast roll_dices results
+                    self.broadcast_packet(RoundDiceResults(
+                        player_token=player.get_id(),
+                        result=packet.choice,
+                        dice1=player.current_dices[0],
+                        dice2=player.current_dices[1]
+                    ))
+
+                    self.state = GameState.ACTION_START_WAIT
+                    self.set_timeout(
+                        seconds=self.CONFIG.get('ACTION_START_WAIT'))
+
+                    # Check if player is in jail
+                    if player.in_jail:
+                        if player.dices_are_double():
+                            self.broadcast_packet(PlayerExitPrison(
+                                player_token=player.get_id()
+                            ))
+                            player.exit_prison()
+                            return
+
+                        player.jail_turns += 1
+                        return
+
+                    if player.dices_are_double():
+                        player.doubles += 1
+
+                        if player.doubles >= self.CONFIG.get(
+                                'MAX_DOUBLES_JAIL'):
+                            # send player to jail :D
+                            player.enter_prison()
+                            self.broadcast_packet(PlayerEnterPrison(
+                                player_token=player.get_id()
+                            ))
+                            return
+                    else:
+                        player.doubles = 0
+
+                    # Move player and check if he reached start
+                    reached_start = self.board.move_player_with_dices(player)
+
+                    # Broadcast new player position
+                    self.broadcast_packet(PlayerMove(
+                        player_token=player.get_id(),
+                        destination=player.position
+                    ))
+
+                    case = self.board.squares[player.position]
+
+                    # Player has reached start
+                    if reached_start:
+                        old_balance = player.score
+                        player.score += self.CONFIG.get('MONEY_GO')
+
+                        self.broadcast_packet(PlayerUpdateBalance(
+                            old_balance=old_balance,
+                            new_balance=player.score,
+                            player_token=player.get_id(),
+                            reason="reach_start"
+                        ))
+
+                        # Player case == 0 & double money option is enabled
+                        if isinstance(case, GoSquare) and \
+                                self.board.option_go_case_double_money:
+                            old_balance = player.score
+                            player.score += self.CONFIG.get('MONEY_GO')
+
+                            self.broadcast_packet(PlayerUpdateBalance(
+                                old_balance=old_balance,
+                                new_balance=player.score,
+                                player_token=player.get_id(),
+                                reason="reach_start_exact"
+                            ))
+
+                        # TODO: HANDLE ALL CASES HERE
+
+                if packet.choice == RoundDiceChoiceResult.JAIL_CARD:
+                    pass
+
+                if packet.choice == RoundDiceChoiceResult.JAIL_PAY:
+                    pass
 
     def process_logic(self):
         # TODO: Check #34 in comments
