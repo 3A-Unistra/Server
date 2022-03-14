@@ -1,6 +1,7 @@
 import json
+from enum import Enum
 
-from server.game_handler.data.exceptions import PacketException
+from .exceptions import PacketException
 
 
 class Packet:
@@ -147,12 +148,19 @@ class GameStart(Packet):
     Contains all informations of current state
     """
     game_name: str
+    options: {}
     players: []
 
-    def __init__(self, game_name: str = "", players: [] = None):
+    def __init__(self, game_name: str = "", options=None, players: [] = None):
         super(GameStart, self).__init__(self.__class__.__name__)
         self.game_name = game_name
+        self.options = {} if options is None else options
         self.players = [] if players is None else players
+
+    def deserialize(self, obj: object):
+        self.game_name = obj['game_name']
+        self.options = obj['options']
+        self.players = obj['players']
 
 
 class PlayerDisconnect(PlayerPacket):
@@ -248,15 +256,40 @@ class RoundDiceThrow(Packet):
         self.id_player = obj["id_player"]
 
 
-class RoundDiceChoice(Packet):
-    id_player: str
+class RoundDiceChoiceResult(Enum):
+    ROLL_DICES = 0
+    JAIL_PAY = 1
+    JAIL_CARD = 2
 
-    def __init__(self, id_player: str = ""):
-        super(RoundDiceChoice, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
+
+class RoundDiceChoice(PlayerPacket):
+    choice: RoundDiceChoiceResult
+
+    def __init__(self, player_token: str = "",
+                 choice: RoundDiceChoiceResult = 0):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.choice = choice
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+        super().deserialize(obj)
+        self.choice = RoundDiceChoiceResult(int(obj['choice']))
+
+
+class RoundDiceResults(PlayerPacket):
+    result: RoundDiceChoiceResult
+    dice1: int
+    dice2: int
+
+    def __init__(self, player_token: str = "",
+                 result: RoundDiceChoiceResult = 0,
+                 dice1: int = 0,
+                 dice2: int = 0):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.result = result
+        self.dice1 = dice1
+        self.dice2 = dice2
 
 
 class PlayerMove(Packet):
@@ -680,6 +713,7 @@ class PacketUtils:
         "RoundStart": RoundStart,
         "RoundDiceThrow": RoundDiceThrow,
         "RoundDiceChoice": RoundDiceChoice,
+        "RoundDiceResults": RoundDiceResults,
         "PlayerMove": PlayerMove,
         "RoundRandomCard": RoundRandomCard,
         "PlayerUpdateBalance": PlayerUpdateBalance,

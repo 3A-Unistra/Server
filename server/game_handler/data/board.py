@@ -20,6 +20,10 @@ class Board:
     current_player_index: int
     round: int
 
+    # Options
+    option_go_case_double_money: bool
+    option_auction_enabled: bool
+
     def __init__(self):
         self.board = []
         self.community_deck = []
@@ -32,6 +36,8 @@ class Board:
         self.current_player_index = 0
         self.bot_names: []
         self.round = 0
+        self.option_go_case_double_money = False
+        self.option_auction_enabled = False
 
     def next_player(self) -> Player:
         """

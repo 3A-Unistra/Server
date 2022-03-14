@@ -191,12 +191,12 @@ Paquet début tour
 RoundDiceChoice
 ^^^^^^^^^^^^^^^
 (*envoyé par le client*).
-Paquet indiquant au serveur que le joueur souhaite lancer un dé, en début de tour.
+Paquet indiquant au serveur que ce que le joueur a choisi de faire,
+entre trois possibilités : ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD = 2.
 Seul le joueur dont c'est le tour peut envoyer ce paquet.
 
 **contenu du paquet :**
- * identifiant du joueur (*id_player*)
-
+ * choice : int(enum(ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD = 2))
 
 PlayerMove
 ^^^^^^^^^^

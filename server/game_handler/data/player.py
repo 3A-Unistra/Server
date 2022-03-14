@@ -16,7 +16,7 @@ class Player:
     """
 
     # Public id is for the id for bots
-    public_id: str
+    public_id: str = None
 
     bot_name: str = None
     user: Optional[User]
@@ -43,6 +43,9 @@ class Player:
     ping: bool = True
     ping_timeout: datetime
 
+    # Temps values
+    start_dice_throw_received: bool
+
     def __init__(self, user: Optional[User] = None, channel_name: str = None,
                  bot: bool = True,
                  bot_name: str = None):
@@ -54,6 +57,7 @@ class Player:
         self.bot_name = bot_name
         self.channel_name = channel_name
         self.current_dices = (0, 0)
+        self.start_dice_throw_received = False
 
         if bot is True:
             self.online = True

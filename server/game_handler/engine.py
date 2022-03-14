@@ -17,7 +17,7 @@ from server.game_handler.data.exceptions.exceptions import \
 from server.game_handler.data.packets import PlayerPacket, Packet, \
     InternalCheckPlayerValidity, GameStart, ExceptionPacket, AppletReady, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
-    PingPacket, PlayerDisconnect, InternalPlayerDisconnect
+    PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice
 
 """
 States:
@@ -171,7 +171,6 @@ class Game(Thread):
                 self.state = GameState.WAITING_PLAYERS
                 self.set_timeout(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
-
         else:
             # If state is not lobby
             # Check for packet validity
@@ -179,34 +178,53 @@ class Game(Thread):
                 if not self.board.player_exists(packet.player_token):
                     return self.send_packet(
                         channel_name=queue_packet.channel_name,
+                        # 4100 => invalid player
                         packet=ExceptionPacket(code=4100))
 
         if self.state is GameState.WAITING_PLAYERS:
             # WebGL app is ready to play
             if isinstance(packet, AppletReady):
+                # Player could not be null -> we are checking before, if this
+                # player exists.
                 player = self.board.get_player(packet.player_token)
 
-                if player is None:
-                    return self.send_packet(
-                        channel_name=queue_packet.channel_name,
-                        packet=ExceptionPacket(code=4100))
-                else:
-                    player.connect()
+                # Set player to connected (bot disabled)
+                player.connect()
 
-                    # init ping heartbeat
-                    player.ping = True
-                    player.ping_timeout = datetime.now() + timedelta(
-                        seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
+                # init ping heartbeat
+                player.ping = True
+                player.ping_timeout = datetime.now() + timedelta(
+                    seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
+                return
 
-    def proceed_stop(self):
-        # Delete game
-        del self.games[self.uid]
+        if self.state is GameState.START_DICE:
 
-    def set_timeout(self, seconds: int):
-        self.timeout = datetime.now() + timedelta(seconds=seconds)
+            if isinstance(packet, GameStartDiceThrow):
+                player = self.board.get_player(packet.player_token)
 
-    def timeout_expired(self) -> bool:
-        return self.timeout < datetime.now()
+                # Block spam (only accept one GameStartDiceThrow)
+                # To avoid broadcast spam
+                if player.start_dice_throw_received:
+                    return
+
+                player.start_dice_throw_received = True
+
+                # broadcast or send to all players? TODO:
+                self.broadcast_packet(GameStartDiceThrow(
+                    player_token=player.get_id()
+                ))
+
+                return
+
+        if self.state is GameState.ROUND_DICE_CHOICE_WAIT:
+            if isinstance(packet, RoundDiceChoice):
+                player = self.board.get_player(packet.player_token)
+
+                # Ignore packets sent by players other than current_player
+                if self.board.get_current_player().get_id() != player:
+                    return
+
+                # TODO: ROUND DICE CHOICE LOGIC HERE
 
     def process_logic(self):
         # TODO: Check #34 in comments
@@ -246,6 +264,21 @@ class Game(Thread):
             if self.state is GameState.ROUND_START_WAIT:
                 self.start_round()
 
+            # If player has not sent his choice to the server,
+            # process to timeout choice
+            if self.state is GameState.ROUND_DICE_CHOICE_WAIT:
+                pass
+
+    def proceed_stop(self):
+        # Delete game
+        del self.games[self.uid]
+
+    def set_timeout(self, seconds: int):
+        self.timeout = datetime.now() + timedelta(seconds=seconds)
+
+    def timeout_expired(self) -> bool:
+        return self.timeout < datetime.now()
+
     def start_game(self):
         """
         Set game in "game" mode, (game starting timeout)
@@ -263,7 +296,7 @@ class Game(Thread):
 
         self.broadcast_packet(GameStart(players=players))
 
-    def start_begin_dice(self):
+    def start_begin_dice(self, re_roll=False):
         """
         After starting timeout is expired,
         Start with game start dice.
@@ -280,10 +313,17 @@ class Game(Thread):
                 self.broadcast_packet(
                     GameStartDiceThrow(player_token=player.get_id()))
 
+            if re_roll:
+                player.start_dice_throw_received = False
+
     def check_start_dice(self):
         """
         After start dice wait, this function is executed.
         This checks if there are any duplicates scores in players dice results.
+        Duplicates:
+        >> state.START_DICE_REROLL -> timeout_expired() -> start_begin_dice()
+        No duplicates:
+        >> state.ROUND_START_WAIT -> timeout_expired() -> start_round(first=1)
         """
         highest = self.board.get_highest_dice()
 
@@ -312,6 +352,7 @@ class Game(Thread):
         Proceed to start new round, next player chosen, dices rolled
         and packet RoundStart sent.
         :param first: First round or not. Handles next_player()
+        state.ROUND_DICE_CHOICE_WAIT -> timeout_expired() -> TODO:
         """
         if not first:
             self.board.next_player()
@@ -329,9 +370,9 @@ class Game(Thread):
         packet = RoundStart(current_player=current_player.get_id())
         self.broadcast_packet(packet)
 
-        # set timeout
-        self.state = GameState.ROUND_DICE_WAIT
-        self.set_timeout(seconds=self.CONFIG.get('ROUND_DICE_WAIT'))
+        # set timeout for dice choice wait
+        self.state = GameState.ROUND_DICE_CHOICE_WAIT
+        self.set_timeout(seconds=self.CONFIG.get('ROUND_DICE_CHOICE_WAIT'))
 
     def proceed_heartbeat(self):
         """
