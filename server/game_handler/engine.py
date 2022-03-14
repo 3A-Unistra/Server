@@ -40,7 +40,7 @@ class GameState(Enum):
     START_DICE_REROLL = 4
     FIRST_ROUND_START_WAIT = 5
     ROUND_START_WAIT = 6
-    ROUND_DICE_WAIT = 7
+    ROUND_DICE_CHOICE_WAIT = 7
 
 
 @dataclass
@@ -260,6 +260,10 @@ class Game(Thread):
                     GameStartDiceThrow(player_token=player.get_id()))
 
     def check_start_dice(self):
+        """
+        After start dice wait, this function is executed.
+        This checks if there are any duplicates scores in players dice results.
+        """
         highest = self.board.get_highest_dice()
 
         # Two players have the same dice score, reroll!
@@ -283,6 +287,11 @@ class Game(Thread):
         self.board.set_current_player(highest)
 
     def start_round(self, first: bool = False):
+        """
+        Proceed to start new round, next player chosen, dices rolled
+        and packet RoundStart sent.
+        :param first: First round or not. Handles next_player()
+        """
         if not first:
             self.board.next_player()
 
