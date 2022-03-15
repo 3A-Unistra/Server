@@ -20,7 +20,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
     PlayerEnterPrison, PlayerMove, PlayerUpdateBalance
-from server.game_handler.data.squares import GoSquare
+from server.game_handler.data.squares import GoSquare, TaxSquare, \
+    FreeParkingSquare
 
 """
 States:
@@ -282,7 +283,7 @@ class Game(Thread):
                         player.doubles = 0
 
                     # Move player and check if he reached start
-                    reached_start = self.board.move_player_with_dices(player)
+                    passed_go = self.board.move_player_with_dices(player)
 
                     # Broadcast new player position
                     self.broadcast_packet(PlayerMove(
@@ -293,31 +294,51 @@ class Game(Thread):
                     case = self.board.squares[player.position]
 
                     # Player has reached start
-                    if reached_start:
-                        old_balance = player.score
-                        player.score += self.CONFIG.get('MONEY_GO')
-
-                        self.broadcast_packet(PlayerUpdateBalance(
-                            old_balance=old_balance,
-                            new_balance=player.score,
-                            player_token=player.get_id(),
-                            reason="reach_start"
-                        ))
+                    if passed_go:
+                        old_balance = player.money
+                        player.money += self.CONFIG.get('MONEY_GO')
+                        reason = "pass_go"
 
                         # Player case == 0 & double money option is enabled
                         if isinstance(case, GoSquare) and \
                                 self.board.option_go_case_double_money:
-                            old_balance = player.score
-                            player.score += self.CONFIG.get('MONEY_GO')
+                            player.money += self.CONFIG.get('MONEY_GO')
+                            reason += "pass_go_exact"
 
-                            self.broadcast_packet(PlayerUpdateBalance(
-                                old_balance=old_balance,
-                                new_balance=player.score,
-                                player_token=player.get_id(),
-                                reason="reach_start_exact"
-                            ))
+                        self.broadcast_packet(PlayerUpdateBalance(
+                            old_balance=old_balance,
+                            new_balance=player.money,
+                            player_token=player.get_id(),
+                            reason=reason
+                        ))
 
-                        # TODO: HANDLE ALL CASES HERE
+                    # Check destination case
+
+                    if isinstance(case, TaxSquare):
+                        old_balance = player.money
+                        player.money -= case.tax_price
+
+                        self.broadcast_packet(PlayerUpdateBalance(
+                            old_balance=old_balance,
+                            new_balance=player.money,
+                            player_token=player.get_id(),
+                            reason="tax_square"
+                        ))
+
+                    if isinstance(case, FreeParkingSquare):
+                        old_balance = player.money
+                        player.money += self.board.board_money
+                        self.board.board_money = 0
+
+                        self.broadcast_packet(PlayerUpdateBalance(
+                            old_balance=old_balance,
+                            new_balance=player.money,
+                            player_token=player.get_id(),
+                            reason="parking_square"
+                        ))
+
+
+
 
                 if packet.choice == RoundDiceChoiceResult.JAIL_CARD:
                     pass
