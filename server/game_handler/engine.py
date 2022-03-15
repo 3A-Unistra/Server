@@ -339,7 +339,7 @@ class Game(Thread):
 
                 if packet.choice == RoundDiceChoiceResult.JAIL_CARD:
                     pass
-
+                # test
                 if packet.choice == RoundDiceChoiceResult.JAIL_PAY:
                     pass
 
