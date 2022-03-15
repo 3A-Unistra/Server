@@ -337,9 +337,6 @@ class Game(Thread):
                             reason="parking_square"
                         ))
 
-
-
-
                 if packet.choice == RoundDiceChoiceResult.JAIL_CARD:
                     pass
 

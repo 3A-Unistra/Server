@@ -22,6 +22,17 @@ test:3.9:
   tags:
     - gitlab-org
 
+test:coverage:
+  stage: test
+  script:
+    - pip install pytest pytest-cov
+    - coverage run -m pytest
+    - coverage report
+    - coverage xml
+  artifacts:
+    reports:
+      cobertura: coverage.xml
+
 pages:
   stage: test
   script:
