@@ -10,6 +10,43 @@ Le contenu des paquets est au format JSON.
     "name": "testpacket123"
     }
 
+Paquets lobby
+-------------
+
+InitConnection
+^^^^^^^^^^^^^^
+Paquet envoyé *par le client* lorsque un joueur se connecte.
+
+**contenu du paquet :**
+ * id du joueur (*token_player*)
+
+LaunchGame
+^^^^^^^^^^
+Paquet envoyé *par le client* lorsque le host du lobby lance la partie.
+
+**contenu du paquet :**
+ * id du joueur lançant la partie (*id_player*)
+
+GetInRoom
+^^^^^^^^^
+Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+ * id de la salle (*id_room*)
+ * booleen indiquant si la salle comporte un mot de passe (*has_password*)
+ * mot de passe (*password*)
+
+AppletPrepare
+^^^^^^^^^^^^^
+
+Paquet envoyé par le serveur au WebSocket du lobby, voir **Paquets démarrage**
+A partir de ce moment là, la partie web devra démarrer l'applet unity et se déconnecter du WebSocket "lobby".
+L'applet unity webgl devra se connecter au WebSocket de la partie et envoyer le paquet AppletReady.
+
+**contenu du paquet :**
+ * id du joueur (*id_player*)
+
 Paquets demarrage
 -----------------
 
@@ -31,32 +68,6 @@ paquets (pendant ce temps les données échangées seront refusées par le serve
 Si le client reçoit ce message, alors la connexion est valide.
 Dans le cas contraire, le serveur ferme la connexion WebSocket avec le client.
 
-LaunchGame
-^^^^^^^^^^
-Paquet envoyé *par le client* lorsque le host du lobby lance la partie.
-
-**contenu du paquet :**
- * id du joueur lançant la partie (*id_player*)
-
-GetInRoom
-^^^^^^^^^
-Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
-
-**contenu du paquet :**
- * id du joueur (*id_player*)
- * id de la salle (*id_room*)
- * booleen indiquant si la salle comporte un mot de passe (*is_protected*)
- * mot de passe (*password*)
-
-AppletPrepare
-^^^^^^^^^^^^^
-
-Paquet envoyé par le serveur au WebSocket du lobby, voir **Paquets démarrage**
-A partir de ce moment là, la partie web devra démarrer l'applet unity et se déconnecter du WebSocket "lobby".
-L'applet unity webgl devra se connecter au WebSocket de la partie et envoyer le paquet AppletReady.
-
-**contenu du paquet :**
- * id du joueur (*id_player*)
 
 
 AppletReady

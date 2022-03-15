@@ -123,6 +123,7 @@ class ExceptionPacket(Packet):
 
 class GetInRoom(LobbyPacket):
     player_token: str
+    id_room: str
     has_password: bool
     password: str
 
@@ -130,6 +131,7 @@ class GetInRoom(LobbyPacket):
         super().__init__("GetInRoom", player_token=player_token)
 
     def deserialize(self, obj: object):
+        self.id_room = str(obj["id_room"])
         self.has_password = bool(obj["has_password"])
         self.password = str(obj["password"])
         self.player_token = str(obj["player_token"])
