@@ -21,7 +21,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
     PlayerEnterPrison, PlayerMove, PlayerUpdateBalance
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
-    FreeParkingSquare
+    FreeParkingSquare, OwnableSquare
 
 """
 States:
@@ -324,8 +324,7 @@ class Game(Thread):
                             player_token=player.get_id(),
                             reason="tax_square"
                         ))
-
-                    if isinstance(case, FreeParkingSquare):
+                    elif isinstance(case, FreeParkingSquare):
                         old_balance = player.money
                         player.money += self.board.board_money
                         self.board.board_money = 0
@@ -336,6 +335,24 @@ class Game(Thread):
                             player_token=player.get_id(),
                             reason="parking_square"
                         ))
+                    elif isinstance(case, OwnableSquare):
+
+                        if case.has_owner():
+                            # Pay rent :o
+                            old_balance = player.money
+                            player.money -= case.rent
+
+                            owner_old_balance = case.owner.money
+                            case.owner.money += case.rent
+
+                            self.broadcast_packet(PlayerUpdateBalance(
+                                old_balance=old_balance,
+                                new_balance=player.money,
+                                player_token=player.get_id(),
+                                reason="rent_receive"
+                            ))
+
+
 
                 if packet.choice == RoundDiceChoiceResult.JAIL_CARD:
                     pass
