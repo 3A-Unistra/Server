@@ -19,7 +19,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
-    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance
+    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, InitConnection, \
+    GetInRoom, LaunchGame
 from server.game_handler.data.squares import GoSquare
 
 """
@@ -171,12 +172,34 @@ class Game(Thread):
                 return
 
         if self.state is GameState.LOBBY:
-            if isinstance(packet, GameStart):
+            # TODO : implement lobby logic
+            if isinstance(packet, InitConnection):
+                # TODO : add packet InitConnection to packet.py and doc
+                # check if player is in any other game
+
+                # check if player crashed
+
+                # add player to list of people getting room updates
+                pass
+
+            elif isinstance(packet, GetInRoom):
+                # TODO : add packet GetInRoom to packet.py and doc
+                # add player to the room, make necessary checks
+                pass
+
+            elif isinstance(packet, LaunchGame):
+                # TODO : add packet LaunchGame to packet.py and doc
+                # check if player_token is the token of the game host
+                # make the game start (if everything gucci) --> AppletPrepare
+                pass
+
+            elif isinstance(packet, GameStart):
                 # set state to waiting players
                 # the server will wait AppletReady packets.
                 self.state = GameState.WAITING_PLAYERS
                 self.set_timeout(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
+
         else:
             # If state is not lobby
             # Check for packet validity
@@ -536,6 +559,15 @@ class Engine:
     def __init__(self, **kwargs):
         self.games = {}
 
+    def player_exists(self, player_token: str) -> bool:
+        """
+        Checks if a player exists in any of the game instances
+        """
+        for game in self.games.values():
+            if game.board.player_exists(player_token):
+                return True
+        return False
+
     def add_game(self, game: Game):
         """
         Add a game to active games list
@@ -587,3 +619,4 @@ class Engine:
         # Blocking function that adds packet to queue
         self.games[game_uid].packets_queue.put(
             QueuePacket(packet=packet, channel_name=channel_name))
+

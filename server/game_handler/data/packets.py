@@ -121,6 +121,34 @@ class ExceptionPacket(Packet):
         self.code = int(obj["code"])
 
 
+class GetInRoom(LobbyPacket):
+    player_token: str
+    has_password: bool
+    password: str
+
+    def __init__(self, player_token: str = ""):
+        super().__init__("GetInRoom", player_token=player_token)
+
+    def deserialize(self, obj: object):
+        self.has_password = bool(obj["has_password"])
+        self.password = str(obj["password"])
+        self.player_token = str(obj["player_token"])
+
+
+class LaunchGame(LobbyPacket):
+    player_token: str
+
+    def __init__(self, player_token: str = ""):
+        super().__init__("LaunchGame", player_token=player_token)
+
+
+class InitConnection(LobbyPacket):
+    player_token: str
+
+    def __init__(self, player_token: str = ""):
+        super().__init__("InitConnection", player_token=player_token)
+
+
 class PingPacket(PlayerPacket):
     def __init__(self, player_token: str = ""):
         super().__init__("Ping", player_token=player_token)

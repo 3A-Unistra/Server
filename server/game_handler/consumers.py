@@ -7,7 +7,8 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from .data.exceptions import PacketException
 from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
-    PlayerDisconnect, InternalPacket, InternalPlayerDisconnect
+    PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
+    InitConnection
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -201,6 +202,13 @@ class GameEngineConsumer(SyncConsumer):
         # Check if packet is not None and game token exists
         if packet is None or 'game_token' not in content:
             return
+
+        if isinstance(packet, InitConnection):
+            # if we receive a request of connection into the lobby
+            # check if player exists
+            if self.engine.player_exists(player_token=packet.player_token):
+                # TODO : send Exception : player already in game
+                pass
 
         game_token = content['game_token']
 
