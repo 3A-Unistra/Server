@@ -196,7 +196,7 @@ entre trois possibilités : ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD = 2.
 Seul le joueur dont c'est le tour peut envoyer ce paquet.
 
 **contenu du paquet :**
- * choice : int(enum(ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD = 2))
+ * choice : int(enum(ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD_CHANCE = 2, JAIL_CARD_COMMUNITY = 3))
 
 PlayerMove
 ^^^^^^^^^^

@@ -4,6 +4,7 @@ from typing import List, Optional
 import names
 
 from . import Card, Player
+from .card import ChanceCard, CommunityCard
 from .squares import Square
 
 
@@ -201,3 +202,9 @@ class Board:
         player.position = (player.position
                            + player.dices_value()) % self.cases_count
         return player.position < temp_position
+
+    def draw_random_chance_card(self) -> ChanceCard:
+        pass
+
+    def draw_random_community_card(self) -> CommunityCard:
+        pass

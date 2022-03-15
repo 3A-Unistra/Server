@@ -19,9 +19,10 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
-    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance
+    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, RoundRandomCard
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
-    FreeParkingSquare, OwnableSquare
+    FreeParkingSquare, OwnableSquare, ChanceSquare, CommunitySquare, \
+    GoToJailSquare
 
 """
 States:
@@ -67,6 +68,9 @@ class GameState(Enum):
 
     # Time between RoundDiceResults and ActionStart (animations)
     ACTION_START_WAIT = 8
+
+    # Time between ActionStart and ActionTimeout (actions)
+    ACTION_TIMEOUT_WAIT = 9
 
 
 @dataclass
@@ -234,131 +238,7 @@ class Game(Thread):
                 if packet.choice.value < 0 or packet.choice.value > 2:
                     return
 
-                if packet.choice == RoundDiceChoiceResult.ROLL_DICES:
-                    # TODO: add this to a function
-                    # Ignore this packet, cant roll dices if player in jail
-                    # and player.jail_turns >= (3)
-                    if player.in_jail and player.jail_turns >= self.CONFIG.get(
-                            'MAX_JAIL_TURNS'):
-                        return
 
-                    player.roll_dices()
-
-                    # Broadcast roll_dices results
-                    self.broadcast_packet(RoundDiceResults(
-                        player_token=player.get_id(),
-                        result=packet.choice,
-                        dice1=player.current_dices[0],
-                        dice2=player.current_dices[1]
-                    ))
-
-                    self.state = GameState.ACTION_START_WAIT
-                    self.set_timeout(
-                        seconds=self.CONFIG.get('ACTION_START_WAIT'))
-
-                    # Check if player is in jail
-                    if player.in_jail:
-                        if player.dices_are_double():
-                            self.broadcast_packet(PlayerExitPrison(
-                                player_token=player.get_id()
-                            ))
-                            player.exit_prison()
-                            return
-
-                        player.jail_turns += 1
-                        return
-
-                    if player.dices_are_double():
-                        player.doubles += 1
-
-                        if player.doubles >= self.CONFIG.get(
-                                'MAX_DOUBLES_JAIL'):
-                            # send player to jail :D
-                            player.enter_prison()
-                            self.broadcast_packet(PlayerEnterPrison(
-                                player_token=player.get_id()
-                            ))
-                            return
-                    else:
-                        player.doubles = 0
-
-                    # Move player and check if he reached start
-                    passed_go = self.board.move_player_with_dices(player)
-
-                    # Broadcast new player position
-                    self.broadcast_packet(PlayerMove(
-                        player_token=player.get_id(),
-                        destination=player.position
-                    ))
-
-                    case = self.board.squares[player.position]
-
-                    # Player has reached start
-                    if passed_go:
-                        old_balance = player.money
-                        player.money += self.CONFIG.get('MONEY_GO')
-                        reason = "pass_go"
-
-                        # Player case == 0 & double money option is enabled
-                        if isinstance(case, GoSquare) and \
-                                self.board.option_go_case_double_money:
-                            player.money += self.CONFIG.get('MONEY_GO')
-                            reason += "pass_go_exact"
-
-                        self.broadcast_packet(PlayerUpdateBalance(
-                            old_balance=old_balance,
-                            new_balance=player.money,
-                            player_token=player.get_id(),
-                            reason=reason
-                        ))
-
-                    # Check destination case
-
-                    if isinstance(case, TaxSquare):
-                        old_balance = player.money
-                        player.money -= case.tax_price
-
-                        self.broadcast_packet(PlayerUpdateBalance(
-                            old_balance=old_balance,
-                            new_balance=player.money,
-                            player_token=player.get_id(),
-                            reason="tax_square"
-                        ))
-                    elif isinstance(case, FreeParkingSquare):
-                        old_balance = player.money
-                        player.money += self.board.board_money
-                        self.board.board_money = 0
-
-                        self.broadcast_packet(PlayerUpdateBalance(
-                            old_balance=old_balance,
-                            new_balance=player.money,
-                            player_token=player.get_id(),
-                            reason="parking_square"
-                        ))
-                    elif isinstance(case, OwnableSquare):
-
-                        if case.has_owner():
-                            # Pay rent :o
-                            old_balance = player.money
-                            player.money -= case.rent
-
-                            owner_old_balance = case.owner.money
-                            case.owner.money += case.rent
-
-                            self.broadcast_packet(PlayerUpdateBalance(
-                                old_balance=old_balance,
-                                new_balance=player.money,
-                                player_token=player.get_id(),
-                                reason="rent_receive"
-                            ))
-
-
-
-                if packet.choice == RoundDiceChoiceResult.JAIL_CARD:
-                    pass
-                # test
-                if packet.choice == RoundDiceChoiceResult.JAIL_PAY:
-                    pass
 
     def process_logic(self):
         # TODO: Check #34 in comments
@@ -528,6 +408,172 @@ class Game(Thread):
                     seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
 
                 self.send_packet_to_player(player, PingPacket())
+
+    def proceed_dice_choice(self, player: Player,
+                            choice: RoundDiceChoiceResult):
+        # TODO: add this to a function
+        # Ignore this packet, cant roll dices if player in jail
+        # and player.jail_turns >= (3)
+        if player.in_jail and player.jail_turns >= self.CONFIG.get(
+                'MAX_JAIL_TURNS'):
+            return
+
+        player.roll_dices()
+
+        # Broadcast roll_dices results
+        self.broadcast_packet(RoundDiceResults(
+            player_token=player.get_id(),
+            result=choice,
+            dice1=player.current_dices[0],
+            dice2=player.current_dices[1]
+        ))
+
+        self.state = GameState.ACTION_START_WAIT
+        self.set_timeout(seconds=self.CONFIG.get('ACTION_START_WAIT'))
+
+        # Check if player is in jail
+        if player.in_jail:
+
+            if choice == RoundDiceChoiceResult.JAIL_CARD:
+
+                if player.jail_cards['community']:
+                    pass
+
+                if player.jail_cards['chance']:
+                    pass
+
+                pass
+            # test
+            if choice == RoundDiceChoiceResult.JAIL_PAY:
+                self.broadcast_packet(PlayerExitPrison(
+                    player_token=player.get_id()
+                ))
+
+
+
+            if player.dices_are_double():
+                self.broadcast_packet(PlayerExitPrison(
+                    player_token=player.get_id()
+                ))
+                player.exit_prison()
+                return
+
+            player.jail_turns += 1
+            return
+
+        if player.dices_are_double():
+            player.doubles += 1
+
+            if player.doubles >= self.CONFIG.get('MAX_DOUBLES_JAIL'):
+                # send player to jail :D
+                player.enter_prison()
+                self.broadcast_packet(PlayerEnterPrison(
+                    player_token=player.get_id()
+                ))
+                return
+        else:
+            player.doubles = 0
+
+        # Move player and check if he reached start
+        passed_go = self.board.move_player_with_dices(player)
+
+        # Broadcast new player position
+        self.broadcast_packet(PlayerMove(
+            player_token=player.get_id(),
+            destination=player.position
+        ))
+
+        case = self.board.squares[player.position]
+
+        # Player has reached start
+        if passed_go:
+            old_balance = player.money
+            player.money += self.CONFIG.get('MONEY_GO')
+            reason = "pass_go"
+
+            # Player case == 0 & double money option is enabled
+            if isinstance(case, GoSquare) and \
+                    self.board.option_go_case_double_money:
+                player.money += self.CONFIG.get('MONEY_GO')
+                reason += "pass_go_exact"
+
+            self.broadcast_packet(PlayerUpdateBalance(
+                old_balance=old_balance,
+                new_balance=player.money,
+                player_token=player.get_id(),
+                reason=reason
+            ))
+
+        # Check destination case
+        if isinstance(case, GoToJailSquare):
+            player.enter_prison()
+            self.broadcast_packet(PlayerEnterPrison(
+                player_token=player.get_id()
+            ))
+        elif isinstance(case, TaxSquare):
+            old_balance = player.money
+            player.money -= case.tax_price
+
+            self.broadcast_packet(PlayerUpdateBalance(
+                old_balance=old_balance,
+                new_balance=player.money,
+                player_token=player.get_id(),
+                reason="tax_square"
+            ))
+        elif isinstance(case, FreeParkingSquare):
+            old_balance = player.money
+            player.money += self.board.board_money
+            self.board.board_money = 0
+
+            self.broadcast_packet(PlayerUpdateBalance(
+                old_balance=old_balance,
+                new_balance=player.money,
+                player_token=player.get_id(),
+                reason="parking_square"
+            ))
+        elif isinstance(case, OwnableSquare):
+
+            if case.has_owner():
+                # Pay rent :o
+                old_balance = player.money
+                player.money -= case.rent
+
+                owner_old_balance = case.owner.money
+                case.owner.money += case.rent
+
+                self.broadcast_packet(PlayerUpdateBalance(
+                    old_balance=old_balance,
+                    new_balance=player.money,
+                    player_token=player.get_id(),
+                    reason="rent_pay"
+                ))
+
+                self.broadcast_packet(PlayerUpdateBalance(
+                    old_balance=owner_old_balance,
+                    new_balance=case.owner.money,
+                    player_token=case.owner.get_id(),
+                    reason="rent_receive"
+                ))
+
+        elif isinstance(case, ChanceSquare):
+            card = self.board.draw_random_chance_card()
+
+            # TODO: Execute card actions
+
+            self.broadcast_packet(RoundRandomCard(
+                player_token=player.get_id(),
+                card_id=card.id_
+            ))
+
+        elif isinstance(case, CommunitySquare):
+            card = self.board.draw_random_community_card()
+
+            # TODO : Execute card actions
+
+            self.broadcast_packet(RoundRandomCard(
+                player_token=player.get_id(),
+                card_id=card.id_
+            ))
 
     def disconnect_player(self, player: Player, reason: str = ""):
         player.disconnect()

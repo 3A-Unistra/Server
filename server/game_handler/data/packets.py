@@ -259,7 +259,8 @@ class RoundDiceThrow(Packet):
 class RoundDiceChoiceResult(Enum):
     ROLL_DICES = 0
     JAIL_PAY = 1
-    JAIL_CARD = 2
+    JAIL_CARD_CHANCE = 2
+    JAIL_CARD_COMMUNITY = 3
 
 
 class RoundDiceChoice(PlayerPacket):
@@ -306,28 +307,25 @@ class PlayerMove(PlayerPacket):
         self.destination = obj["destination"]
 
 
-class RoundRandomCard(Packet):
-    id_player: str
-    is_communautaire: bool
-    card_content: str
+class RoundRandomCard(PlayerPacket):
+    card_id: int
+    is_community: bool
 
-    def __init__(
-            self, id_player: str = "", is_communautaire: bool = False,
-            card_content: str = ""
-    ):
-        super(RoundRandomCard, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.is_communautaire = is_communautaire
-        self.card_content = card_content
+    def __init__(self, player_token: str = "", card_id: int = 0,
+                 is_community: bool = False):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.card_id = card_id
+        self.is_community = is_community
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.is_communautaire = obj["is_communautaire"]
-        self.card_content = obj["card_content"]
+        super().deserialize(obj)
+        self.card_id = int(obj['card_id']) if 'card_id' in obj else 0
+        self.is_community = bool(
+            obj['is_community']) if 'is_community' in obj else False
 
 
 class PlayerUpdateBalance(PlayerPacket):
-    id_player: str
     old_balance: int
     new_balance: int
     reason: str
@@ -345,9 +343,9 @@ class PlayerUpdateBalance(PlayerPacket):
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.old_balance = obj["old_balance"]
-        self.new_balance = obj["new_balance"]
-        self.reason = obj["reason"]
+        self.old_balance = obj['old_balance']
+        self.new_balance = obj['new_balance']
+        self.reason = obj['reason']
 
 
 class PlayerEnterPrison(PlayerPacket):
