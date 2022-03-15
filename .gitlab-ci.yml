@@ -25,6 +25,7 @@ test:3.9:
 test:coverage:
   stage: test
   script:
+    - pip install -r requirements.txt
     - pip install pytest pytest-cov
     - coverage run -m pytest
     - coverage report
