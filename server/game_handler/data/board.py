@@ -24,6 +24,7 @@ class Board:
     # Options
     option_go_case_double_money: bool
     option_auction_enabled: bool
+    option_password: str
 
     def __init__(self, squares=None):
         self.squares = [] if squares is None else squares
@@ -40,6 +41,7 @@ class Board:
         self.round = 0
         self.option_go_case_double_money = False
         self.option_auction_enabled = False
+        self.option_password = ""
 
     def next_player(self) -> Player:
         """

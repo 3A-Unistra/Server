@@ -20,8 +20,9 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
     PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, InitConnection, \
-    GetInRoom, LaunchGame
+    GetInRoom, LaunchGame, AppletPrepare
 from server.game_handler.data.squares import GoSquare
+from server.game_handler.models import User
 
 """
 States:
@@ -173,22 +174,33 @@ class Game(Thread):
 
         if self.state is GameState.LOBBY:
             # TODO : implement lobby logic
-            if isinstance(packet, InitConnection):
-                # TODO : add packet InitConnection to packet.py and doc
-                # check if player is in any other game
+            if isinstance(packet, GetInRoom):
 
-                # check if player crashed
+                try:    # get user from database
+                    User.objects.get(id=packet.player_token)
+                except User.DoesNotExist:
+                    return
 
-                # add player to list of people getting room updates
-                pass
+                if packet.has_password:
+                    if packet.password != self.board.option_password:
+                        self.send_packet_to_player(self, packet.player_token, ExceptionPacket(code=4101))
+                        # TODO : specify error code for wrong password
+                        return
+                # if game is full
+                if len(self.board.players) == self.board.nb_player:
+                    self.send_packet_to_player(self, packet.player_token, ExceptionPacket(code=4102))
+                    # TODO : specify error code for game full
+                    return
 
-            elif isinstance(packet, GetInRoom):
-                # TODO : add packet GetInRoom to packet.py and doc
-                # add player to the room, make necessary checks
-                pass
+                # if all the checks are fine, add the player to the game
+                # create the new player instance
+                newplayer = Player(self, channel_name=self.channel_layer, bot=False)  # This might be wrong
+                # add player to current game
+                self.board.add_player(newplayer)
+                # TODO : send GetInRoomSuccess
 
             elif isinstance(packet, LaunchGame):
-                # TODO : add packet LaunchGame to packet.py and doc
+                self.broadcast_packet(self, AppletPrepare)
                 # check if player_token is the token of the game host
                 # make the game start (if everything gucci) --> AppletPrepare
                 pass

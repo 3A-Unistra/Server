@@ -13,19 +13,19 @@ Le contenu des paquets est au format JSON.
 Paquets lobby
 -------------
 
-InitConnection
-^^^^^^^^^^^^^^
-Paquet envoyé *par le client* lorsque un joueur se connecte.
+InternalInitConnection
+^^^^^^^^^^^^^^^^^^^^^^
+Paquet envoyé lorsque un joueur se connecte.
 
 **contenu du paquet :**
- * id du joueur (*token_player*)
+ * id du joueur (*player_token*)
 
 LaunchGame
 ^^^^^^^^^^
 Paquet envoyé *par le client* lorsque le host du lobby lance la partie.
 
 **contenu du paquet :**
- * id du joueur lançant la partie (*id_player*)
+ * id du joueur lançant la partie (*player_token*)
 
 GetInRoom
 ^^^^^^^^^
@@ -34,8 +34,15 @@ Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
 **contenu du paquet :**
  * id du joueur (*player_token*)
  * id de la salle (*id_room*)
- * booleen indiquant si la salle comporte un mot de passe (*has_password*)
  * mot de passe (*password*)
+
+
+GetInRoomSuccess
+^^^^^^^^^^^^^^^^
+Paquet envoyé au client pour signifier le succès de son entrée dans une partie
+
+*ce paquet ne contient pas d'informations*
+
 
 AppletPrepare
 ^^^^^^^^^^^^^
@@ -45,7 +52,7 @@ A partir de ce moment là, la partie web devra démarrer l'applet unity et se d�
 L'applet unity webgl devra se connecter au WebSocket de la partie et envoyer le paquet AppletReady.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
+ * id du joueur (*player_token*)
 
 Paquets demarrage
 -----------------

@@ -203,13 +203,6 @@ class GameEngineConsumer(SyncConsumer):
         if packet is None or 'game_token' not in content:
             return
 
-        if isinstance(packet, InitConnection):
-            # if we receive a request of connection into the lobby
-            # check if player exists
-            if self.engine.player_exists(player_token=packet.player_token):
-                # TODO : send Exception : player already in game
-                pass
-
         game_token = content['game_token']
 
         # get channel name

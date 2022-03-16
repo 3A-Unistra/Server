@@ -121,10 +121,8 @@ class ExceptionPacket(Packet):
         self.code = int(obj["code"])
 
 
-class GetInRoom(LobbyPacket):
-    player_token: str
+class GetInRoom(PlayerPacket):
     id_room: str
-    has_password: bool
     password: str
 
     def __init__(self, player_token: str = ""):
@@ -132,9 +130,12 @@ class GetInRoom(LobbyPacket):
 
     def deserialize(self, obj: object):
         self.id_room = str(obj["id_room"])
-        self.has_password = bool(obj["has_password"])
         self.password = str(obj["password"])
-        self.player_token = str(obj["player_token"])
+
+
+class GetInRoomSuccess(LobbyPacket):
+    def __init__(self):
+        super().__init__("GetInRoom")
 
 
 class LaunchGame(LobbyPacket):
@@ -145,8 +146,7 @@ class LaunchGame(LobbyPacket):
 
 
 class InitConnection(LobbyPacket):
-    player_token: str
-
+    # maybe this is not useful anymore
     def __init__(self, player_token: str = ""):
         super().__init__("InitConnection", player_token=player_token)
 
@@ -156,15 +156,9 @@ class PingPacket(PlayerPacket):
         super().__init__("Ping", player_token=player_token)
 
 
-class AppletPrepare(Packet):
-    id_player: str
-
-    def __init__(self, id_player: str = ""):
-        super(AppletPrepare, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+class AppletPrepare(LobbyPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__("AppletPrepare", player_token=player_token)
 
 
 class AppletReady(PlayerPacket):
