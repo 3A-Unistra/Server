@@ -20,7 +20,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
     PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, \
-    GetInRoom, LaunchGame, AppletPrepare
+    GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess
 from server.game_handler.data.squares import GoSquare
 from server.game_handler.models import User
 
@@ -185,21 +185,21 @@ class Game(Thread):
                 if packet.has_password:
                     if packet.password != self.board.option_password:
                         self.send_packet_to_player(self, packet.player_token, ExceptionPacket(code=4101))
-                        # TODO : specify error code for wrong password
+                        # TODO : specify error code for wrong password (code here is just a placeholder)
                         return
                 # if game is full
                 if len(self.board.players) == self.board.nb_player:
                     self.send_packet_to_player(self, packet.player_token, ExceptionPacket(code=4102))
-                    # TODO : specify error code for game full
+                    # TODO : specify error code for game full (code here is just a placeholder)
                     return
 
                 # if all the checks are fine, add the player to the game
                 # create the new player instance
-                # This might be wrong
                 newplayer = Player(self, user=user, channel_name=self.channel_layer, bot=False)
                 # add player to current game
                 self.board.add_player(newplayer)
-                # TODO : send GetInRoomSuccess and add room to the update list
+                self.send_packet_to_player(self, packet.player_token, GetInRoomSuccess())
+                # TODO : add room to the update list and broadcast it to all players that are connected to the website
 
             elif isinstance(packet, LaunchGame):
                 # check if player_token is the token of the game host
@@ -208,6 +208,7 @@ class Game(Thread):
                 self.broadcast_packet(self, AppletPrepare)
                 # putting the game in waiting mode (waiting for AppletReady from all the players)
                 self.state = GameState.WAITING_PLAYERS
+                # setting timeout to wait for the players to send AppletReady
                 self.set_timeout(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
 
