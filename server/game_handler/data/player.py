@@ -1,5 +1,6 @@
 import random
 import uuid
+from datetime import datetime
 from typing import Optional, Tuple
 
 from server.game_handler.models import User
@@ -13,9 +14,10 @@ class Player:
     To check if this Player is a "real" bot (not disconnected player bot),
     compare bot and online bool, if they are both True it is a "real" bot.
     """
-    id_: str
-    public_id: str
-    name: str
+
+    # Public id is for the id for bots
+    public_id: str = None
+
     bot_name: str = None
     user: Optional[User]
     channel_name: str
@@ -37,25 +39,29 @@ class Player:
 
     piece: int = 0
 
-    def __init__(self, id_: str, name: str, channel_name: str = None,
+    # Bool for ping heartbeat, default value=True, for first heartbeat
+    ping: bool = True
+    ping_timeout: datetime
+
+    # Temps values
+    start_dice_throw_received: bool
+
+    def __init__(self, user: Optional[User] = None, channel_name: str = None,
                  bot: bool = True,
                  bot_name: str = None):
         """
-        :param id_: Id of the Player
-        :param name: Name of the Player
         :param bot: If this Player is a "real" bot
         """
-        self.id_ = id_
-        self.name = name
+        self.user = user
         self.bot = bot
         self.bot_name = bot_name
-        self.user = None
         self.channel_name = channel_name
         self.current_dices = (0, 0)
-        self.public_id = str(uuid.uuid4())
+        self.start_dice_throw_received = False
 
         if bot is True:
             self.online = True
+            self.public_id = str(uuid.uuid4())
 
     def connect(self):
         """
@@ -76,10 +82,10 @@ class Player:
         :return: Name of the Player
         """
         if self.bot:
-            if self.name is None:
+            if self.user is None or self.user.name is None:
                 return self.bot_name
             return 'Bot %s' % self.bot_name
-        return self.name
+        return self.user.name
 
     def roll_dices(self) -> int:
         """
@@ -94,9 +100,22 @@ class Player:
     def dices_value(self) -> int:
         return sum(self.current_dices)
 
+    def dices_are_double(self) -> bool:
+        return self.current_dices[0] == self.current_dices[1]
+
+    def enter_prison(self):
+        self.doubles = 0
+        self.jail_turns = 0
+        self.in_jail = True
+
+    def exit_prison(self):
+        self.doubles = 0
+        self.jail_turns = 0
+        self.in_jail = False
+
     def get_coherent_infos(self) -> dict:
         return {
-            'player_token': self.public_id,
+            'player_token': self.get_id(),
             'name': self.get_name(),
             'bot': self.bot,
             'money': self.money,
@@ -107,3 +126,17 @@ class Player:
             'bankrupt': self.bankrupt,
             'piece': self.piece
         }
+
+    def get_id(self) -> str:
+        """
+        :return: Public_id if bot is a "real" bot, otherwise user.id
+        """
+        return self.public_id if self.bot and self.online else str(
+            self.user.id)
+
+    def __eq__(self, other):
+        # For equality: player == other_player
+        # Like: player.get_id() == other_player.get_id()
+        if isinstance(other, Player):
+            return self.get_id() == other.get_id()
+        return False

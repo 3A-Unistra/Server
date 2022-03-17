@@ -13,6 +13,14 @@ Le contenu des paquets est au format JSON.
 Paquets demarrage
 -----------------
 
+PlayerPing
+^^^^^^^^^^
+
+Paquet heartbeat, envoyé toutes les 10 secondes.
+C'est un paquet ping-pong, le serveur envoie, le client reçoit.
+Si le serveur ne reçoit pas de paquet en retour après 10 secondes,
+il ferme la connexion (broadcast PlayerDisconnect)
+
 PlayerValid
 ^^^^^^^^^^^
 
@@ -149,25 +157,20 @@ Si plusieurs joueurs de la partie ont un même résultat, il faut renvoyer un pa
 
 RoundStart
 ^^^^^^^^^^
-Notifie les clients que la partie peut débuter.
-
-*ce paquet ne contient pas d'informations*
-
-RoundDiceThrow
-^^^^^^^^^^^^^^
-(*envoyé par le client*). Envoyé lorque le client à qui c'est le tout appuye sur le bouton pour lancer le dé.
+Notifie les clients qu'une nouvelle manche démarre.
 
 **contenu du paquet :**
- * identifiant du joueur. (*id_player*)
-
+ * identifiant du joueur qui joue. (*current_player*)
 
 RoundDiceResults
 ^^^^^^^^^^^^^^^^
 Paquet contenant le résultat du lancer de dé du joueur. Envoyé à tout les joueurs, le résultat des lancers de dés étant publique.
 
 **contenu du paquet :**
- * identifiant du joueur (*id_player*)
- * résultat du lancer de dé (*dice_result*)
+ * identifiant du joueur (*player_token*)
+ * result : int(enum(ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD_CHANCE = 2, JAIL_CARD_COMMUNITY = 3))
+ * résultat dé 1 : (*dice1*)
+ * résultat dé 2 : (*dice2*)
 
 Exception
 ^^^^^^^^^
@@ -182,20 +185,21 @@ Paquet début tour
 RoundDiceChoice
 ^^^^^^^^^^^^^^^
 (*envoyé par le client*).
-Paquet indiquant au serveur que le joueur souhaite lancer un dé, en début de tour.
+Paquet indiquant au serveur que ce que le joueur a choisi de faire,
+entre trois possibilités : ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD = 2.
 Seul le joueur dont c'est le tour peut envoyer ce paquet.
 
 **contenu du paquet :**
- * identifiant du joueur (*id_player*)
-
+ * id du joueur qui a choisi (*player_token*)
+ * choice : int(enum(ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD_CHANCE = 2, JAIL_CARD_COMMUNITY = 3))
 
 PlayerMove
 ^^^^^^^^^^
 Indique aux clients qu'un des joueurs se déplace.
 
 **contenu du paquet : **
- * id du joueur qui se déplace (*id_moving_player*)
- * case de destination (*destination_case*)
+ * id du joueur qui se déplace (*player_token*)
+ * case de destination (*destination*)
 
 RoundRandomCard
 ^^^^^^^^^^^^^^^
@@ -203,9 +207,9 @@ RoundRandomCard
 Si le joueur tombe sur une case communautaire ou une case de chance, ce paquet est envoyé à tout le monde.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * indiquer si c'est une case communautaire ou de chance (*is_communautaire*)
- * contenu de la carte tiré aléatoirement (*card_content*)
+ * id du joueur (*player_token*)
+ * indiquer si c'est une case communautaire ou de chance (*is_community*)
+ * id de la carte tirée aléatoirement (*card_id*)
 
 PlayerUpdateBalance
 ^^^^^^^^^^^^^^^^^^^
@@ -213,9 +217,9 @@ PlayerUpdateBalance
 Lorsque la somme d'argent d'un joueur modifie, ce paquet est envoyé à tout les clients pour les notifier de ce changement
 
 **contenu du paquet :**
- * id du joueur dont la somme a changé (*id_player*)
- * Somme qu'il avait (*old_balance*)
- * Nouvel somme (*new_balance*)
+ * id du joueur dont la somme a changé (*player_token*)
+ * Balance qu'il avait (*old_balance*)
+ * Nouvelle balance (*new_balance*)
  * raison
 
 PlayerEnterPrison
@@ -223,7 +227,7 @@ PlayerEnterPrison
 Paquet envoyé lorsque le joueur entre en prison
 
 **contenu du paquet :**
- * id du joueur allant en prison (*id_player*)
+ * id du joueur allant en prison (*player_token*)
 
 
 PlayerExitPrison
@@ -231,7 +235,7 @@ PlayerExitPrison
 Paquet envoyé lorsque le joueur sort de prison
 
 **contenu du paquet :**
- * id du joueur allant en prison (*id_player*)
+ * id du joueur allant en prison (*player_token*)
 
 Paquet d'actions durant le tour
 -------------------------------

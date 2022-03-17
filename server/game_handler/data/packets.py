@@ -1,11 +1,12 @@
 import json
+from enum import Enum
 
-from server.game_handler.data.exceptions import PacketException
+from .exceptions import PacketException
 
 
 class Packet:
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
 
     def serialize(self) -> str:
@@ -37,18 +38,39 @@ class PlayerPacket(Packet):
             self.player_token = obj["player_token"]
 
 
-class InternalCheckPlayerValidity(PlayerPacket):
+class InternalPacket(Packet):
+    """
+    Packet for Internal communication
+    """
+    pass
+
+
+class InternalCheckPlayerValidity(InternalPacket):
+    player_token: str
     valid: bool
 
-    def __init__(self, player_token: str, valid: bool = False):
-        super(InternalCheckPlayerValidity, self).__init__(
-            name=self.__class__.__name__,
-            player_token=player_token)
+    def __init__(self, player_token: str = "", valid: bool = False):
+        super().__init__(name=self.__class__.__name__)
+        self.player_token = player_token
         self.valid = valid
 
     def deserialize(self, obj: object):
-        super().deserialize(obj)
+        self.player_token = obj['player_token']
         self.valid = bool(obj['valid'])
+
+
+class InternalPlayerDisconnect(InternalPacket):
+    player_token: str
+    reason: str
+
+    def __init__(self, player_token: str = "", reason: str = ""):
+        super().__init__(name=self.__class__.__name__)
+        self.player_token = player_token
+        self.reason = reason
+
+    def deserialize(self, obj: object):
+        self.player_token = obj['player_token']
+        self.reason = obj['reason']
 
 
 class PlayerValid(Packet):
@@ -81,7 +103,7 @@ class LaunchGame(Packet):
     id_player: str
 
     def __init__(self, id_player: str = ""):
-        super(LaunchGame, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
         self.id_player = id_player
 
     def deserialize(self, obj: object):
@@ -92,28 +114,28 @@ class ExceptionPacket(Packet):
     code: int
 
     def __init__(self, code: int = 4000):
-        super(ExceptionPacket, self).__init__("Exception")
+        super().__init__("Exception")
         self.code = code
 
     def deserialize(self, obj: object):
         self.code = int(obj["code"])
 
 
-class AppletPrepare(Packet):
-    id_player: str
+class PingPacket(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__("Ping", player_token=player_token)
 
-    def __init__(self, id_player: str = ""):
-        super(AppletPrepare, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
 
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+class AppletPrepare(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
 class AppletReady(PlayerPacket):
-    def __init__(self, player_token: str):
-        super(AppletReady, self).__init__(name=self.__class__.__name__,
-                                          player_token=player_token)
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
 class GameStart(Packet):
@@ -121,39 +143,44 @@ class GameStart(Packet):
     Contains all informations of current state
     """
     game_name: str
+    options: {}
     players: []
 
-    def __init__(self, game_name: str = "", players: [] = None):
-        super(GameStart, self).__init__(self.__class__.__name__)
+    def __init__(self, game_name: str = "", options=None, players: [] = None):
+        super().__init__(self.__class__.__name__)
         self.game_name = game_name
+        self.options = {} if options is None else options
         self.players = [] if players is None else players
 
+    def deserialize(self, obj: object):
+        self.game_name = obj['game_name']
+        self.options = obj['options']
+        self.players = obj['players']
 
-class PlayerDisconnect(Packet):
-    id_player: str
+
+class PlayerDisconnect(PlayerPacket):
     reason: str
 
-    def __init__(self, id_player: str = "", reason: str = ""):
-        super(PlayerDisconnect, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
+    def __init__(self, player_token: str = "", reason: str = ""):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
         self.reason = reason
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+        super().deserialize(obj)
         self.reason = obj["reason"]
 
 
-class PlayerReconnect(Packet):
-    id_player: str
+class PlayerReconnect(PlayerPacket):
     reason: str
 
-    def __init__(self, id_player: str = "", reason: str = ""):
-        super(PlayerReconnect, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
+    def __init__(self, player_token: str = "", reason: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
         self.reason = reason
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+        super().deserialize(obj)
         self.reason = obj["reason"]
 
 
@@ -202,122 +229,135 @@ class GameStartDiceResults(Packet):
 
 
 class RoundStart(Packet):
-    def __init__(self):
-        super(RoundStart, self).__init__(self.__class__.__name__)
+    current_player: str
 
-
-class RoundDiceThrow(Packet):
-    id_player: str
-
-    def __init__(self, id_player: str = ""):
-        super(RoundDiceThrow, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
+    def __init__(self, current_player: str = ""):
+        super().__init__(self.__class__.__name__)
+        self.current_player = current_player
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+        self.current_player = obj['current_player']
 
 
-class RoundDiceChoice(Packet):
-    id_player: str
+class RoundDiceChoiceResult(Enum):
+    ROLL_DICES = 0
+    JAIL_PAY = 1
+    JAIL_CARD_CHANCE = 2
+    JAIL_CARD_COMMUNITY = 3
 
-    def __init__(self, id_player: str = ""):
-        super(RoundDiceChoice, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-
-
-class PlayerMove(Packet):
-    id_moving_player: str
-    destination_case: int
-
-    def __init__(self, id_moving_player: str = "",
-                 destination_case: int = 0):
-        super(PlayerMove, self).__init__(self.__class__.__name__)
-        self.id_moving_player = id_moving_player
-        self.destination_case = destination_case
-
-    def deserialize(self, obj: object):
-        self.id_moving_player = obj["id_moving_player"]
-        self.destination_case = obj["destination_case"]
+    @staticmethod
+    def has_value(value):
+        return value in set(item.value for item in RoundDiceChoiceResult)
 
 
-class RoundRandomCard(Packet):
-    id_player: str
-    is_communautaire: bool
-    card_content: str
+class RoundDiceChoice(PlayerPacket):
+    choice: int
 
-    def __init__(
-            self, id_player: str = "", is_communautaire: bool = False,
-            card_content: str = ""
-    ):
-        super(RoundRandomCard, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.is_communautaire = is_communautaire
-        self.card_content = card_content
+    def __init__(self, player_token: str = "",
+                 choice: RoundDiceChoiceResult = RoundDiceChoiceResult(0)):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.choice = choice.value
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.is_communautaire = obj["is_communautaire"]
-        self.card_content = obj["card_content"]
+        super().deserialize(obj)
+        self.choice = int(obj['choice'])
 
 
-class PlayerUpdateBalance(Packet):
-    id_player: str
+class RoundDiceResults(PlayerPacket):
+    result: int
+    dice1: int
+    dice2: int
+
+    def __init__(self, player_token: str = "",
+                 result: RoundDiceChoiceResult = RoundDiceChoiceResult(0),
+                 dice1: int = 0,
+                 dice2: int = 0):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.result = result.value
+        self.dice1 = dice1
+        self.dice2 = dice2
+
+    def deserialize(self, obj: object):
+        super().deserialize(obj)
+        # TODO check enum validity
+        self.result = RoundDiceChoiceResult(int(obj['result']))
+        self.dice1 = int(obj['dice1'])
+        self.dice2 = int(obj['dice2'])
+
+
+class PlayerMove(PlayerPacket):
+    destination: int
+
+    def __init__(self, player_token: str = "",
+                 destination: int = 0):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.destination = destination
+
+    def deserialize(self, obj: object):
+        super().deserialize(obj)
+        self.destination = obj["destination"]
+
+
+class RoundRandomCard(PlayerPacket):
+    card_id: int
+    is_community: bool
+
+    def __init__(self, player_token: str = "", card_id: int = 0,
+                 is_community: bool = False):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.card_id = card_id
+        self.is_community = is_community
+
+    def deserialize(self, obj: object):
+        super().deserialize(obj)
+        self.card_id = int(obj['card_id']) if 'card_id' in obj else 0
+        self.is_community = bool(
+            obj['is_community']) if 'is_community' in obj else False
+
+
+class PlayerUpdateBalance(PlayerPacket):
     old_balance: int
     new_balance: int
     reason: str
 
     def __init__(
-            self, id_player: str = "", old_balance: int = 0,
+            self, player_token: str = "", old_balance: int = 0,
             new_balance: int = 0,
             reason: str = ""
     ):
-        super(PlayerUpdateBalance, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
         self.old_balance = old_balance
         self.new_balance = new_balance
         self.reason = reason
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.old_balance = obj["old_balance"]
-        self.new_balance = obj["new_balance"]
-        self.reason = obj["reason"]
+        super().deserialize(obj)
+        self.old_balance = obj['old_balance']
+        self.new_balance = obj['new_balance']
+        self.reason = obj['reason']
 
 
-class PlayerEnterPrison(Packet):
-    id_player: str
-
-    def __init__(self, id_player: str = ""):
-        super(PlayerEnterPrison, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+class PlayerEnterPrison(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
-class PlayerExitPrison(Packet):
-    id_player: str
-
-    def __init__(self, id_player: str = ""):
-        super(PlayerExitPrison, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+class PlayerExitPrison(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
-class ActionExchange(Packet):
-    id_player: str
-
-    def __init__(self, id_player: str = ""):
-        super(ActionExchange, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+class ActionExchange(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
 class ActionExchangePlayerSelect(Packet):
@@ -384,19 +424,19 @@ class ActionExchangeSend(Packet):
 
 class ActionExchangeDecline(Packet):
     def __init__(self):
-        super(ActionExchangeDecline, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
 
 
 class ActionExchangeCounter(Packet):
     def __init__(self):
-        super(ActionExchangeCounter, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
 
 
 class ActionExchangeCancel(Packet):
     reason: str
 
     def __init__(self, reason: str = ""):
-        super(ActionExchangeCancel, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
         self.reason = reason
 
     def deserialize(self, obj: object):
@@ -638,7 +678,10 @@ class CreateGame(LobbyPacket):
 
 class PacketUtils:
     packets: dict = {
+        # Utility packets
         "Exception": ExceptionPacket,
+        "Ping": PingPacket,
+        # Common packets
         "AppletPrepare": AppletPrepare,
         "AppletReady": AppletReady,
         "PlayerDisconnect": PlayerDisconnect,
@@ -647,8 +690,8 @@ class PacketUtils:
         "GameStartDiceThrow": GameStartDiceThrow,
         "GameStartDiceResults": GameStartDiceResults,
         "RoundStart": RoundStart,
-        "RoundDiceThrow": RoundDiceThrow,
         "RoundDiceChoice": RoundDiceChoice,
+        "RoundDiceResults": RoundDiceResults,
         "PlayerMove": PlayerMove,
         "RoundRandomCard": RoundRandomCard,
         "PlayerUpdateBalance": PlayerUpdateBalance,
@@ -682,7 +725,8 @@ class PacketUtils:
         # Lobby packets
         "GetInRoom": GetInRoom,
         # Internal packets
-        "CheckPlayerValidity": InternalCheckPlayerValidity
+        "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
+        "InternalPlayerDisconnect": InternalPlayerDisconnect
     }
 
     @staticmethod

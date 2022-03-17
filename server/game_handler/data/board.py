@@ -1,35 +1,115 @@
 import random
 from typing import List, Optional
 
-from . import Card, Player
+import names
+
+from . import Player
+from .cards import ChanceCard, CommunityCard, CardActionType, Card
 from .squares import Square
 
 
 class Board:
-    board: List[Square]
-    community_deck: List[Card]
-    chance_deck: List[Card]
-    prison_square: int
+    squares: List[Square]
+    cases_count: int
+    community_deck: List[CommunityCard]
+    chance_deck: List[ChanceCard]
     board_money: int
     players: List[Player]
     players_nb: int
     bots_nb: int
     bot_names: []
+    current_player_index: int
+    prison_square_index: int
+    round: int
 
-    def __init__(self):
-        self.board = []
+    # Options
+    option_go_case_double_money: bool
+    option_auction_enabled: bool
+
+    # Card indexes
+    community_card_indexes = {
+        'leave_jail': -1
+    }
+    chance_card_indexes = {
+        'leave_jail': -1
+    }
+
+    def __init__(self, squares=None):
+        self.squares = [] if squares is None else squares
+        self.cases_count = len(self.squares)
         self.community_deck = []
         self.chance_deck = []
-        self.prison_square = 0
         self.board_money = 0
         self.players = []
         self.players_nb = 0
         self.bots_nb = 0
+        self.current_player_index = 0
+        self.prison_square_index = 0
         self.bot_names: []
+        self.round = 0
+        self.option_go_case_double_money = False
+        self.option_auction_enabled = False
+        self.search_card_indexes()
+
+    def search_card_indexes(self):
+        """
+        Search special card indexes (leave_jail)
+        Writes in <chance or community>_card_indexes
+        """
+        for i in range(0, len(self.chance_deck)):
+            card = self.chance_deck[i]
+            if card.action_type == CardActionType.LEAVE_JAIL:
+                self.chance_card_indexes['leave_jail'] = i
+                break
+        for i in range(0, len(self.community_deck)):
+            card = self.community_deck[i]
+            if card.action_type == CardActionType.LEAVE_JAIL:
+                self.community_card_indexes['leave_jail'] = i
+                break
+
+    def next_player(self) -> Player:
+        """
+        Setting next player (if player is bankrupt, goto next)
+        :return: Next player playing
+        """
+        i = 0
+        curr_idx = self.current_player_index
+
+        while i < self.players_nb:
+            curr_idx = (curr_idx + 1) % self.players_nb
+
+            if not self.players[curr_idx].bankrupt:
+                self.current_player_index = curr_idx
+                break
+
+            i += 1
+
+        return self.players[self.current_player_index]
+
+    def get_player_idx(self, player: Player) -> int:
+        for i in range(0, self.players_nb):
+            if self.players[i] == player:
+                return i
+        return -1
+
+    def set_current_player(self, player: Player) -> int:
+        """
+        Set current playing player
+        :param player: Player
+        :return: -1 if player not found, idx if found
+        """
+        idx = self.get_player_idx(player)
+        if idx == -1:
+            return -1
+        self.current_player_index = idx
+        return idx
+
+    def get_current_player(self) -> Player:
+        return self.players[self.current_player_index]
 
     def get_player(self, uid: str) -> Optional[Player]:
         for player in self.players:
-            if player.id_ == uid:
+            if player.get_id() == uid:
                 return player
         return None
 
@@ -37,10 +117,13 @@ class Board:
         return self.get_player(uid) is not None
 
     def add_player(self, player: Player):
-        if self.player_exists(player.id_):
+        if self.player_exists(player.get_id()):
             return
 
         self.players.append(player)
+
+    def remove_player(self, player: Player):
+        self.players.remove(player)
 
     def get_online_players_count(self) -> int:
         """
@@ -75,17 +158,14 @@ class Board:
         """
         :return: Random bot name not
         """
-        name: str = 'Bot'
-        names_count = len(self.bot_names)
-        i = names_count
-
+        i = 50  # Max 50 tries
         while i > 0:
-            name = self.bot_names[random.randint(0, names_count)]
+            name = names.get_first_name()
             if self.bot_name_used(name) is False:
-                break
+                return 'Bot %s' % name
             i -= 1
-
-        return '%s #%s' % (name, str(random.randint(1, 9)))
+        # If above code fails, then we generate a name like: Bot #<random>
+        return 'Bot #%d' % random.randint(1, 9)
 
     def set_bot_names(self):
         """
@@ -104,6 +184,16 @@ class Board:
                 players.append(player)
         return players
 
+    def get_online_real_players(self) -> List[Player]:
+        """
+        :return: Online players, bots excluded
+        """
+        players = []
+        for player in self.players:
+            if player.online is True and player.bot is False:
+                players.append(player)
+        return players
+
     def get_highest_dice(self) -> Optional[Player]:
         """
         Returns the highest dice score player in game
@@ -118,10 +208,58 @@ class Board:
 
         # Check for uniqueness
         for comp in self.get_online_players():
-            if comp.id_ is player.id_:
+            if comp == player:
                 continue
 
             if comp.dices_value() == player.dices_value():
                 return None
 
         return player
+
+    # Cases processing here
+
+    def move_player_with_dices(self, player: Player) -> bool:
+        """
+        :param player: Player to move
+        :return: If player reached "0" (start) case
+        """
+        temp_position = player.position
+        player.position = (player.position
+                           + player.dices_value()) % self.cases_count
+        return player.position < temp_position
+
+    def draw_random_card(self, deck: List[Card]) -> Optional[Card]:
+        deck_len = len(deck)
+
+        # Limit iterations
+        for i in range(0, deck_len):
+            card = deck[random.randint(0, deck_len)]
+
+            if card.available:
+                return card
+
+        return None
+
+    def draw_random_chance_card(self) -> Optional[ChanceCard]:
+        """
+        :return: Randomly drawn chance card, (+ jail card if available)
+                Could be None if no card was found or available
+        """
+        return self.draw_random_card(self.chance_deck)
+
+    def draw_random_community_card(self) -> Optional[CommunityCard]:
+        """
+        :return: Randomly drawn community card, (+ jail card if available)
+                Could be None if no card was found or available
+        """
+        return self.draw_random_card(self.community_deck)
+
+    def use_chance_jail_card(self, player: Player):
+        player.jail_cards['chance'] = False
+        self.chance_deck[
+            self.chance_card_indexes['leave_jail']].available = True
+
+    def use_community_jail_card(self, player: Player):
+        player.jail_cards['community'] = False
+        self.community_deck[
+            self.community_card_indexes['leave_jail']].available = True

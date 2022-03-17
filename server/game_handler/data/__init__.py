@@ -1,4 +1,4 @@
 from .bank import Bank
-from .card import Card, CardType
+from .cards import Card
 from .player import Player
 from .board import Board

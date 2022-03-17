@@ -111,11 +111,27 @@ CHANNEL_LAYERS = {
     },
 }
 
+# If server is localhost then SERVER_OFFLINE should be True
+SERVER_OFFLINE = False
+
 ENGINE_CONFIG = {
     'TICK_RATE': 20,
+
+    # In seconds
     'WAITING_PLAYERS_TIMEOUT': 30,
     'GAME_STARTING_TIMEOUT': 3,
     'START_DICE_WAIT': 5,
     'START_DICE_REROLL_WAIT': 3,
-    'ROUND_START_WAIT': 5
+    'ROUND_START_WAIT': 5,
+    'ROUND_DICE_CHOICE_WAIT': 5,
+    'ACTION_START_WAIT': 5,
+
+    'PING_HEARTBEAT_TIMEOUT': 10,
+
+    'MONEY_START': 1000,
+    'MONEY_GO': 200,
+
+    'MAX_DOUBLES_JAIL': 3,
+    'MAX_JAIL_TURNS': 3,
+    'JAIL_LEAVE_PRICE': 50
 }

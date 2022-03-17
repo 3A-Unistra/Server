@@ -5,8 +5,9 @@ from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .data.exceptions import PacketException
-from .data.packets import PacketUtils, LobbyPacket, GameStart, PlayerPacket, \
-    ExceptionPacket, InternalCheckPlayerValidity, PlayerValid
+from .data.packets import PacketUtils, PlayerPacket, \
+    ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
+    PlayerDisconnect, InternalPacket, InternalPlayerDisconnect
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -16,12 +17,11 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
     """
     Consumer between Client and Server
     """
-    game_token: str
-    player_token: str
-    valid: bool
+    player_token: str = None
+    game_token: str = None
+    valid: bool = False
 
     async def connect(self):
-
         # User is anonymous
         if self.scope["user"] is None:
             # Reject the connection
@@ -29,22 +29,11 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
 
         self.valid = False
 
-        game_token = None
-        player_token = None
-
         if 'game_token' in self.scope['url_route']['kwargs']:
-            game_token = self.scope['url_route']['kwargs']['game_token']
+            self.game_token = self.scope['url_route']['kwargs']['game_token']
 
-        if 'player_token' in self.scope['url_route']['kwargs']:
-            player_token = self.scope['url_route']['kwargs']['player_token']
-
-        if game_token is None:
+        if self.game_token is None:
             return await self.close(code=4001)
-
-        if player_token is None:
-            return await self.close(code=4002)
-
-        player_token = player_token[0]
 
         """
         Player connects -> send internal check player validity to server
@@ -53,7 +42,10 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         If valid, packet PlayerValid is sent to WebSocket
         """
 
-        packet = InternalCheckPlayerValidity(player_token=player_token)
+        self.player_token = self.scope['user'].id
+
+        packet = InternalCheckPlayerValidity(
+            player_token=self.player_token)
 
         # send to game engine worker
         await self.channel_layer.send(
@@ -89,6 +81,10 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
             # send error packet (or ignore)
             return
 
+        # Internal packets are not accepted
+        if isinstance(packet, InternalPacket):
+            return
+
         # process packets here
         if isinstance(packet, PlayerPacket):
             packet.player_token = self.player_token
@@ -104,8 +100,32 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
             }
         )
 
-        async def disconnect(self, code):
-            pass
+    async def disconnect(self, code):
+        self.valid = False
+
+        if 4100 <= code <= 4101:
+            return
+
+        # Remove player from broadcast group
+        await self.channel_layer.group_discard(self.game_token,
+                                               self.channel_name)
+
+        # Handle client-side errors
+
+        packet = InternalPlayerDisconnect(
+            reason="client",
+            player_token=self.player_token
+        )
+
+        await self.channel_layer.send(
+            'game_engine',
+            {
+                'type': 'process.packets',
+                'content': packet.serialize(),
+                'game_token': self.game_token,
+                'channel_name': self.channel_name
+            }
+        )
 
     async def player_callback(self, content):
         """
@@ -134,6 +154,11 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         if isinstance(packet, InternalCheckPlayerValidity):
             if packet.valid:
                 packet = PlayerValid()
+
+        # If PlayerDisconnect received, force WebSocket close.
+        if isinstance(packet, PlayerDisconnect):
+            if packet.player_token == self.player_token:
+                return await self.close(code=4101)
 
         # Send packet to front/cli
         await self.send(packet.serialize())
