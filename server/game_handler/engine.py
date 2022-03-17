@@ -11,7 +11,9 @@ from channels.layers import get_channel_layer
 from django.conf import settings
 import pause
 
-from server.game_handler.data import Board, Player
+from server.game_handler.data import Board, Player, Card
+from server.game_handler.data.cards import ChanceCard, CardActionType, \
+    CommunityCard
 from server.game_handler.data.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import PlayerPacket, Packet, \
@@ -220,7 +222,6 @@ class Game(Thread):
 
                 player.start_dice_throw_received = True
 
-                # broadcast or send to all players? TODO:
                 self.broadcast_packet(GameStartDiceThrow(
                     player_token=player.get_id()
                 ))
@@ -235,10 +236,34 @@ class Game(Thread):
                 if self.board.get_current_player() != player:
                     return
 
-                if packet.choice.value < 0 or packet.choice.value > 2:
+                # Check if enum exists, if not ignore.
+                if not RoundDiceChoiceResult.has_value(packet.choice):
                     return
 
+                choice = RoundDiceChoiceResult(packet.choice)
 
+                # Ignore this packet, cant roll dices if player in jail
+                # and player.jail_turns >= (3)
+                if choice is RoundDiceChoiceResult.ROLL_DICES and \
+                        player.in_jail and player.jail_turns \
+                        >= self.CONFIG.get('MAX_JAIL_TURNS'):
+                    return
+
+                # Ignore this packet if player has chosen jail_card_chance,
+                # but doesnt have one.
+                if player.in_jail and choice is RoundDiceChoiceResult \
+                        .JAIL_CARD_CHANCE and not player.jail_cards['chance']:
+                    return
+
+                # Ignore this packet if player has chosen jail_card_community,
+                # but doesnt have one.
+                if player.in_jail and choice is RoundDiceChoiceResult. \
+                        JAIL_CARD_COMMUNITY and not player \
+                        .jail_cards['community']:
+                    return
+
+                self.proceed_dice_choice(player=player, choice=choice)
+                return
 
     def process_logic(self):
         # TODO: Check #34 in comments
@@ -281,7 +306,15 @@ class Game(Thread):
             # If player has not sent his choice to the server,
             # process to timeout choice
             if self.state is GameState.ROUND_DICE_CHOICE_WAIT:
-                pass
+                player = self.board.get_current_player()
+                choice = RoundDiceChoiceResult.ROLL_DICES
+
+                # Player has X jail_turns, force pay.
+                if player.in_jail and player.jail_turns >= self.CONFIG.get(
+                        'MAX_JAIL_TURNS'):
+                    choice = RoundDiceChoiceResult.JAIL_PAY
+
+                self.proceed_dice_choice(player=player, choice=choice)
 
     def proceed_stop(self):
         # Delete game
@@ -314,6 +347,9 @@ class Game(Thread):
         """
         After starting timeout is expired,
         Start with game start dice.
+
+        :param re_roll: Dices reroll or not
+
         state.START_DICE -> timeout_expired() -> check_start_dice()
         """
         self.state = GameState.START_DICE
@@ -365,8 +401,11 @@ class Game(Thread):
         """
         Proceed to start new round, next player chosen, dices rolled
         and packet RoundStart sent.
+
         :param first: First round or not. Handles next_player()
-        state.ROUND_DICE_CHOICE_WAIT -> timeout_expired() -> TODO:
+
+        state.ROUND_DICE_CHOICE_WAIT -> timeout_expired()
+                                                    -> proceed_dice_choice()
         """
         if not first:
             self.board.next_player()
@@ -411,13 +450,12 @@ class Game(Thread):
 
     def proceed_dice_choice(self, player: Player,
                             choice: RoundDiceChoiceResult):
-        # TODO: add this to a function
-        # Ignore this packet, cant roll dices if player in jail
-        # and player.jail_turns >= (3)
-        if player.in_jail and player.jail_turns >= self.CONFIG.get(
-                'MAX_JAIL_TURNS'):
-            return
+        """
+        Logic: dice choice
 
+        :param player: Player playing
+        :param choice: Player's choice
+        """
         player.roll_dices()
 
         # Broadcast roll_dices results
@@ -434,22 +472,36 @@ class Game(Thread):
         # Check if player is in jail
         if player.in_jail:
 
-            if choice == RoundDiceChoiceResult.JAIL_CARD:
+            if choice == RoundDiceChoiceResult.JAIL_CARD_CHANCE and \
+                    player.jail_cards['chance']:
+                # Exit prison & use card
+                player.exit_prison()
+                self.board.use_chance_jail_card(player)
 
-                if player.jail_cards['community']:
-                    pass
-
-                if player.jail_cards['chance']:
-                    pass
-
-                pass
-            # test
-            if choice == RoundDiceChoiceResult.JAIL_PAY:
                 self.broadcast_packet(PlayerExitPrison(
                     player_token=player.get_id()
                 ))
 
+            if choice == RoundDiceChoiceResult.JAIL_CARD_COMMUNITY and \
+                    player.jail_cards['community']:
+                # Exit prison & use card
+                player.exit_prison()
+                self.board.use_community_jail_card(player)
 
+                self.broadcast_packet(PlayerExitPrison(
+                    player_token=player.get_id()
+                ))
+
+            if choice == RoundDiceChoiceResult.JAIL_PAY:
+                player.exit_prison()
+
+                self.broadcast_packet(PlayerExitPrison(
+                    player_token=player.get_id()
+                ))
+
+                self.update_player_balance(player, player.money -
+                                           self.CONFIG.get('JAIL_LEAVE_PRICE'),
+                                           "jail_leave_pay")
 
             if player.dices_are_double():
                 self.broadcast_packet(PlayerExitPrison(
@@ -487,93 +539,66 @@ class Game(Thread):
 
         # Player has reached start
         if passed_go:
-            old_balance = player.money
-            player.money += self.CONFIG.get('MONEY_GO')
-            reason = "pass_go"
+            self.update_player_balance(player, player.money +
+                                       self.CONFIG.get('MONEY_GO'),
+                                       "pass_go")
 
             # Player case == 0 & double money option is enabled
             if isinstance(case, GoSquare) and \
                     self.board.option_go_case_double_money:
-                player.money += self.CONFIG.get('MONEY_GO')
-                reason += "pass_go_exact"
-
-            self.broadcast_packet(PlayerUpdateBalance(
-                old_balance=old_balance,
-                new_balance=player.money,
-                player_token=player.get_id(),
-                reason=reason
-            ))
+                self.update_player_balance(player, player.money +
+                                           self.CONFIG.get('MONEY_GO'),
+                                           "pass_go_exact")
 
         # Check destination case
         if isinstance(case, GoToJailSquare):
             player.enter_prison()
+            player.position = self.board.prison_square_index
             self.broadcast_packet(PlayerEnterPrison(
                 player_token=player.get_id()
             ))
         elif isinstance(case, TaxSquare):
-            old_balance = player.money
-            player.money -= case.tax_price
-
-            self.broadcast_packet(PlayerUpdateBalance(
-                old_balance=old_balance,
-                new_balance=player.money,
-                player_token=player.get_id(),
-                reason="tax_square"
-            ))
+            self.update_player_balance(player, player.money - case.tax_price,
+                                       "tax_square")
         elif isinstance(case, FreeParkingSquare):
-            old_balance = player.money
-            player.money += self.board.board_money
+            self.update_player_balance(player, player.money + self.board
+                                       .board_money, "parking_square")
             self.board.board_money = 0
-
-            self.broadcast_packet(PlayerUpdateBalance(
-                old_balance=old_balance,
-                new_balance=player.money,
-                player_token=player.get_id(),
-                reason="parking_square"
-            ))
         elif isinstance(case, OwnableSquare):
-
             if case.has_owner():
                 # Pay rent :o
-                old_balance = player.money
-                player.money -= case.rent
-
-                owner_old_balance = case.owner.money
-                case.owner.money += case.rent
-
-                self.broadcast_packet(PlayerUpdateBalance(
-                    old_balance=old_balance,
-                    new_balance=player.money,
-                    player_token=player.get_id(),
-                    reason="rent_pay"
-                ))
-
-                self.broadcast_packet(PlayerUpdateBalance(
-                    old_balance=owner_old_balance,
-                    new_balance=case.owner.money,
-                    player_token=case.owner.get_id(),
-                    reason="rent_receive"
-                ))
-
+                rent = case.get_rent()
+                self.update_player_balance(player, player.money - rent,
+                                           "rent_pay")
+                self.update_player_balance(case.owner, case.owner.money
+                                           + rent, "rent_receive")
         elif isinstance(case, ChanceSquare):
             card = self.board.draw_random_chance_card()
 
-            # TODO: Execute card actions
-
-            self.broadcast_packet(RoundRandomCard(
-                player_token=player.get_id(),
-                card_id=card.id_
-            ))
+            if card is None:
+                # TODO: Send exception packet
+                pass
+            else:
+                self.broadcast_packet(RoundRandomCard(
+                    player_token=player.get_id(),
+                    card_id=card.id_,
+                    is_community=False
+                ))
+                self.process_card_action(player=player, card=card)
 
         elif isinstance(case, CommunitySquare):
             card = self.board.draw_random_community_card()
 
-            # TODO : Execute card actions
-
-            self.broadcast_packet(RoundRandomCard(
-                player_token=player.get_id(),
-                card_id=card.id_
-            ))
+            if card is None:
+                # TODO: Send exception packet
+                pass
+            else:
+                self.broadcast_packet(RoundRandomCard(
+                    player_token=player.get_id(),
+                    card_id=card.id_,
+                    is_community=True
+                ))
+                self.process_card_action(player=player, card=card)
 
     def disconnect_player(self, player: Player, reason: str = ""):
         player.disconnect()
@@ -583,6 +608,47 @@ class Game(Thread):
         self.broadcast_packet(PlayerDisconnect(
             reason=reason,
             player_token=player.get_id()
+        ))
+
+    def process_card_action(self, player: Player, card: Card):
+        """
+        All actions handled here # TODO:
+
+        :param player: Player who drawn card
+        :param card: Card to handle action
+        """
+
+        if not card.available:  # WTF?
+            return
+
+        if isinstance(card, ChanceCard):
+            if card.action_type is CardActionType.LEAVE_JAIL:
+                player.jail_cards['chance'] = True
+                card.available = False
+
+        if isinstance(card, CommunityCard):
+            if card.action_type is CardActionType.LEAVE_JAIL:
+                player.jail_cards['community'] = True
+                card.available = False
+
+    def update_player_balance(self, player: Player, new_balance: int,
+                              reason: str):
+        """
+        Update player's balance to new_balance and broadcast
+         PlayerUpdateBalance to all players.
+
+        :param player: Player
+        :param new_balance: Player's balance set to this value
+        :param reason: Balance update reason
+        """
+        old_balance = player.money
+        player.money = new_balance
+
+        self.broadcast_packet(PlayerUpdateBalance(
+            player_token=player.get_id(),
+            old_balance=old_balance,
+            new_balance=player.money,
+            reason=reason
         ))
 
     def broadcast_packet(self, packet: Packet):
@@ -598,6 +664,7 @@ class Game(Thread):
     def send_packet(self, channel_name: str, packet: Packet):
         """
         Send packet to channel layer
+
         :param channel_name: Channel to send packet to
         :param packet: Packet to send
         """
@@ -620,6 +687,7 @@ class Engine:
     def add_game(self, game: Game):
         """
         Add a game to active games list
+
         :param game: Game to add
         """
         if game.uid in self.games:
@@ -640,6 +708,7 @@ class Engine:
     def remove_game(self, uid: str):
         """
         Remove a game from active games list
+
         :param uid: UUID of an existing game
         """
 
@@ -658,6 +727,7 @@ class Engine:
         """
         Add packet to game packets queue
         Blocking thread until packet is added to queue
+
         :param game_uid: UUID of an existing game
         :param packet: Packet to send
         :param channel_name: Channel name (to contact player)

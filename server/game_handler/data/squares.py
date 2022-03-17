@@ -32,6 +32,9 @@ class OwnableSquare(Square):
     def has_owner(self) -> bool:
         return self.owner is not None
 
+    def get_rent(self) -> int:
+        return self.rent
+
 
 class ChanceSquare(Square):
     def __init__(self, id_: int, name: str):
@@ -77,5 +80,16 @@ class GoToJailSquare(Square):
 
 
 class PropertySquare(OwnableSquare):
-    def __init__(self, id_: int, name: str):
+    nb_house: int
+    house_cost: int
+    house_rents: {}
+
+    hotel_rent: int
+
+    def __init__(self, id_: int, name: str, house_rents: {}):
         super().__init__(id_, name)
+        self.house_rents = house_rents
+
+    def get_rent(self) -> int:
+        # TODO
+        pass
