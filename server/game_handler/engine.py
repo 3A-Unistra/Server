@@ -202,17 +202,22 @@ class Game(Thread):
                 # TODO : send GetInRoomSuccess and add room to the update list
 
             elif isinstance(packet, LaunchGame):
-                self.broadcast_packet(self, AppletPrepare)
                 # check if player_token is the token of the game host
-                # make the game start (if everything gucci) --> AppletPrepare
-                pass
+                if packet.player_token != self.id_host_player:
+                    return  # ignore the launch request
+                self.broadcast_packet(self, AppletPrepare)
+                # putting the game in waiting mode (waiting for AppletReady from all the players)
+                self.state = GameState.WAITING_PLAYERS
+                self.set_timeout(
+                    seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
 
+            """
+            THIS IS DONE BY LaunchGame : obsolete code
             elif isinstance(packet, GameStart):
                 # set state to waiting players
                 # the server will wait AppletReady packets.
                 self.state = GameState.WAITING_PLAYERS
-                self.set_timeout(
-                    seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
+            """
 
         else:
             # If state is not lobby
