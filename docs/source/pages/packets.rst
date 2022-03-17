@@ -44,6 +44,17 @@ Paquet envoyé au client pour signifier le succès de son entrée dans une parti
 *ce paquet ne contient pas d'informations*
 
 
+CreateGame
+^^^^^^^^^^
+Paquet envoyé *par le client* lorsqu'il veut créer une partie
+
+**contenu du paquet :**
+ * id du player créant la partie (*player_token*)
+ * nombre de joueurs (*number_players*)
+ * partie privé ou public (*private*)
+ * mot de passe (peut être un champ vide) (*password*)
+
+
 AppletPrepare
 ^^^^^^^^^^^^^
 

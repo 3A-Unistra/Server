@@ -19,7 +19,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
-    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, InitConnection, \
+    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, \
     GetInRoom, LaunchGame, AppletPrepare
 from server.game_handler.data.squares import GoSquare
 from server.game_handler.models import User
@@ -86,6 +86,7 @@ class Game(Thread):
     CONFIG: {}
     # reference to games dict
     games: {}
+    id_host_player: str
 
     def __init__(self, uid: str = str(uuid.uuid4()), **kwargs):
         super(Game, self).__init__(daemon=True, name="Game_%s" % uid, **kwargs)
@@ -177,7 +178,7 @@ class Game(Thread):
             if isinstance(packet, GetInRoom):
 
                 try:    # get user from database
-                    User.objects.get(id=packet.player_token)
+                    user = User.objects.get(id=packet.player_token)
                 except User.DoesNotExist:
                     return
 
@@ -194,10 +195,11 @@ class Game(Thread):
 
                 # if all the checks are fine, add the player to the game
                 # create the new player instance
-                newplayer = Player(self, channel_name=self.channel_layer, bot=False)  # This might be wrong
+                # This might be wrong
+                newplayer = Player(self, user=user, channel_name=self.channel_layer, bot=False)
                 # add player to current game
                 self.board.add_player(newplayer)
-                # TODO : send GetInRoomSuccess
+                # TODO : send GetInRoomSuccess and add room to the update list
 
             elif isinstance(packet, LaunchGame):
                 self.broadcast_packet(self, AppletPrepare)

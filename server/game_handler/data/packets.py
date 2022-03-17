@@ -710,7 +710,9 @@ class ActionSellHouseSucceed(Packet):
 # TODO:
 
 class CreateGame(LobbyPacket):
-    pass
+    # TODO: all the other options and stuff
+    def __init__(self, player_token: str = ""):
+        super().__init__("CreateGame", player_token=player_token)
 
 
 class PacketUtils:
@@ -759,6 +761,7 @@ class PacketUtils:
         "PlayerValid": PlayerValid,
         # Lobby packets
         "GetInRoom": GetInRoom,
+        "CreateGame": CreateGame,
         # Internal packets
         "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
         "InternalPlayerDisconnect": InternalPlayerDisconnect
