@@ -229,16 +229,12 @@ class Board:
         return player.position < temp_position
 
     def draw_random_card(self, deck: List[Card]) -> Optional[Card]:
-        deck_len = len(deck)
+        available_deck = [card for card in deck if card.available]
 
-        # Limit iterations
-        for i in range(0, deck_len):
-            card = deck[random.randint(0, deck_len)]
+        if len(available_deck) == 0:
+            return None
 
-            if card.available:
-                return card
-
-        return None
+        return random.choice(available_deck)
 
     def draw_random_chance_card(self) -> Optional[ChanceCard]:
         """
