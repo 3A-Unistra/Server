@@ -342,6 +342,23 @@ class PlayerUpdateBalance(PlayerPacket):
         self.reason = obj['reason']
 
 
+class PlayerPayDebt(PlayerPacket):
+    player_to: str
+    amount: int
+
+    def __init__(self, player_from: str = "", player_to: str = "",
+                 amount: int = 0):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_from)
+        self.player_to = player_to
+        self.amount = amount
+
+    def deserialize(self, obj: object):
+        super().deserialize(obj)
+        self.player_to = obj['player_to'] if 'player_to' in obj else ""
+        self.amount = int(obj['amount']) if 'amount' in obj else 0
+
+
 class PlayerEnterPrison(PlayerPacket):
     def __init__(self, player_token: str = ""):
         super().__init__(name=self.__class__.__name__,
@@ -695,6 +712,7 @@ class PacketUtils:
         "PlayerMove": PlayerMove,
         "RoundRandomCard": RoundRandomCard,
         "PlayerUpdateBalance": PlayerUpdateBalance,
+        "PlayerPayDebt": PlayerPayDebt,
         "PlayerEnterPrison": PlayerEnterPrison,
         "PlayerExitPrison": PlayerExitPrison,
         "ActionExchange": ActionExchange,

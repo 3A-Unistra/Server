@@ -1,9 +1,22 @@
+import collections
 import random
 import uuid
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 from server.game_handler.models import User
+
+
+class PlayerDebt:
+    """
+    When creditor is None, creditor is the bank
+    """
+    creditor: Optional["Player"]
+    amount: int
+
+    def __init__(self, creditor: Optional["Player"], amount: int = 0):
+        self.creditor = creditor
+        self.amount = amount
 
 
 class Player:
@@ -43,8 +56,11 @@ class Player:
     ping: bool = True
     ping_timeout: datetime
 
-    # Temps values
+    # Temp values
     start_dice_throw_received: bool
+
+    # Dept system
+    debts: collections.deque[PlayerDebt]
 
     def __init__(self, user: Optional[User] = None, channel_name: str = None,
                  bot: bool = True,
@@ -58,6 +74,7 @@ class Player:
         self.channel_name = channel_name
         self.current_dices = (0, 0)
         self.start_dice_throw_received = False
+        self.debts = collections.deque()
 
         if bot is True:
             self.online = True
@@ -112,6 +129,25 @@ class Player:
         self.doubles = 0
         self.jail_turns = 0
         self.in_jail = False
+
+    def is_bankrupt(self) -> bool:
+        """
+        A player is bankrupt if he has debts
+        :return: Player is bankrupt or not
+        """
+        return len(self.debts) > 0
+
+    def has_debts(self) -> bool:
+        return self.is_bankrupt()
+
+    def add_debt(self, player: Optional["Player"], amount: int):
+        self.debts.append(PlayerDebt(
+            creditor=player,
+            amount=amount
+        ))
+
+    def get_debts_for(self, creditor: Optional["Player"]):
+        return [a for a in self.debts if a.creditor == creditor]
 
     def get_coherent_infos(self) -> dict:
         return {

@@ -5,6 +5,7 @@ import uuid
 from enum import Enum
 from threading import Thread
 from queue import Queue
+from typing import Optional
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -22,6 +23,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
     PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, RoundRandomCard
+from server.game_handler.data.player import PlayerDebt
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
     FreeParkingSquare, OwnableSquare, ChanceSquare, CommunitySquare, \
     GoToJailSquare
@@ -499,7 +501,7 @@ class Game(Thread):
                     player_token=player.get_id()
                 ))
 
-                self.update_player_balance(player, player.money -
+                self.player_balance_update(player, player.money -
                                            self.CONFIG.get('JAIL_LEAVE_PRICE'),
                                            "jail_leave_pay")
 
@@ -539,14 +541,14 @@ class Game(Thread):
 
         # Player has reached start
         if passed_go:
-            self.update_player_balance(player, player.money +
+            self.player_balance_update(player, player.money +
                                        self.CONFIG.get('MONEY_GO'),
                                        "pass_go")
 
             # Player case == 0 & double money option is enabled
             if isinstance(case, GoSquare) and \
                     self.board.option_go_case_double_money:
-                self.update_player_balance(player, player.money +
+                self.player_balance_update(player, player.money +
                                            self.CONFIG.get('MONEY_GO'),
                                            "pass_go_exact")
 
@@ -558,19 +560,19 @@ class Game(Thread):
                 player_token=player.get_id()
             ))
         elif isinstance(case, TaxSquare):
-            self.update_player_balance(player, player.money - case.tax_price,
+            self.player_balance_update(player, player.money - case.tax_price,
                                        "tax_square")
         elif isinstance(case, FreeParkingSquare):
-            self.update_player_balance(player, player.money + self.board
+            self.player_balance_update(player, player.money + self.board
                                        .board_money, "parking_square")
             self.board.board_money = 0
         elif isinstance(case, OwnableSquare):
             if case.has_owner():
                 # Pay rent :o
                 rent = case.get_rent()
-                self.update_player_balance(player, player.money - rent,
+                self.player_balance_update(player, player.money - rent,
                                            "rent_pay")
-                self.update_player_balance(case.owner, case.owner.money
+                self.player_balance_update(case.owner, case.owner.money
                                            + rent, "rent_receive")
         elif isinstance(case, ChanceSquare):
             card = self.board.draw_random_chance_card()
@@ -631,7 +633,96 @@ class Game(Thread):
                 player.jail_cards['community'] = True
                 card.available = False
 
-    def update_player_balance(self, player: Player, new_balance: int,
+    def player_balance_pay(self, player: Player, receiver: Optional[Player],
+                           amount: int,
+                           reason: str):
+        old_amount = amount
+
+        # Check if there are bidirectional debts
+        if receiver is not None:
+            debts = receiver.get_debts_for(player)
+            to_remove = []
+
+            for debt in debts:
+                if amount == 0:
+                    break
+
+                if debt.amount > amount:
+                    debt.amount = debt.amount - amount
+                    amount = 0
+                else:
+                    amount = amount - debt.amount
+                    debt.amount = 0
+                    to_remove.append(debt)
+
+            for debt in to_remove:
+                receiver.debts.remove(debt)
+
+        if old_amount != amount:
+            # TODO: send packet debts where regulated
+            pass
+
+        if amount == 0:
+            # if amount is 0, then all debts that the receiver had for
+            # the payer, were bigger than the amount that the payer should
+            # have payed.
+            return
+
+        if player.money >= amount:
+            self.player_balance_update(player=player,
+                                       new_balance=player.money - amount,
+                                       reason=reason)
+
+            if receiver is not None:
+                self.player_balance_update(player=receiver,
+                                           new_balance=receiver.money + amount,
+                                           reason=reason)
+            return
+
+        # Player has not enough money (debts are added)
+        debt_amount = amount - player.money
+
+        player.debts.append(PlayerDebt(
+            creditor=receiver,
+            amount=debt_amount
+        ))
+
+        # TODO: reasons
+
+        if receiver is not None:
+            self.player_balance_update(player=receiver,
+                                       new_balance=player.money,
+                                       reason=reason)
+        self.player_balance_update(player=player,
+                                   new_balance=0,
+                                   reason=reason)
+
+    def player_balance_receive(self, player: Player, amount: int,
+                               reason: str):
+
+        if player.has_debts():
+            to_remove = []
+
+            for debt in player.debts:
+                if amount == 0:
+                    break
+
+                if debt.amount > amount:
+                    debt.amount = debt.amount - amount
+                    amount = 0
+                else:
+                    amount = amount - debt.amount
+                    debt.amount = 0
+                    to_remove.append(debt)
+
+            for debt in to_remove:
+                player.debts.remove(debt)
+
+
+
+
+
+    def player_balance_update(self, player: Player, new_balance: int,
                               reason: str):
         """
         Update player's balance to new_balance and broadcast
