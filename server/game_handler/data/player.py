@@ -84,7 +84,7 @@ class Player:
         if self.bot:
             if self.user is None or self.user.name is None:
                 return self.bot_name
-            return 'Bot %s' % self.bot_name
+            return 'Bot %s' % self.user.name
         return self.user.name
 
     def roll_dices(self) -> int:
