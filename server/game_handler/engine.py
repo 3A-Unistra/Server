@@ -22,21 +22,12 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
-    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, RoundRandomCard
+    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, RoundRandomCard, \
+    PlayerPayDebt
 from server.game_handler.data.player import PlayerDebt
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
     FreeParkingSquare, OwnableSquare, ChanceSquare, CommunitySquare, \
     GoToJailSquare
-
-"""
-States:
--> Démarrage -> démarrage timer remplacement joueur par un bot.
--> Attente de nb_joueurs AppletReady
--> Lorsque ce nombre est atteint => GameStart
--> On attends 2-3 secondes
--> On envoie un paquet GameStartDice
-
-"""
 
 
 class GameState(Enum):
@@ -103,6 +94,7 @@ class Game(Thread):
         self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
         self.tick_duration = 1.0 / self.CONFIG.get('TICK_RATE')
         self.board = Board()
+        self.timeout = datetime.now()
 
     def run(self) -> None:
         # Starting game thread
@@ -131,7 +123,7 @@ class Game(Thread):
         """
 
         # Blocking queue
-        self.packets_queue.join()
+        # self.packets_queue.join()
 
         # Store all packets in temp array
         # If packet processing is taking too much time,
@@ -142,7 +134,7 @@ class Game(Thread):
             packets.append(self.packets_queue.get(block=False))
 
         # Unblock
-        self.packets_queue.task_done()
+        # self.packets_queue.task_done()
 
         # Process all packets in queue
         for packet in packets:
@@ -271,7 +263,7 @@ class Game(Thread):
         # TODO: Check #34 in comments
 
         # Check pings
-        if self.state > GameState.LOBBY:
+        if self.state.value > GameState.LOBBY.value:
             self.proceed_heartbeat()
 
         # State is waiting that players connecting and send AppletReady
@@ -320,6 +312,11 @@ class Game(Thread):
 
     def proceed_stop(self):
         # Delete game
+        self.state = GameState.STOP_THREAD
+
+        if self.uid not in self.games:
+            return
+
         del self.games[self.uid]
 
     def set_timeout(self, seconds: int):
@@ -636,47 +633,17 @@ class Game(Thread):
     def player_balance_pay(self, player: Player, receiver: Optional[Player],
                            amount: int,
                            reason: str):
-        old_amount = amount
 
-        # Check if there are bidirectional debts
-        if receiver is not None:
-            debts = receiver.get_debts_for(player)
-            to_remove = []
-
-            for debt in debts:
-                if amount == 0:
-                    break
-
-                if debt.amount > amount:
-                    debt.amount = debt.amount - amount
-                    amount = 0
-                else:
-                    amount = amount - debt.amount
-                    debt.amount = 0
-                    to_remove.append(debt)
-
-            for debt in to_remove:
-                receiver.debts.remove(debt)
-
-        if old_amount != amount:
-            # TODO: send packet debts where regulated
-            pass
-
-        if amount == 0:
-            # if amount is 0, then all debts that the receiver had for
-            # the payer, were bigger than the amount that the payer should
-            # have payed.
-            return
-
+        # Player has enough money, no debt must be created
         if player.money >= amount:
             self.player_balance_update(player=player,
                                        new_balance=player.money - amount,
                                        reason=reason)
 
             if receiver is not None:
-                self.player_balance_update(player=receiver,
-                                           new_balance=receiver.money + amount,
-                                           reason=reason)
+                self.player_balance_receive(player=receiver,
+                                            amount=amount,
+                                            reason=reason)
             return
 
         # Player has not enough money (debts are added)
@@ -687,40 +654,76 @@ class Game(Thread):
             amount=debt_amount
         ))
 
-        # TODO: reasons
-
-        if receiver is not None:
-            self.player_balance_update(player=receiver,
-                                       new_balance=player.money,
-                                       reason=reason)
+        # send packets
         self.player_balance_update(player=player,
                                    new_balance=0,
                                    reason=reason)
 
+        if receiver is not None:
+            self.player_balance_receive(player=receiver,
+                                        amount=amount,
+                                        reason=reason)
+
     def player_balance_receive(self, player: Player, amount: int,
                                reason: str):
 
+        # Check if player has some debts.
         if player.has_debts():
-            to_remove = []
+            updates = []
 
-            for debt in player.debts:
+            for debt in player.debts.copy():
                 if amount == 0:
                     break
 
+                if debt.amount == 0:
+                    player.debts.remove(debt)
+                    continue
+
                 if debt.amount > amount:
                     debt.amount = debt.amount - amount
+                    sent = amount
                     amount = 0
                 else:
                     amount = amount - debt.amount
+                    sent = debt.amount
                     debt.amount = 0
-                    to_remove.append(debt)
+                    # debt was settled
+                    player.debts.remove(debt)
 
-            for debt in to_remove:
-                player.debts.remove(debt)
+                # first update all debts, then send money.
+                updates.append((debt.creditor, sent))
 
+                # broadcast information packet
+                self.broadcast_packet(PlayerPayDebt(
+                    player_from=player.get_id(),
+                    player_to=debt.creditor.get_id()
+                    if debt.creditor is not None else "",  # "" == Bank
+                    amount=sent
+                ))
 
+            # Send money after removing debts.
+            for (creditor, amount) in updates:
 
+                # Bank does not receive any money.
+                if creditor is None:
+                    continue
 
+                # Recursive method.
+                self.player_balance_receive(
+                    player=creditor,
+                    amount=amount,
+                    reason="debt_payment"
+                )
+
+        if amount == 0:
+            # if amount is 0, then all debts that the player, were bigger than
+            # the amount that the player should have received.
+            return
+
+        # send the remaining money to the player.
+        self.player_balance_update(player=player,
+                                   new_balance=player.money + amount,
+                                   reason=reason)
 
     def player_balance_update(self, player: Player, new_balance: int,
                               reason: str):

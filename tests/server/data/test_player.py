@@ -116,7 +116,6 @@ class TestPacket(TestCase):
                          user=User(id="173e1f5e-3411-44c5-9bc5-037358c47100"))
         player.debts.append(PlayerDebt(creditor=player2, amount=10))
 
-
         debts = player.get_debts_for(player2)
         assert len(debts) == 1
         assert debts[0].amount == 10
