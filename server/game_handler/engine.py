@@ -661,7 +661,7 @@ class Game(Thread):
 
         if receiver is not None:
             self.player_balance_receive(player=receiver,
-                                        amount=amount,
+                                        amount=player.money,
                                         reason=reason)
 
     def player_balance_receive(self, player: Player, amount: int,
@@ -702,7 +702,7 @@ class Game(Thread):
                 ))
 
             # Send money after removing debts.
-            for (creditor, amount) in updates:
+            for (creditor, send_amount) in updates:
 
                 # Bank does not receive any money.
                 if creditor is None:
@@ -711,7 +711,7 @@ class Game(Thread):
                 # Recursive method.
                 self.player_balance_receive(
                     player=creditor,
-                    amount=amount,
+                    amount=send_amount,
                     reason="debt_payment"
                 )
 
