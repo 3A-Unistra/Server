@@ -498,9 +498,11 @@ class Game(Thread):
                     player_token=player.get_id()
                 ))
 
-                self.player_balance_update(player, player.money -
-                                           self.CONFIG.get('JAIL_LEAVE_PRICE'),
-                                           "jail_leave_pay")
+                self.player_balance_pay(player=player,
+                                        receiver=None,
+                                        amount=self.CONFIG.get(
+                                            'JAIL_LEAVE_PRICE'),
+                                        reason="jail_leave_pay")
 
             if player.dices_are_double():
                 self.broadcast_packet(PlayerExitPrison(
@@ -538,16 +540,16 @@ class Game(Thread):
 
         # Player has reached start
         if passed_go:
-            self.player_balance_update(player, player.money +
-                                       self.CONFIG.get('MONEY_GO'),
-                                       "pass_go")
+            self.player_balance_receive(player=player,
+                                        amount=self.CONFIG.get('MONEY_GO'),
+                                        reason="pass_go")
 
             # Player case == 0 & double money option is enabled
             if isinstance(case, GoSquare) and \
                     self.board.option_go_case_double_money:
-                self.player_balance_update(player, player.money +
-                                           self.CONFIG.get('MONEY_GO'),
-                                           "pass_go_exact")
+                self.player_balance_receive(player=player,
+                                            amount=self.CONFIG.get('MONEY_GO'),
+                                            reason="pass_go_exact")
 
         # Check destination case
         if isinstance(case, GoToJailSquare):
@@ -557,8 +559,12 @@ class Game(Thread):
                 player_token=player.get_id()
             ))
         elif isinstance(case, TaxSquare):
-            self.player_balance_update(player, player.money - case.tax_price,
-                                       "tax_square")
+            # Receiver=None is bank
+            self.player_balance_pay(player=player,
+                                    receiver=None,
+                                    amount=case.tax_price,
+                                    reason="tax_square")
+            self.board.board_money += case.tax_price
         elif isinstance(case, FreeParkingSquare):
             self.player_balance_update(player, player.money + self.board
                                        .board_money, "parking_square")
@@ -738,10 +744,13 @@ class Game(Thread):
         old_balance = player.money
         player.money = new_balance
 
+        if new_balance == 0:
+            new_balance = -player.get_total_debts()
+
         self.broadcast_packet(PlayerUpdateBalance(
             player_token=player.get_id(),
             old_balance=old_balance,
-            new_balance=player.money,
+            new_balance=new_balance,
             reason=reason
         ))
 

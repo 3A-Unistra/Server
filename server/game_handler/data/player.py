@@ -149,6 +149,12 @@ class Player:
     def get_debts_for(self, creditor: Optional["Player"]):
         return [a for a in self.debts if a.creditor == creditor]
 
+    def get_total_debts(self) -> int:
+        """
+        :return: Total debts
+        """
+        return sum([debt.amount for debt in self.debts])
+
     def get_coherent_infos(self) -> dict:
         return {
             'player_token': self.get_id(),
