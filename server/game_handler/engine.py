@@ -20,7 +20,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
     PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, \
-    GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess
+    GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, GetOutRoomSuccess
 from server.game_handler.data.squares import GoSquare
 from server.game_handler.models import User
 
@@ -198,8 +198,27 @@ class Game(Thread):
                 newplayer = Player(self, user=user, channel_name=self.channel_layer, bot=False)
                 # add player to current game
                 self.board.add_player(newplayer)
+                # send success of getting in room
                 self.send_packet_to_player(self, packet.player_token, GetInRoomSuccess())
                 # TODO : add room to the update list and broadcast it to all players that are connected to the website
+
+            elif isinstance(packet, GetOutRoom):
+                # check if player is part of the current room
+                if not self.board.player_exists(self.board, packet.player_token):
+                    self.send_packet_to_player(self, packet.player_token, ExceptionPacket(code=4103))
+                    # TODO : specify error for player not in game (code here is just a placeholder)
+                    return
+
+                # if player is the host of the game
+                if packet.player_token != self.id_host_player :
+                    self.send_packet_to_player(self, packet.player_token, ExceptionPacket(code=4103))
+                    # TODO : specify error for host cannot quit game (code here is just a placeholder)
+                    return
+
+                # if checks passed, kick out player
+                self.board.remove_player(self.board, packet.player_token)
+                self.send_packet_to_player(self, packet.player_token, GetOutRoomSuccess())
+                # TODO : broadcast updated room status
 
             elif isinstance(packet, LaunchGame):
                 # check if player_token is the token of the game host
@@ -214,6 +233,7 @@ class Game(Thread):
 
             """
             THIS IS DONE BY LaunchGame : obsolete code
+            TODO: check this
             elif isinstance(packet, GameStart):
                 # set state to waiting players
                 # the server will wait AppletReady packets.

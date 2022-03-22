@@ -44,6 +44,13 @@ Paquet envoyé au client pour signifier le succès de son entrée dans une parti
 *ce paquet ne contient pas d'informations*
 
 
+GetOutRoom
+^^^^^^^^^^
+Paquet envoyé *par le client* lorsque un joueur veut sortir d'un lobby de partie.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+
 CreateGame
 ^^^^^^^^^^
 Paquet envoyé *par le client* lorsqu'il veut créer une partie

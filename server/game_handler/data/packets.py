@@ -135,7 +135,23 @@ class GetInRoom(PlayerPacket):
 
 class GetInRoomSuccess(LobbyPacket):
     def __init__(self):
-        super().__init__("GetInRoom")
+        super().__init__("GetInRoomSuccess")
+
+
+class GetOutRoom(LobbyPacket):
+    player_token: str
+
+    def __init__(self, player_token: str=""):
+        super().__init__("GetOutRoom")
+        self.player_token = player_token
+
+    def deserialize(self, obj: object):
+        self.player_token = obj['player_token']
+
+
+class GetOutRoomSuccess(LobbyPacket):
+    def __init__(self):
+        super().__init__("GetOutRoomSuccess")
 
 
 class LaunchGame(LobbyPacket):
@@ -761,6 +777,9 @@ class PacketUtils:
         "PlayerValid": PlayerValid,
         # Lobby packets
         "GetInRoom": GetInRoom,
+        "GetInRoomSuccess": GetInRoomSuccess,
+        "GetOutRoom": GetOutRoom,
+        "GetOutRoomSuccess": GetOutRoomSuccess,
         "CreateGame": CreateGame,
         # Internal packets
         "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
