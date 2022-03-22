@@ -86,7 +86,7 @@ class Game(Thread):
     CONFIG: {}
     # reference to games dict
     games: {}
-    id_host_player: str
+    host_player: Player
 
     def __init__(self, uid: str = str(uuid.uuid4()), **kwargs):
         super(Game, self).__init__(daemon=True, name="Game_%s" % uid, **kwargs)
@@ -178,53 +178,58 @@ class Game(Thread):
             if isinstance(packet, GetInRoom):
 
                 try:    # get user from database
-                    user = User.objects.get(id=packet.player_token)
+                    user = User.id.get(id=packet.player_token)
                 except User.DoesNotExist:
                     return
 
-                if packet.has_password:
+                if packet.password != "":
                     if packet.password != self.board.option_password:
-                        self.send_packet_to_player(self, packet.player_token, ExceptionPacket(code=4101))
+                        self.send_packet(channel_name=packet.player_token,
+                                         packet=ExceptionPacket(code=4101))
                         # TODO : specify error code for wrong password (code here is just a placeholder)
                         return
                 # if game is full
-                if len(self.board.players) == self.board.nb_player:
-                    self.send_packet_to_player(self, packet.player_token, ExceptionPacket(code=4102))
+                if len(self.board.players) == self.board.players_nb:
+                    self.send_packet(channel_name=packet.player_token,
+                                     packet=ExceptionPacket(code=4102))
                     # TODO : specify error code for game full (code here is just a placeholder)
                     return
 
                 # if all the checks are fine, add the player to the game
-                # create the new player instance
-                newplayer = Player(self, user=user, channel_name=self.channel_layer, bot=False)
-                # add player to current game
-                self.board.add_player(newplayer)
+                self.board.add_player(Player(user=user, channel_name=self.channel_layer, bot=False))
                 # send success of getting in room
-                self.send_packet_to_player(self, packet.player_token, GetInRoomSuccess())
+                self.send_packet(channel_name=packet.player_token,
+                                 packet=GetInRoomSuccess())
                 # TODO : add room to the update list and broadcast it to all players that are connected to the website
 
             elif isinstance(packet, GetOutRoom):
                 # check if player is part of the current room
-                if not self.board.player_exists(self.board, packet.player_token):
-                    self.send_packet_to_player(self, packet.player_token, ExceptionPacket(code=4103))
+                if not self.board.player_exists(packet.player_token):
+                    self.send_packet(channel_name=packet.player_token,
+                                     packet=ExceptionPacket(code=4103))
                     # TODO : specify error for player not in game (code here is just a placeholder)
                     return
 
                 # if player is the host of the game
-                if packet.player_token != self.id_host_player :
-                    self.send_packet_to_player(self, packet.player_token, ExceptionPacket(code=4103))
+                if packet.player_token != self.host_player:
+                    self.send_packet(channel_name=packet.player_token,
+                                     packet=ExceptionPacket(code=4103))
                     # TODO : specify error for host cannot quit game (code here is just a placeholder)
                     return
 
                 # if checks passed, kick out player
-                self.board.remove_player(self.board, packet.player_token)
-                self.send_packet_to_player(self, packet.player_token, GetOutRoomSuccess())
+                self.board.remove_player(self.board.get_player(packet.player_token))
+                # maybe broadcast to let every player in the room know this player is leaving
+                # this might also be done with the broadcast of the updated room status
+                self.send_packet(packet.player_token, GetOutRoomSuccess())
                 # TODO : broadcast updated room status
 
             elif isinstance(packet, LaunchGame):
                 # check if player_token is the token of the game host
-                if packet.player_token != self.id_host_player:
+                if packet.player_token != self.host_player:
                     return  # ignore the launch request
-                self.broadcast_packet(self, AppletPrepare)
+                # do we broadcast here or do we send it to the room only (how?)
+                self.broadcast_packet(packet=AppletPrepare())
                 # putting the game in waiting mode (waiting for AppletReady from all the players)
                 self.state = GameState.WAITING_PLAYERS
                 # setting timeout to wait for the players to send AppletReady
