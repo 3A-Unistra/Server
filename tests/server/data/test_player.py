@@ -119,3 +119,12 @@ class TestPacket(TestCase):
         debts = player.get_debts_for(player2)
         assert len(debts) == 1
         assert debts[0].amount == 10
+
+    def test_add_debt(self):
+        player = Player(bot=False,
+                        user=User(id="283e1f5e-3411-44c5-9bc5-037358c47100"))
+        player.add_debt(creditor=None,
+                        amount=1)
+        assert player.has_debts()
+        assert player.debts[0].creditor is None
+        assert player.debts[0].amount == 1

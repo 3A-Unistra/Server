@@ -81,6 +81,57 @@ class TestPacket(TestCase):
         assert not player1.has_debts()
         assert not player2.has_debts()
 
+        # test recursive method
+        # Player 1 -> debt 50 Player2
+        # Player 2 -> debt 50 Player3
+        # Player 3 -> debt 30 Player1 -> debt 30 Player2
 
+    def test_player_balance_receive(self):
+        game = game_instance_overwrited()
+        player1 = Player(bot=False,
+                         user=User(id="183e1f5e-3411-44c5-9bc5-037358c47100"))
+        player2 = Player(bot=False,
+                         user=User(id="523e1f5e-3411-44c5-9bc5-037358c47100"))
+        player3 = Player(bot=False,
+                         user=User(id="612e1f5e-3411-44c5-9bc5-037358c47100"))
 
+        game.board.add_player(player1)
+        game.board.add_player(player2)
+        game.board.add_player(player3)
 
+        # test recursive method
+        # Player 1 -> debt 50 Player2
+        # Player 2 -> debt 50 Player3
+        # Player 3 -> debt 30 Player1 -> debt 30 Player2
+
+        player1.add_debt(
+            creditor=player2,
+            amount=50
+        )
+
+        player2.add_debt(
+            creditor=player3,
+            amount=50
+        )
+
+        player3.add_debt(
+            creditor=player1,
+            amount=30
+        )
+
+        player3.add_debt(
+            creditor=player2,
+            amount=20
+        )
+
+        game.player_balance_receive(player=player1,
+                                    amount=50,
+                                    reason="test")
+
+        assert not player1.has_debts()
+        assert not player2.has_debts()
+        assert not player3.has_debts()
+
+        assert player1.money == 30
+        assert player2.money == 20
+        assert player3.money == 0

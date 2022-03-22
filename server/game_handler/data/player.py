@@ -140,9 +140,9 @@ class Player:
     def has_debts(self) -> bool:
         return self.is_bankrupt()
 
-    def add_debt(self, player: Optional["Player"], amount: int):
+    def add_debt(self, creditor: Optional["Player"], amount: int):
         self.debts.append(PlayerDebt(
-            creditor=player,
+            creditor=creditor,
             amount=amount
         ))
 
