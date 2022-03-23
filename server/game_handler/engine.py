@@ -646,15 +646,40 @@ class Game(Thread):
         if not card.available:  # WTF?
             return
 
-        if isinstance(card, ChanceCard):
-            if card.action_type is CardActionType.LEAVE_JAIL:
+        if card.action_type is CardActionType.LEAVE_JAIL:
+            if isinstance(card, ChanceCard):
                 player.jail_cards['chance'] = True
                 card.available = False
+                return
 
-        if isinstance(card, CommunityCard):
-            if card.action_type is CardActionType.LEAVE_JAIL:
+            if isinstance(card, CommunityCard):
                 player.jail_cards['community'] = True
                 card.available = False
+                return
+
+        if card.action_type is CardActionType.RECEIVE_BANK:
+            pass
+
+        if card.action_type is CardActionType.GIVE_BANK:
+            pass
+
+        if card.action_type is CardActionType.MOVE_FORWARD:
+            pass
+
+        if card.action_type is CardActionType.MOVE_BACKWARD:
+            pass
+
+        if card.action_type is CardActionType.GOTO_POSITION:
+            pass
+
+        if card.action_type is CardActionType.GOTO_JAIL:
+            pass
+
+        if card.action_type is CardActionType.GIVE_ALL:
+            pass
+
+        if card.action_type is CardActionType.RECEIVE_ALL:
+            pass
 
     def player_balance_pay(self, player: Player, receiver: Optional[Player],
                            amount: int,
