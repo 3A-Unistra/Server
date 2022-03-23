@@ -128,3 +128,9 @@ class TestPacket(TestCase):
         assert player.has_debts()
         assert player.debts[0].creditor is None
         assert player.debts[0].amount == 1
+
+    def test_get_total_debts(self):
+        player = Player()
+        player.add_debt(None, 500)
+
+        assert player.get_total_debts() == 500

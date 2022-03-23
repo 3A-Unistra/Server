@@ -578,17 +578,25 @@ class Game(Thread):
                                     reason="tax_square")
             self.board.board_money += case.tax_price
         elif isinstance(case, FreeParkingSquare):
-            self.player_balance_update(player, player.money + self.board
-                                       .board_money, "parking_square")
+
+            # change all debts targeting the bank (None) to this player
+            self.board.retarget_player_bank_debts(new_target=player)
+
+            # update balance
+            self.player_balance_receive(player=player,
+                                        amount=self.board.board_money,
+                                        reason="parking_square")
+
+            # set board money to 0
             self.board.board_money = 0
         elif isinstance(case, OwnableSquare):
             if case.has_owner():
                 # Pay rent :o
-                rent = case.get_rent()
-                self.player_balance_update(player, player.money - rent,
-                                           "rent_pay")
-                self.player_balance_update(case.owner, case.owner.money
-                                           + rent, "rent_receive")
+                self.player_balance_pay(player=player,
+                                        receiver=case.owner,
+                                        amount=case.get_rent(),
+                                        reason="rent_pay",
+                                        receiver_reason="rent_receive")
         elif isinstance(case, ChanceSquare):
             card = self.board.draw_random_chance_card()
 
@@ -650,7 +658,8 @@ class Game(Thread):
 
     def player_balance_pay(self, player: Player, receiver: Optional[Player],
                            amount: int,
-                           reason: str) -> int:
+                           reason: str,
+                           receiver_reason: str = "") -> int:
 
         # Player has enough money, no debt must be created
         if player.money >= amount:
@@ -661,16 +670,15 @@ class Game(Thread):
             if receiver is not None:
                 self.player_balance_receive(player=receiver,
                                             amount=amount,
-                                            reason=reason)
+                                            reason=receiver_reason)
             return 0
 
         # Player has not enough money (debts are added)
         debt_amount = amount - player.money
 
-        player.debts.append(PlayerDebt(
-            creditor=receiver,
-            amount=debt_amount
-        ))
+        player.add_debt(creditor=receiver,
+                        amount=debt_amount,
+                        reason=receiver_reason)
 
         # send packets
         self.player_balance_update(player=player,
@@ -680,12 +688,13 @@ class Game(Thread):
         if receiver is not None:
             self.player_balance_receive(player=receiver,
                                         amount=player.money,
-                                        reason=reason)
-
-        return
+                                        reason=receiver_reason)
 
     def player_balance_receive(self, player: Player, amount: int,
                                reason: str):
+        # if amount is 0, no processing is required
+        if amount == 0:
+            return
 
         # Check if player has some debts.
         if player.has_debts():
@@ -718,7 +727,8 @@ class Game(Thread):
                     player_from=player.get_id(),
                     player_to=debt.creditor.get_id()
                     if debt.creditor is not None else "",  # "" == Bank
-                    amount=sent
+                    amount=sent,
+                    reason=debt.reason
                 ))
 
             # Send money after removing debts.
@@ -726,6 +736,8 @@ class Game(Thread):
 
                 # Bank does not receive any money.
                 if creditor is None:
+                    # update board money when bank is creditor
+                    self.board.board_money += send_amount
                     continue
 
                 # Recursive method.

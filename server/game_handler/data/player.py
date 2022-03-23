@@ -13,10 +13,13 @@ class PlayerDebt:
     """
     creditor: Optional["Player"]
     amount: int
+    reason: str
 
-    def __init__(self, creditor: Optional["Player"], amount: int = 0):
+    def __init__(self, creditor: Optional["Player"], amount: int = 0,
+                 reason: str = ""):
         self.creditor = creditor
         self.amount = amount
+        self.reason = reason
 
 
 class Player:
@@ -140,10 +143,12 @@ class Player:
     def has_debts(self) -> bool:
         return self.is_bankrupt()
 
-    def add_debt(self, creditor: Optional["Player"], amount: int):
+    def add_debt(self, creditor: Optional["Player"], amount: int,
+                 reason: str = ""):
         self.debts.append(PlayerDebt(
             creditor=creditor,
-            amount=amount
+            amount=amount,
+            reason=reason
         ))
 
     def get_debts_for(self, creditor: Optional["Player"]):
