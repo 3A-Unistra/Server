@@ -34,6 +34,8 @@ test:coverage:
   artifacts:
     reports:
       cobertura: coverage.xml
+  tags:
+    - gitlab-org
 
 pages:
   stage: test

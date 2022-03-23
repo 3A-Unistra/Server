@@ -259,3 +259,14 @@ class Board:
         player.jail_cards['community'] = False
         self.community_deck[
             self.community_card_indexes['leave_jail']].available = True
+
+    def retarget_player_bank_debts(self, new_target: Player):
+        """
+        change all debts targeting the bank (None) to this player (new_target)
+        :param new_target: Target
+        """
+        for player in self.players:
+            for debt in player.debts:
+                if debt.creditor is not None:
+                    continue
+                debt.creditor = new_target

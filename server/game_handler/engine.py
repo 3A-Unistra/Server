@@ -5,6 +5,7 @@ import uuid
 from enum import Enum
 from threading import Thread
 from queue import Queue
+from typing import Optional
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -21,20 +22,12 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
-    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, RoundRandomCard
+    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, RoundRandomCard, \
+    PlayerPayDebt
+from server.game_handler.data.player import PlayerDebt
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
     FreeParkingSquare, OwnableSquare, ChanceSquare, CommunitySquare, \
     GoToJailSquare
-
-"""
-States:
--> Démarrage -> démarrage timer remplacement joueur par un bot.
--> Attente de nb_joueurs AppletReady
--> Lorsque ce nombre est atteint => GameStart
--> On attends 2-3 secondes
--> On envoie un paquet GameStartDice
-
-"""
 
 
 class GameState(Enum):
@@ -101,6 +94,7 @@ class Game(Thread):
         self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
         self.tick_duration = 1.0 / self.CONFIG.get('TICK_RATE')
         self.board = Board()
+        self.timeout = datetime.now()
 
     def run(self) -> None:
         # Starting game thread
@@ -129,7 +123,7 @@ class Game(Thread):
         """
 
         # Blocking queue
-        self.packets_queue.join()
+        # self.packets_queue.join()
 
         # Store all packets in temp array
         # If packet processing is taking too much time,
@@ -140,7 +134,7 @@ class Game(Thread):
             packets.append(self.packets_queue.get(block=False))
 
         # Unblock
-        self.packets_queue.task_done()
+        # self.packets_queue.task_done()
 
         # Process all packets in queue
         for packet in packets:
@@ -269,7 +263,7 @@ class Game(Thread):
         # TODO: Check #34 in comments
 
         # Check pings
-        if self.state > GameState.LOBBY:
+        if self.state.value > GameState.LOBBY.value:
             self.proceed_heartbeat()
 
         # State is waiting that players connecting and send AppletReady
@@ -318,6 +312,11 @@ class Game(Thread):
 
     def proceed_stop(self):
         # Delete game
+        self.state = GameState.STOP_THREAD
+
+        if self.uid not in self.games:
+            return
+
         del self.games[self.uid]
 
     def set_timeout(self, seconds: int):
@@ -499,9 +498,11 @@ class Game(Thread):
                     player_token=player.get_id()
                 ))
 
-                self.update_player_balance(player, player.money -
-                                           self.CONFIG.get('JAIL_LEAVE_PRICE'),
-                                           "jail_leave_pay")
+                self.player_balance_pay(player=player,
+                                        receiver=None,
+                                        amount=self.CONFIG.get(
+                                            'JAIL_LEAVE_PRICE'),
+                                        reason="jail_leave_pay")
 
             if player.dices_are_double():
                 self.broadcast_packet(PlayerExitPrison(
@@ -526,6 +527,16 @@ class Game(Thread):
         else:
             player.doubles = 0
 
+        # Move player
+        self.move_player(player)
+
+    def move_player(self, player: Player):
+        """
+        Move player to new position given by the dices
+
+        Warning: Dices are not rolled in this function!
+        :param player: Player moved
+        """
         # Move player and check if he reached start
         passed_go = self.board.move_player_with_dices(player)
 
@@ -537,41 +548,55 @@ class Game(Thread):
 
         case = self.board.squares[player.position]
 
+        # TODO: IMPLEMENT NEW CONFIG MADE BY AKI (Money GO)
         # Player has reached start
         if passed_go:
-            self.update_player_balance(player, player.money +
-                                       self.CONFIG.get('MONEY_GO'),
-                                       "pass_go")
+            self.player_balance_receive(player=player,
+                                        amount=self.CONFIG.get('MONEY_GO'),
+                                        reason="pass_go")
 
             # Player case == 0 & double money option is enabled
             if isinstance(case, GoSquare) and \
                     self.board.option_go_case_double_money:
-                self.update_player_balance(player, player.money +
-                                           self.CONFIG.get('MONEY_GO'),
-                                           "pass_go_exact")
+                self.player_balance_receive(player=player,
+                                            amount=self.CONFIG.get('MONEY_GO'),
+                                            reason="pass_go_exact")
 
         # Check destination case
         if isinstance(case, GoToJailSquare):
             player.enter_prison()
             player.position = self.board.prison_square_index
+
             self.broadcast_packet(PlayerEnterPrison(
                 player_token=player.get_id()
             ))
         elif isinstance(case, TaxSquare):
-            self.update_player_balance(player, player.money - case.tax_price,
-                                       "tax_square")
+            # Receiver=None is bank
+            self.player_balance_pay(player=player,
+                                    receiver=None,
+                                    amount=case.tax_price,
+                                    reason="tax_square")
+            self.board.board_money += case.tax_price
         elif isinstance(case, FreeParkingSquare):
-            self.update_player_balance(player, player.money + self.board
-                                       .board_money, "parking_square")
+
+            # change all debts targeting the bank (None) to this player
+            self.board.retarget_player_bank_debts(new_target=player)
+
+            # update balance
+            self.player_balance_receive(player=player,
+                                        amount=self.board.board_money,
+                                        reason="parking_square")
+
+            # set board money to 0
             self.board.board_money = 0
         elif isinstance(case, OwnableSquare):
             if case.has_owner():
                 # Pay rent :o
-                rent = case.get_rent()
-                self.update_player_balance(player, player.money - rent,
-                                           "rent_pay")
-                self.update_player_balance(case.owner, case.owner.money
-                                           + rent, "rent_receive")
+                self.player_balance_pay(player=player,
+                                        receiver=case.owner,
+                                        amount=case.get_rent(),
+                                        reason="rent_pay",
+                                        receiver_reason="rent_receive")
         elif isinstance(case, ChanceSquare):
             card = self.board.draw_random_chance_card()
 
@@ -631,7 +656,108 @@ class Game(Thread):
                 player.jail_cards['community'] = True
                 card.available = False
 
-    def update_player_balance(self, player: Player, new_balance: int,
+    def player_balance_pay(self, player: Player, receiver: Optional[Player],
+                           amount: int,
+                           reason: str,
+                           receiver_reason: str = "") -> int:
+
+        # Player has enough money, no debt must be created
+        if player.money >= amount:
+            self.player_balance_update(player=player,
+                                       new_balance=player.money - amount,
+                                       reason=reason)
+
+            if receiver is not None:
+                self.player_balance_receive(player=receiver,
+                                            amount=amount,
+                                            reason=receiver_reason)
+            return 0
+
+        # Player has not enough money (debts are added)
+        debt_amount = amount - player.money
+
+        player.add_debt(creditor=receiver,
+                        amount=debt_amount,
+                        reason=receiver_reason)
+
+        # send packets
+        self.player_balance_update(player=player,
+                                   new_balance=0,
+                                   reason=reason)
+
+        if receiver is not None:
+            self.player_balance_receive(player=receiver,
+                                        amount=player.money,
+                                        reason=receiver_reason)
+
+    def player_balance_receive(self, player: Player, amount: int,
+                               reason: str):
+        # if amount is 0, no processing is required
+        if amount == 0:
+            return
+
+        # Check if player has some debts.
+        if player.has_debts():
+            updates = []
+
+            for debt in player.debts.copy():
+                if amount == 0:
+                    break
+
+                if debt.amount == 0:
+                    player.debts.remove(debt)
+                    continue
+
+                if debt.amount > amount:
+                    debt.amount = debt.amount - amount
+                    sent = amount
+                    amount = 0
+                else:
+                    amount = amount - debt.amount
+                    sent = debt.amount
+                    debt.amount = 0
+                    # debt was settled
+                    player.debts.remove(debt)
+
+                # first update all debts, then send money.
+                updates.append((debt.creditor, sent))
+
+                # broadcast information packet
+                self.broadcast_packet(PlayerPayDebt(
+                    player_from=player.get_id(),
+                    player_to=debt.creditor.get_id()
+                    if debt.creditor is not None else "",  # "" == Bank
+                    amount=sent,
+                    reason=debt.reason
+                ))
+
+            # Send money after removing debts.
+            for (creditor, send_amount) in updates:
+
+                # Bank does not receive any money.
+                if creditor is None:
+                    # update board money when bank is creditor
+                    self.board.board_money += send_amount
+                    continue
+
+                # Recursive method.
+                self.player_balance_receive(
+                    player=creditor,
+                    amount=send_amount,
+                    reason="debt_payment"
+                )
+
+        if amount == 0:
+            # if amount is 0, then all debts that the player, were bigger than
+            # the amount that the player should have received.
+            return
+
+        # send the remaining money to the player.
+        self.player_balance_update(player=player,
+                                   new_balance=player.money + amount,
+                                   reason=reason)
+
+    def player_balance_update(self, player: Player, new_balance: int,
                               reason: str):
         """
         Update player's balance to new_balance and broadcast
@@ -644,10 +770,13 @@ class Game(Thread):
         old_balance = player.money
         player.money = new_balance
 
+        if new_balance == 0:
+            new_balance = -player.get_total_debts()
+
         self.broadcast_packet(PlayerUpdateBalance(
             player_token=player.get_id(),
             old_balance=old_balance,
-            new_balance=player.money,
+            new_balance=new_balance,
             reason=reason
         ))
 
