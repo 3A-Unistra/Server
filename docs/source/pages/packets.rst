@@ -51,6 +51,15 @@ Paquet envoyé *par le client* lorsque un joueur veut sortir d'un lobby de parti
 **contenu du paquet :**
  * id du joueur (*player_token*)
 
+
+GetOutRoomSuccess
+^^^^^^^^^^^^^^^^^
+Paquet envoyé au client pour confirmer le succès de la sortie du lobby de partie
+
+*ce paquet ne contient pas d'informations*
+
+
+
 CreateGame
 ^^^^^^^^^^
 Paquet envoyé *par le client* lorsqu'il veut créer une partie
@@ -71,6 +80,17 @@ L'applet unity webgl devra se connecter au WebSocket de la partie et envoyer le 
 
 **contenu du paquet :**
  * id du joueur (*player_token*)
+
+BroadcastUpdatedRoom
+^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé lorsque qu'un lobby change de statut (soit le nombre de joueurs, soit la partie est lancé, etc)
+
+**contenu du paquet :**
+ * id du lobby (*id_room*)
+ * l'ancien nombre de joueurs (*old_nb_players*)
+ * le nouveau nombre de joueurs (*new_nb_players*)
+ * le statut de la partie (*status*)
 
 Paquets demarrage
 -----------------

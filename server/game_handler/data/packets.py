@@ -154,11 +154,25 @@ class GetOutRoomSuccess(LobbyPacket):
         super().__init__("GetOutRoomSuccess")
 
 
-class LaunchGame(LobbyPacket):
-    player_token: str
+class BroadcastUpdatedRoom(LobbyPacket):
+    id_room: str
+    old_nb_players: int
+    new_nb_players: int
+    state: str
 
-    def __init__(self, player_token: str = ""):
-        super().__init__("LaunchGame", player_token=player_token)
+    def __init__(self, id_room: str, old_nb_players: int, new_nb_players: int,
+                 state: str):
+        super().__init__("BroadcastUpdatedRoom")
+        self.id_room = id_room
+        self.old_nb_players = old_nb_players
+        self.new_nb_players = new_nb_players
+        self.state = state
+
+    def deserialize(self, obj: object):
+        self.id_room = obj['id_room']
+        self.old_nb_players = obj['old_nb_players']
+        self.new_nb_players = obj['new_nb_players']
+        self.state = obj['state']
 
 
 class InitConnection(LobbyPacket):
@@ -723,12 +737,17 @@ class ActionSellHouseSucceed(Packet):
 
 
 # Lobby packets
-# TODO:
 
 class CreateGame(LobbyPacket):
+    player_token: str
     # TODO: all the other options and stuff
+
     def __init__(self, player_token: str = ""):
-        super().__init__("CreateGame", player_token=player_token)
+        super().__init__("CreateGame")
+        self.player_token = player_token
+
+    def deserialize(self, obj: object):
+        self.player_token = obj['player_token']
 
 
 class PacketUtils:
@@ -781,6 +800,8 @@ class PacketUtils:
         "GetOutRoom": GetOutRoom,
         "GetOutRoomSuccess": GetOutRoomSuccess,
         "CreateGame": CreateGame,
+        "LaunchGame": LaunchGame,
+        "BroadcastUpdatedRoom": BroadcastUpdatedRoom,
         # Internal packets
         "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
         "InternalPlayerDisconnect": InternalPlayerDisconnect
