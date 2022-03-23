@@ -236,3 +236,28 @@ class TestPacket(TestCase):
 
         card = self.board.draw_random_card(card_deck)
         assert card.id_ == 2
+
+    def test_retarget_player_bank_debts(self):
+        player1 = Player(bot=False,
+                         user=User(id="283e1f5e-3411-44c5-9bc5-037358c47100"))
+        player2 = Player(bot=False,
+                         user=User(id="153e1f5e-3411-32c5-9bc5-037358c47100"))
+        player3 = Player(bot=False,
+                         user=User(id="413e1f2e-3411-32c5-9bc5-037358c47120"))
+        self.board.add_player(player1)
+        self.board.add_player(player2)
+        self.board.add_player(player3)
+
+        player2.add_debt(creditor=None, amount=500)
+        player2.add_debt(creditor=None, amount=50)
+        player3.add_debt(creditor=None, amount=100)
+
+        self.board.retarget_player_bank_debts(player1)
+
+        assert player2.debts[0].creditor == player1
+        assert player2.debts[1].creditor == player1
+        assert player3.debts[0].creditor == player1
+
+        self.board.remove_player(player1)
+        self.board.remove_player(player2)
+        self.board.remove_player(player3)

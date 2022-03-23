@@ -270,4 +270,3 @@ class Board:
                 if debt.creditor is not None:
                     continue
                 debt.creditor = new_target
-
