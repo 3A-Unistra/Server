@@ -100,14 +100,14 @@ class GetInRoom(Packet):
 
 
 class LaunchGame(Packet):
-    id_player: str
+    player_token: str
 
-    def __init__(self, id_player: str = ""):
+    def __init__(self, player_token: str = ""):
         super(LaunchGame, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
+        self.player_token = player_token
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+        self.player_token = obj["player_token"]
 
 
 class ExceptionPacket(Packet):

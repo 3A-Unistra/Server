@@ -677,11 +677,4 @@ class Engine:
         self.games[game_uid].packets_queue.put(
             QueuePacket(packet=packet, channel_name=channel_name))
 
-    def broadcast_updated_room(self, game_uid: str):
-        """
-        sends the updated game status to all players that are in a game which
-        hasn't started yet
-        :param game_uid: id of an existing game
-        """
-        # TODO: send BroadcastUpdatedRoom to all players that are in lobby mode
-        pass
+

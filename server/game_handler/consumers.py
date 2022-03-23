@@ -1,6 +1,7 @@
 import logging
 from urllib.parse import parse_qs
 
+from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
@@ -175,6 +176,47 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
             return
 
         await self.send_json(packet)
+
+
+class LobbyConsumer(AsyncJsonWebsocketConsumer):
+    player_token: str = None
+    game_token: str = None
+
+    async def connect(self):
+        # User is anonymous
+        if self.scope["user"] is None:
+            # Reject the connection
+            return await self.close(code=4000)
+
+        self.player_token = self.scope['user'].id
+
+        packet = InternalCheckPlayerValidity(
+            player_token=self.player_token)
+
+        # send to game engine worker
+        await self.channel_layer.send(
+            'game_engine',
+            {
+                'type': 'process.packets',
+                'content': packet.serialize(),
+                'game_token': self.game_token,
+                'channel_name': self.channel_name
+            }
+        )
+
+        # adding player to the lobby group
+        async_to_sync(self.channel_layer.group_add)("lobby", self.channel_name)
+
+    async def receive_json(self, content, **kwargs):
+        pass
+
+    async def disconnect(self, code):
+        # removing player from the lobby group
+        async_to_sync(self.channel_layer.group_discard)("lobby",
+                                                        self.channel_name)
+
+    async def send_lobby_packet(self, content):
+        pass
 
 
 class GameEngineConsumer(SyncConsumer):
