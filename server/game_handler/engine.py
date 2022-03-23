@@ -527,6 +527,16 @@ class Game(Thread):
         else:
             player.doubles = 0
 
+        # Move player
+        self.move_player(player)
+
+    def move_player(self, player: Player):
+        """
+        Move player to new position given by the dices
+
+        Warning: Dices are not rolled in this function!
+        :param player: Player moved
+        """
         # Move player and check if he reached start
         passed_go = self.board.move_player_with_dices(player)
 
@@ -538,6 +548,7 @@ class Game(Thread):
 
         case = self.board.squares[player.position]
 
+        # TODO: IMPLEMENT NEW CONFIG MADE BY AKI (Money GO)
         # Player has reached start
         if passed_go:
             self.player_balance_receive(player=player,
@@ -555,6 +566,7 @@ class Game(Thread):
         if isinstance(case, GoToJailSquare):
             player.enter_prison()
             player.position = self.board.prison_square_index
+
             self.broadcast_packet(PlayerEnterPrison(
                 player_token=player.get_id()
             ))
@@ -638,7 +650,7 @@ class Game(Thread):
 
     def player_balance_pay(self, player: Player, receiver: Optional[Player],
                            amount: int,
-                           reason: str):
+                           reason: str) -> int:
 
         # Player has enough money, no debt must be created
         if player.money >= amount:
@@ -650,7 +662,7 @@ class Game(Thread):
                 self.player_balance_receive(player=receiver,
                                             amount=amount,
                                             reason=reason)
-            return
+            return 0
 
         # Player has not enough money (debts are added)
         debt_amount = amount - player.money
@@ -669,6 +681,8 @@ class Game(Thread):
             self.player_balance_receive(player=receiver,
                                         amount=player.money,
                                         reason=reason)
+
+        return
 
     def player_balance_receive(self, player: Player, amount: int,
                                reason: str):
