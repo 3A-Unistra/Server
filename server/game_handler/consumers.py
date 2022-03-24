@@ -279,4 +279,4 @@ class GameEngineConsumer(SyncConsumer):
             return
 
         if isinstance(packet, CreateGame):
-            self.engine.create_game(CreateGame)
+            self.engine.create_game(packet)

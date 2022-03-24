@@ -98,7 +98,7 @@ Paquet envoyé lorsque qu'un lobby change de statut (soit le nombre de joueurs, 
  * id du lobby (*id_room*)
  * l'ancien nombre de joueurs (*old_nb_players*)
  * le nouveau nombre de joueurs (*new_nb_players*)
- * le statut de la partie (*status*)
+ * le statut de la partie (*state*)
 
 Paquets demarrage
 -----------------
