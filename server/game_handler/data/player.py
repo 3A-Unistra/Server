@@ -21,6 +21,11 @@ class PlayerDebt:
         self.amount = amount
         self.reason = reason
 
+    def __str__(self):
+        name = self.creditor.get_name() if self.creditor \
+                                           is not None else "BANK"
+        return "%d for %s" % (self.amount, name)
+
 
 class Player:
     """

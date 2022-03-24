@@ -546,21 +546,32 @@ class Game(Thread):
             destination=player.position
         ))
 
+        self.proceed_move_player_actions(player=player, passed_go=passed_go)
+
+    def proceed_move_player_actions(self, player: Player,
+                                    passed_go: bool = False,
+                                    backward: bool = False):
+        """
+        Proceed move player logic
+        :param player: Player concerned
+        :param passed_go: Player has passed go after moving
+        :param backward: Player moved backward (passed_go != backward)
+        """
         case = self.board.squares[player.position]
 
         # TODO: IMPLEMENT NEW CONFIG MADE BY AKI (Money GO)
         # Player has reached start
-        if passed_go:
-            self.player_balance_receive(player=player,
-                                        amount=self.CONFIG.get('MONEY_GO'),
-                                        reason="pass_go")
+        if passed_go and not backward:
+            amount = self.CONFIG.get('MONEY_GO')
 
             # Player case == 0 & double money option is enabled
             if isinstance(case, GoSquare) and \
                     self.board.option_go_case_double_money:
-                self.player_balance_receive(player=player,
-                                            amount=self.CONFIG.get('MONEY_GO'),
-                                            reason="pass_go_exact")
+                amount *= 2
+
+            self.player_balance_receive(player=player,
+                                        amount=amount,
+                                        reason="pass_go")
 
         # Check destination case
         if isinstance(case, GoToJailSquare):
@@ -597,7 +608,8 @@ class Game(Thread):
                                         amount=case.get_rent(),
                                         reason="rent_pay",
                                         receiver_reason="rent_receive")
-        elif isinstance(case, ChanceSquare):
+
+        elif isinstance(case, ChanceSquare) and not backward:
             card = self.board.draw_random_chance_card()
 
             if card is None:
@@ -609,9 +621,9 @@ class Game(Thread):
                     card_id=card.id_,
                     is_community=False
                 ))
-                self.process_card_action(player=player, card=card)
+                self.process_card_actions(player=player, card=card)
 
-        elif isinstance(case, CommunitySquare):
+        elif isinstance(case, CommunitySquare) and not backward:
             card = self.board.draw_random_community_card()
 
             if card is None:
@@ -623,7 +635,7 @@ class Game(Thread):
                     card_id=card.id_,
                     is_community=True
                 ))
-                self.process_card_action(player=player, card=card)
+                self.process_card_actions(player=player, card=card)
 
     def disconnect_player(self, player: Player, reason: str = ""):
         player.disconnect()
@@ -635,7 +647,7 @@ class Game(Thread):
             player_token=player.get_id()
         ))
 
-    def process_card_action(self, player: Player, card: Card):
+    def process_card_actions(self, player: Player, card: Card):
         """
         All actions handled here # TODO:
 
@@ -657,34 +669,86 @@ class Game(Thread):
                 card.available = False
                 return
 
+        # Receive new injected money
         if card.action_type is CardActionType.RECEIVE_BANK:
-            pass
+            self.player_balance_receive(player=player,
+                                        amount=card.action_value,
+                                        reason="card_receive_bank")
+            return
 
-        if card.action_type is CardActionType.GIVE_BANK:
-            pass
-
-        if card.action_type is CardActionType.MOVE_FORWARD:
-            pass
+        # Give to bank = give money to board
+        if card.action_type is CardActionType.GIVE_BOARD:
+            self.player_balance_pay(player=player,
+                                    receiver=None,
+                                    amount=card.action_value,
+                                    reason="card_give_board")
+            return
 
         if card.action_type is CardActionType.MOVE_BACKWARD:
-            pass
+            self.board.move_player(player=player,
+                                   cases=-card.action_value)
+            # No actions for passed go
+            self.proceed_move_player_actions(player=player,
+                                             backward=True)
+            return
 
         if card.action_type is CardActionType.GOTO_POSITION:
-            pass
+            passed_go = card.action_value < player.position
+            player.position = card.action_value
+            # Move player actions
+            self.proceed_move_player_actions(player=player,
+                                             passed_go=passed_go)
+            return
 
         if card.action_type is CardActionType.GOTO_JAIL:
-            pass
+            player.enter_prison()
+            player.position = self.board.prison_square_index
+
+            self.broadcast_packet(PlayerEnterPrison(
+                player_token=player.get_id(),
+            ))
+            return
 
         if card.action_type is CardActionType.GIVE_ALL:
-            pass
+            # Give money to all players
+            for receiver in self.board.players:
+                if receiver == player:
+                    continue
+                self.player_balance_pay(player=player,
+                                        receiver=receiver,
+                                        amount=card.action_value,
+                                        reason="card_give_all_send",
+                                        receiver_reason="card_give_all"
+                                                        "_receive")
+            return
 
         if card.action_type is CardActionType.RECEIVE_ALL:
-            pass
+            # Receive money from all players
+            for sender in self.board.players:
+                if sender == player:
+                    continue
+
+                self.player_balance_pay(player=sender,
+                                        receiver=player,
+                                        amount=card.action_value,
+                                        reason="card_receive_all_send",
+                                        receiver_reason="card_receive_all"
+                                                        "_receive")
 
     def player_balance_pay(self, player: Player, receiver: Optional[Player],
                            amount: int,
                            reason: str,
                            receiver_reason: str = "") -> int:
+        """
+        Players pays some amount to receiver.
+        Checks if there's any debts.
+        :param player: Sender
+        :param receiver: Receiver
+        :param amount: Amount to send
+        :param reason: Sender's reason of balance update
+        :param receiver_reason: Receiver's reason of balance update
+        :return: Amount sent to receiver without debts
+        """
 
         # Player has enough money, no debt must be created
         if player.money >= amount:
@@ -692,14 +756,20 @@ class Game(Thread):
                                        new_balance=player.money - amount,
                                        reason=reason)
 
-            if receiver is not None:
+            if receiver is None:
+                self.board.board_money += amount
+            else:
                 self.player_balance_receive(player=receiver,
                                             amount=amount,
                                             reason=receiver_reason)
-            return 0
+            return amount
 
         # Player has not enough money (debts are added)
-        debt_amount = amount - player.money
+        money = player.money
+        debt_amount = amount - money
+
+        # TODO: first check if we can cancel some debts (to pass test
+        # test_process_card_actions)
 
         player.add_debt(creditor=receiver,
                         amount=debt_amount,
@@ -710,13 +780,25 @@ class Game(Thread):
                                    new_balance=0,
                                    reason=reason)
 
-        if receiver is not None:
+        if money == 0:
+            return 0
+
+        if receiver is None:
+            self.board.board_money += money
+        else:
             self.player_balance_receive(player=receiver,
-                                        amount=player.money,
+                                        amount=money,
                                         reason=receiver_reason)
+        return money
 
     def player_balance_receive(self, player: Player, amount: int,
                                reason: str):
+        """
+        Player receive's balance. Checking for debts.
+        :param player: Receiver
+        :param amount: Amount to receive
+        :param reason: Reason of receive
+        """
         # if amount is 0, no processing is required
         if amount == 0:
             return
