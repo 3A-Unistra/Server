@@ -5,7 +5,7 @@ import uuid
 from enum import Enum
 from threading import Thread
 from queue import Queue
-from typing import Optional
+from typing import Optional, List
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -24,10 +24,9 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
     PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, RoundRandomCard, \
     PlayerPayDebt
-from server.game_handler.data.player import PlayerDebt
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
     FreeParkingSquare, OwnableSquare, ChanceSquare, CommunitySquare, \
-    GoToJailSquare
+    GoToJailSquare, Square
 
 
 class GameState(Enum):
@@ -335,7 +334,7 @@ class Game(Thread):
         self.state = GameState.STARTING
         self.set_timeout(seconds=self.CONFIG.get('GAME_STARTING_TIMEOUT'))
 
-        # send coherent informations to all players
+        # send coherent information to all players
         players = []
         for player in self.board.get_online_players():
             players.append(player.get_coherent_infos())
@@ -950,6 +949,8 @@ class Game(Thread):
 
 class Engine:
     games: dict[str, Game]
+    squares: List[Square]
+    cards: List[Card]
 
     def __init__(self, **kwargs):
         self.games = {}
