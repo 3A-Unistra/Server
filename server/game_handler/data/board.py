@@ -5,6 +5,7 @@ import names
 
 from . import Card, Player
 from .squares import Square
+from ...settings.common import DEFAULT_STARTING_BALANCE
 
 
 class Board:
@@ -20,6 +21,7 @@ class Board:
     bot_names: []
     current_player_index: int
     round: int
+    starting_balance: int
 
     # Options
     option_go_case_double_money: bool
@@ -43,6 +45,7 @@ class Board:
         self.option_auction_enabled = False
         self.option_password = ""
         self.option_is_private = False
+        self.starting_balance = DEFAULT_STARTING_BALANCE
 
     def next_player(self) -> Player:
         """

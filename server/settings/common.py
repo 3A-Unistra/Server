@@ -134,3 +134,6 @@ ENGINE_CONFIG = {
     'MAX_DOUBLES_JAIL': 3,
     'MAX_JAIL_TURNS': 3
 }
+
+# idk if this is an appropriate starting balance
+DEFAULT_STARTING_BALANCE = 100000

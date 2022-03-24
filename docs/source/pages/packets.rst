@@ -68,6 +68,7 @@ Paquet envoyé *par le client* lorsqu'il veut créer une partie
  * id du player créant la partie (*player_token*)
  * nombre de joueurs (*max_nb_players*)
  * partie privé ou public (*is_private*)
+ * montant de base pour chaque joueur (*starting_balance*)
  * mot de passe (peut être un champ vide) (*password*)
 
 
@@ -99,6 +100,17 @@ Paquet envoyé lorsque qu'un lobby change de statut (soit le nombre de joueurs, 
  * l'ancien nombre de joueurs (*old_nb_players*)
  * le nouveau nombre de joueurs (*new_nb_players*)
  * le statut de la partie (*state*)
+
+
+AddBot
+^^^^^^
+
+Paquet envoyé *par le client* (le host) lorsqu'il ajoute un bot à la partie
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+ * id du room (*id_room*)
+ * difficulté du bot (*bot_difficulty*)
 
 Paquets demarrage
 -----------------

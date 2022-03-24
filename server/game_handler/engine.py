@@ -708,7 +708,8 @@ class Engine:
         self.add_game(new_game)
 
         # adding host to the game
-        self.games[id_new_game].board.add_player(packet.player_token)
+        self.games[id_new_game].board.add_player(Player(
+            channel_name=packet.player_token, bot=False))
         # giving him host status
         self.games[id_new_game].host_player = packet.player_token
         # setting up the numbers of players
@@ -717,11 +718,14 @@ class Engine:
         self.games[id_new_game].board.option_password = packet.password
         # setting up privacy
         self.games[id_new_game].board.option_is_private = packet.is_private
-
+        # setting up starting balance
+        self.games[id_new_game].board.starting_balance = \
+            packet.starting_balance
+        # sending CreateGameSuccess to host
         self.send_packet(game_uid=id_new_game,
                          packet=CreateGameSuccess(packet.player_token),
                          channel_name=packet.player_token)
-
+        # sending updated room status
         self.games[id_new_game].send_packet_lobby(BroadcastUpdatedRoom(
             id_room=id_new_game, old_nb_players=0, new_nb_players=1,
             state="LOBBY"))
