@@ -44,18 +44,26 @@ class Square:
 class OwnableSquare(Square):
     owner: Optional[Player]
     mortgaged: bool
-    price: int
-    rent: int
+    buy_price: int
+    rent_base: int
 
     def __init__(self, id_: int = 0):
         super().__init__(id_)
         self.owner = None
+        self.mortgaged = False
+        self.buy_price = 0
+        self.rent_base = 0
 
     def has_owner(self) -> bool:
         return self.owner is not None
 
     def get_rent(self) -> int:
-        return self.rent
+        return self.rent_base
+
+    def deserialize(self, obj: dict):
+        super().deserialize(obj)
+        self.buy_price = int(obj['buy_price'])
+        self.rent_base = int(obj['rent_base'])
 
 
 class ChanceSquare(Square):
@@ -107,18 +115,27 @@ class JailSquare(Square):
 
 class PropertySquare(OwnableSquare):
     nb_house: int
-    house_cost: int
+    house_price: int  # same as hotel_price
     house_rents: {}
 
-    hotel_rent: int
-
-    def __init__(self, id_: int = 0, house_rents: {} = None):
+    def __init__(self, id_: int = 0, house_price: int = 0,
+                 house_rents: {} = None):
         super().__init__(id_)
+        self.nb_house = 0
+        self.house_price = house_price
         self.house_rents = house_rents
 
     def get_rent(self) -> int:
         # TODO
         pass
+
+    def deserialize(self, obj: dict):
+        super().deserialize(obj)
+        self.house_price = int(obj['house_price'])
+        self.house_rents = {}
+
+        for i in range(5):
+            self.house_rents[i] = obj['rent_%d' % (i + 1)]
 
 
 class SquareUtils:

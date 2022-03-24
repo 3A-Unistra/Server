@@ -10,6 +10,9 @@ class CardActionType(Enum):
     GIVE_ALL = 5
     RECEIVE_ALL = 6
     LEAVE_JAIL = 7
+    CLOSEST_STATION = 8
+    CLOSEST_MUSEUM = 9
+    GIVE_BOARD_HOUSES = 10
 
 
 class Card:
