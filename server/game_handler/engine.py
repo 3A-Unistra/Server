@@ -21,7 +21,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
     PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, \
     GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
-    GetOutRoomSuccess
+    GetOutRoomSuccess, CreateGame, CreateGameSuccess
 from server.game_handler.data.squares import GoSquare
 from server.game_handler.models import User
 
@@ -220,7 +220,7 @@ class Game(Thread):
                 # if player is the host of the game
                 if packet.player_token != self.host_player:
                     self.send_packet(channel_name=packet.player_token,
-                                     packet=ExceptionPacket(code=4103))
+                                     packet=ExceptionPacket(code=4104))
                     # TODO : specify error for host cannot quit game
                     #  (code here is just a placeholder)
                     return
@@ -677,4 +677,33 @@ class Engine:
         self.games[game_uid].packets_queue.put(
             QueuePacket(packet=packet, channel_name=channel_name))
 
+    def create_game(self, packet):
+
+        if not isinstance(packet, CreateGame):
+            return
+
+        # if player is already in another game
+        if self.player_exists(packet.player_token):
+            return  # or maybe send error
+
+        # adding a new game
+        new_game = Game()
+        id_new_game = new_game.uid
+        self.add_game(new_game)
+
+        # adding host to the game
+        self.games[id_new_game].board.add_player(packet.player_token)
+        # giving him host status
+        self.games[id_new_game].host_player = packet.player_token
+        # setting up the numbers of players
+        self.games[id_new_game].board.players_nb = packet.max_nb_players
+        # setting up password
+        self.games[id_new_game].board.option_password = packet.password
+        # setting up privacy
+        self.games[id_new_game].board.option_is_private = packet.is_private
+
+        self.send_packet(game_uid=id_new_game,
+                         packet=CreateGameSuccess(packet.player_token),
+                         channel_name=packet.player_token)
+        # TODO: send updatedRoomStatus + CreateRoomSuccess
 

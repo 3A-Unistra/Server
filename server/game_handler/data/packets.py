@@ -740,10 +740,30 @@ class ActionSellHouseSucceed(Packet):
 
 class CreateGame(LobbyPacket):
     player_token: str
-    # TODO: all the other options and stuff
+    password: str
+    max_nb_players: int
+    is_private: bool
 
-    def __init__(self, player_token: str = ""):
+    def __init__(self, player_token: str = "", password: str = "",
+                 max_nb_players: int = 0, is_private: bool = False):
         super().__init__("CreateGame")
+        self.player_token = player_token
+        self.password = password
+        self.max_nb_players = max_nb_players
+        self.is_private = is_private
+
+    def deserialize(self, obj: object):
+        self.player_token = obj['player_token']
+        self.password = obj['password']
+        self.max_nb_players = obj['max']
+        self.is_private = obj['is_private']
+
+
+class CreateGameSuccess(LobbyPacket):
+    player_token: str
+
+    def __init__(self, player_token: str):
+        super().__init__("CreateGameSuccess")
         self.player_token = player_token
 
     def deserialize(self, obj: object):
@@ -800,6 +820,7 @@ class PacketUtils:
         "GetOutRoom": GetOutRoom,
         "GetOutRoomSuccess": GetOutRoomSuccess,
         "CreateGame": CreateGame,
+        "CreateGameSuccess": CreateGameSuccess,
         "LaunchGame": LaunchGame,
         "BroadcastUpdatedRoom": BroadcastUpdatedRoom,
         # Internal packets

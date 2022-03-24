@@ -66,10 +66,18 @@ Paquet envoyé *par le client* lorsqu'il veut créer une partie
 
 **contenu du paquet :**
  * id du player créant la partie (*player_token*)
- * nombre de joueurs (*number_players*)
- * partie privé ou public (*private*)
+ * nombre de joueurs (*max_nb_players*)
+ * partie privé ou public (*is_private*)
  * mot de passe (peut être un champ vide) (*password*)
 
+
+CreateGameSuccess
+^^^^^^^^^^^^^^^^^
+
+Paquet envoyé par le serveur pour confirmer la création d'une partie
+
+**contenu du packet :**
+ * id du player (*player_token*)
 
 AppletPrepare
 ^^^^^^^^^^^^^

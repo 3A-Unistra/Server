@@ -42,6 +42,7 @@ class Board:
         self.option_go_case_double_money = False
         self.option_auction_enabled = False
         self.option_password = ""
+        self.option_is_private = False
 
     def next_player(self) -> Player:
         """
