@@ -280,4 +280,3 @@ class GameEngineConsumer(SyncConsumer):
 
         if isinstance(packet, CreateGame):
             self.engine.create_game(CreateGame)
-

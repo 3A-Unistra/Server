@@ -706,4 +706,3 @@ class Engine:
                          packet=CreateGameSuccess(packet.player_token),
                          channel_name=packet.player_token)
         # TODO: send updatedRoomStatus + CreateRoomSuccess
-

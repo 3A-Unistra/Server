@@ -78,24 +78,21 @@ class PlayerValid(Packet):
         super().__init__(self.__class__.__name__)
 
 
-class GetInRoom(Packet):
-    id_player: str
+class GetInRoom(LobbyPacket):
+    player_token: str
     id_room: str
-    is_protected: bool
     password: str
 
-    def __init__(self, id_player: str = "", id_room: str = "",
-                 is_protected: bool = False, password: str = ""):
+    def __init__(self, player_token: str = "", id_room: str = "",
+                 password: str = ""):
         super(GetInRoom, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
+        self.player_token = player_token
         self.id_room = id_room
-        self.is_protected = is_protected
         self.password = password
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
+        self.player_token = obj["player_token"]
         self.id_room = obj["id_room"]
-        self.is_protected = obj["is_protected"]
         self.password = obj["password"]
 
 
@@ -119,18 +116,6 @@ class ExceptionPacket(Packet):
 
     def deserialize(self, obj: object):
         self.code = int(obj["code"])
-
-
-class GetInRoom(PlayerPacket):
-    id_room: str
-    password: str
-
-    def __init__(self, player_token: str = ""):
-        super().__init__("GetInRoom", player_token=player_token)
-
-    def deserialize(self, obj: object):
-        self.id_room = str(obj["id_room"])
-        self.password = str(obj["password"])
 
 
 class GetInRoomSuccess(LobbyPacket):
