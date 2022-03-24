@@ -1,3 +1,5 @@
+import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import time
@@ -11,6 +13,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
 import pause
+from django.contrib.staticfiles import finders
 
 from server.game_handler.data import Board, Player, Card
 from server.game_handler.data.cards import ChanceCard, CardActionType, \
@@ -952,8 +955,24 @@ class Engine:
     squares: List[Square]
     cards: List[Card]
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.games = {}
+        self.squares = []
+        self.cards = []
+        self.__load_json()
+
+    def __load_json(self):
+        squares_path = os.path.join(settings.STATIC_ROOT, 'data/squares.json')
+        with open(squares_path) as squares_file:
+            squares_json = json.load(squares_file)
+            print(squares_json)
+            self.squares = []
+
+        cards_path = os.path.join(settings.STATIC_ROOT, 'data/cards.json')
+        with open(cards_path) as cards_file:
+            cards_json = json.load(cards_file)
+            print(cards_json)
+            self.cards = []
 
     def add_game(self, game: Game):
         """
