@@ -220,7 +220,18 @@ Lorsque la somme d'argent d'un joueur modifie, ce paquet est envoyé à tout les
  * id du joueur dont la somme a changé (*player_token*)
  * Balance qu'il avait (*old_balance*)
  * Nouvelle balance (*new_balance*)
- * raison
+ * raison (*reason*)
+
+PlayerPayDebt
+^^^^^^^^^^^^^
+
+Lorsqu'un joueur rembourse sa dette.
+
+**contenu du paquet :**
+ * id du joueur qui rembourse sa dette (*player_token*)
+ * id ou vide (banque) du receveur (*player_to*)
+ * montant de la dette remboursé (*amount*)
+ * raison (*reason*)
 
 PlayerEnterPrison
 ^^^^^^^^^^^^^^^^^
