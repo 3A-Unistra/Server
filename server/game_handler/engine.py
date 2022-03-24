@@ -766,10 +766,44 @@ class Game(Thread):
 
         # Player has not enough money (debts are added)
         money = player.money
-        debt_amount = amount - money
+        temp_amount = 0
 
-        # TODO: first check if we can cancel some debts (to pass test
-        # test_process_card_actions)
+        if receiver is not None and receiver.has_debts():
+            for debt in receiver.debts.copy():
+                if amount == 0:
+                    break
+
+                # creditor should be the player who pays
+                if debt.creditor != player:
+                    continue
+
+                if debt.amount == 0:
+                    receiver.debts.remove(debt)
+                    continue
+
+                if debt.amount > amount:
+                    debt.amount -= amount
+                    temp_amount += amount
+                    amount = 0
+                    break
+                else:
+                    amount -= debt.amount
+                    temp_amount += amount
+                    receiver.debts.remove(debt)
+
+        if temp_amount != 0:
+            # broadcast information packet
+            self.broadcast_packet(PlayerPayDebt(
+                player_from=receiver.get_id(),
+                player_to=player.get_id(),
+                amount=temp_amount,
+                reason="debt_rebalancing"
+            ))
+
+        if amount == 0:
+            return 0
+
+        debt_amount = amount - money
 
         player.add_debt(creditor=receiver,
                         amount=debt_amount,
@@ -816,11 +850,11 @@ class Game(Thread):
                     continue
 
                 if debt.amount > amount:
-                    debt.amount = debt.amount - amount
+                    debt.amount -= amount
                     sent = amount
                     amount = 0
                 else:
-                    amount = amount - debt.amount
+                    amount -= debt.amount
                     sent = debt.amount
                     debt.amount = 0
                     # debt was settled

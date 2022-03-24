@@ -217,6 +217,8 @@ class TestPacket(TestCase):
             action_value=50
         )
 
+        # Player1 has two debts: 50 for player2, 50 for player3
+        # Here the player should receive 50 from all players (player2,3)
         game.process_card_actions(player=player1,
                                   card=card)
 
@@ -224,12 +226,9 @@ class TestPacket(TestCase):
         assert player2.money == 0
         assert player3.money == 0
 
-        print([str(debt) for debt in player1.debts])
-
-        assert player3.has_debts()
-        assert player2.has_debts()
-        # TODO:
-        # assert not player1.has_debts()
+        assert not player3.has_debts()
+        assert not player2.has_debts()
+        assert not player1.has_debts()
 
         card = ChanceCard(
             id_=8,
