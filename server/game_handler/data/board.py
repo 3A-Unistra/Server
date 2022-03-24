@@ -223,9 +223,17 @@ class Board:
         :param player: Player to move
         :return: If player reached "0" (start) case
         """
+        return self.move_player(player=player, cases=player.dices_value())
+
+    def move_player(self, player: Player, cases: int) -> bool:
+        """
+        :param player: Player to move
+        :param cases: Cases to move
+        :return: If player reached "0" (start) case
+        """
         temp_position = player.position
         player.position = (player.position
-                           + player.dices_value()) % self.cases_count
+                           + cases) % self.cases_count
         return player.position < temp_position
 
     def draw_random_card(self, deck: List[Card]) -> Optional[Card]:

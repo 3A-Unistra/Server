@@ -21,6 +21,11 @@ class PlayerDebt:
         self.amount = amount
         self.reason = reason
 
+    def __str__(self):
+        name = self.creditor.get_name() if self.creditor \
+                                           is not None else "BANK"
+        return "%d for %s" % (self.amount, name)
+
 
 class Player:
     """
@@ -184,6 +189,8 @@ class Player:
     def __eq__(self, other):
         # For equality: player == other_player
         # Like: player.get_id() == other_player.get_id()
+        if other is None:
+            return False
         if isinstance(other, Player):
             return self.get_id() == other.get_id()
         return False

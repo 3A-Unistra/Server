@@ -2,15 +2,14 @@ from enum import Enum
 
 
 class CardActionType(Enum):
-    ADD_BALANCE = 0
-    MOVE_FORWARD = 1
+    RECEIVE_BANK = 0
+    GIVE_BOARD = 1
     MOVE_BACKWARD = 2
     GOTO_POSITION = 3
     GOTO_JAIL = 4
     GIVE_ALL = 5
     RECEIVE_ALL = 6
-    GIVE_BANK = 7
-    LEAVE_JAIL = 8
+    LEAVE_JAIL = 7
 
 
 class Card:
