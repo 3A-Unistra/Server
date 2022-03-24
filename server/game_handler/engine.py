@@ -21,7 +21,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
     PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, \
     GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
-    GetOutRoomSuccess, CreateGame, CreateGameSuccess, BroadcastUpdatedRoom
+    GetOutRoomSuccess, CreateGame, CreateGameSuccess, BroadcastUpdatedRoom, \
+    AddBot
 from server.game_handler.data.squares import GoSquare
 from server.game_handler.models import User
 
@@ -259,7 +260,36 @@ class Game(Thread):
                                               state="WAITING_PLAYERS")
                 self.send_packet_lobby(update)
 
-                # remove players from lobby group?
+                # remove players from lobby group
+                async_to_sync(
+                    self.channel_layer.group_discard)("lobby",
+                                                      packet.player_token)
+
+            elif isinstance(packet, AddBot):
+                # check if the host is the one sending the packet
+                if packet.player_token != self.host_player:
+                    self.send_packet(channel_name=packet.player_token,
+                                     packet=ExceptionPacket(code=4205))
+                    return
+
+                # check if game is not full
+                if len(self.board.players) == self.board.players_nb:
+                    self.send_packet(channel_name=packet.player_token,
+                                     packet=ExceptionPacket(code=4202))
+                    return
+
+                # add bot to the game
+                nb_players = len(self.board.players)
+                self.board.add_player(Player(
+                    bot_name=self.board.get_random_bot_name(),
+                    bot_level=packet.bot_difficulty))
+
+                # broadcast updated room status
+                update = BroadcastUpdatedRoom(id_room=self.uid,
+                                              old_nb_players=nb_players,
+                                              new_nb_players=nb_players + 1,
+                                              state="LOBBY")
+                self.send_packet_lobby(update)
 
         else:
             # If state is not lobby

@@ -19,6 +19,7 @@ class Player:
     public_id: str = None
 
     bot_name: str = None
+    bot_level: int = 0
     user: Optional[User]
     channel_name: str
     online: bool = False
@@ -47,14 +48,14 @@ class Player:
     start_dice_throw_received: bool
 
     def __init__(self, user: Optional[User] = None, channel_name: str = None,
-                 bot: bool = True,
-                 bot_name: str = None):
+                 bot: bool = True, bot_name: str = None, bot_level: int = 0):
         """
         :param bot: If this Player is a "real" bot
         """
         self.user = user
         self.bot = bot
         self.bot_name = bot_name
+        self.bot_level = bot_level
         self.channel_name = channel_name
         self.current_dices = (0, 0)
         self.start_dice_throw_received = False

@@ -161,20 +161,20 @@ class BroadcastUpdatedRoom(LobbyPacket):
         self.state = obj['state']
 
 
-class InitConnection(LobbyPacket):
-    # maybe this is not useful anymore
-    def __init__(self, player_token: str = ""):
-        super().__init__("InitConnection", player_token=player_token)
-
-
 class PingPacket(PlayerPacket):
     def __init__(self, player_token: str = ""):
         super().__init__("Ping", player_token=player_token)
 
 
 class AppletPrepare(LobbyPacket):
+    player_token: str
+
     def __init__(self, player_token: str = ""):
-        super().__init__("AppletPrepare", player_token=player_token)
+        super().__init__("AppletPrepare")
+        self.player_token = player_token
+
+    def deserialize(self, obj: object):
+        self.player_token = obj['player_token']
 
 
 class AppletReady(PlayerPacket):
@@ -759,6 +759,24 @@ class CreateGameSuccess(LobbyPacket):
         self.player_token = obj['player_token']
 
 
+class AddBot(LobbyPacket):
+    player_token: str
+    id_room: str
+    bot_difficulty: int
+
+    def __init__(self, player_token: str, id_room: str = "",
+                 bot_difficulty: int = 0):
+        super().__init__("AddBot")
+        self.player_token = player_token
+        self.id_room = id_room
+        self.bot_difficulty = bot_difficulty
+
+    def deserialize(self, obj: object):
+        self.player_token = obj['player_token']
+        self.bot_difficulty = obj['bot_difficulty']
+        self.id_room = obj['id_room']
+
+
 class PacketUtils:
     packets: dict = {
         "Exception": ExceptionPacket,
@@ -812,6 +830,7 @@ class PacketUtils:
         "CreateGameSuccess": CreateGameSuccess,
         "LaunchGame": LaunchGame,
         "BroadcastUpdatedRoom": BroadcastUpdatedRoom,
+        "AddBot": AddBot,
         # Internal packets
         "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
         "InternalPlayerDisconnect": InternalPlayerDisconnect

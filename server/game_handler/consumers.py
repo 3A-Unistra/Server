@@ -9,7 +9,7 @@ from .data.exceptions import PacketException
 from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
     PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
-    InitConnection, BroadcastUpdatedRoom, CreateGame
+    CreateGame
 from .engine import Engine
 
 log = logging.getLogger(__name__)
