@@ -48,7 +48,7 @@ class Board:
         self.players_nb = 0
         self.bots_nb = 0
         self.current_player_index = 0
-        self.prison_square_index = 0
+        self.prison_square_index = -1
         self.bot_names: []
         self.round = 0
         self.option_go_case_double_money = False
@@ -105,7 +105,7 @@ class Board:
         return self.players[self.current_player_index]
 
     def get_player_idx(self, player: Player) -> int:
-        for i in range(0, self.players_nb):
+        for i in range(len(self.players)):
             if self.players[i] == player:
                 return i
         return -1
@@ -300,7 +300,7 @@ class Board:
     def find_closest_station_index(self, player: Player) -> int:
         """
         :param player: Player (get player position)
-        :return: Index of clostest station, or -1 if not found
+        :return: Index of closest station, or -1 if not found
         """
         position = player.position
         squares_len = len(self.squares)
@@ -313,10 +313,10 @@ class Board:
 
         return -1
 
-    def find_closest_museum_index(self, player: Player) -> int:
+    def find_closest_company_index(self, player: Player) -> int:
         """
         :param player: Player (get player position)
-        :return: Index of clostest station, or -1 if not found
+        :return: Index of closest company, or -1 if not found
         """
         position = player.position
         squares_len = len(self.squares)

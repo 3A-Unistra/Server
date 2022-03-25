@@ -849,7 +849,7 @@ class Game(Thread):
         elif card.action_type is CardActionType.CLOSEST_STATION:
             pass
 
-        elif card.action_type is CardActionType.CLOSEST_MUSEUM:
+        elif card.action_type is CardActionType.CLOSEST_COMPANY:
             pass
 
         elif card.action_type is CardActionType.GIVE_BOARD_HOUSES:
