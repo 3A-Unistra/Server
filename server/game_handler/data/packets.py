@@ -777,6 +777,23 @@ class AddBot(LobbyPacket):
         self.id_room = obj['id_room']
 
 
+class DeleteRoom(LobbyPacket):
+    player_token: str
+
+    def __init__(self, player_token: str):
+        super().__init__("DeleteRoom")
+        self.player_token = player_token
+
+    def deserialize(self, obj: object):
+        self.player_token = obj['player_token']
+
+
+class DeleteRoomSuccess(LobbyPacket):
+
+    def __init__(self):
+        super().__init__("DeleteRoomSuccess")
+
+
 class PacketUtils:
     packets: dict = {
         "Exception": ExceptionPacket,
@@ -830,6 +847,8 @@ class PacketUtils:
         "CreateGameSuccess": CreateGameSuccess,
         "LaunchGame": LaunchGame,
         "BroadcastUpdatedRoom": BroadcastUpdatedRoom,
+        "DeleteRoom": DeleteRoom,
+        "DeleteRoomSuccess": DeleteRoomSuccess,
         "AddBot": AddBot,
         # Internal packets
         "InternalCheckPlayerValidity": InternalCheckPlayerValidity,

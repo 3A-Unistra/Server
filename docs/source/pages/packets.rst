@@ -93,7 +93,8 @@ L'applet unity webgl devra se connecter au WebSocket de la partie et envoyer le 
 BroadcastUpdatedRoom
 ^^^^^^^^^^^^^^^^^^^^
 
-Paquet envoyé lorsque qu'un lobby change de statut (soit le nombre de joueurs, soit la partie est lancé, etc)
+Paquet envoyé lorsque qu'un lobby change de statut (soit le nombre de joueurs, soit la partie est lancé, etc).
+Ce paquet est envoyé à tout les joueurs qui sont dans le lobby (pas in-game).
 
 **contenu du paquet :**
  * id du lobby (*id_room*)
@@ -111,6 +112,25 @@ Paquet envoyé *par le client* (le host) lorsqu'il ajoute un bot à la partie
  * id du joueur (*player_token*)
  * id du room (*id_room*)
  * difficulté du bot (*bot_difficulty*)
+
+
+DeleteRoom
+^^^^^^^^^^
+
+Paquet envoyé *par le client* lorsqu'un joueur veut supprimer la partie (avant qu'elle soit lancée).
+Ce paquet ne peut être envoyé que par l'hôte de la partie.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+
+
+DeleteRoomSuccess
+^^^^^^^^^^^^^^^^^
+Paquet envoyé au client pour lui signaler le succès de la suppression d'une partie.
+Les autres joueurs seront prévenus via un BroadcastUpdatedRoom avec le champ *state* à CLOSED.
+
+*ce paquet ne contient pas d'informations*
+
 
 Paquets demarrage
 -----------------
