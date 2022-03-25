@@ -1,13 +1,15 @@
 import logging
 from urllib.parse import parse_qs
 
+from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .data.exceptions import PacketException
 from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
-    PlayerDisconnect, InternalPacket, InternalPlayerDisconnect
+    PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
+    CreateGame
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -176,6 +178,60 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(packet)
 
 
+class LobbyConsumer(AsyncJsonWebsocketConsumer):
+    player_token: str = None
+    game_token: str = None
+
+    async def connect(self):
+        # User is anonymous
+        if self.scope["user"] is None:
+            # Reject the connection
+            return await self.close(code=4000)
+
+        self.player_token = self.scope['user'].id
+
+        packet = InternalCheckPlayerValidity(
+            player_token=self.player_token)
+
+        # adding player to the group
+        async_to_sync(self.channel_layer.group_add)("lobby", self.channel_name)
+
+        # send to game engine worker
+        await self.channel_layer.send(
+            'game_engine',
+            {
+                'type': 'process.lobby.packets',
+                'content': packet.serialize(),
+                'game_token': self.game_token,
+                'channel_name': self.channel_name
+            }
+        )
+
+    async def receive_json(self, content, **kwargs):
+        try:
+            packet = PacketUtils.deserialize_packet(content)
+        except PacketException:
+            # send error packet (or ignore)
+            return
+
+        if isinstance(packet, InternalPacket):
+            return
+
+    async def disconnect(self, code):
+        # removing player from the lobby group
+        async_to_sync(self.channel_layer.group_discard)("lobby",
+                                                        self.channel_name)
+        return
+
+    async def send_lobby_packet(self, content):
+        packet = content.get('packet', None)
+
+        if packet is None:
+            return
+
+        await self.send_json(packet)
+
+
 class GameEngineConsumer(SyncConsumer):
     """
     Consumer between Game Engine Worker and PlayerConsumer
@@ -211,3 +267,16 @@ class GameEngineConsumer(SyncConsumer):
         # Send packet to game thread
         self.engine.send_packet(game_uid=game_token, packet=packet,
                                 channel_name=channel_name)
+
+    def process_lobby_packet(self, content):
+        """
+        packets for creating game are handled here
+        """
+        try:
+            packet = PacketUtils.deserialize_packet(content)
+        except PacketException:
+            # send error packet (or ignore)
+            return
+
+        if isinstance(packet, CreateGame):
+            self.engine.create_game(packet)

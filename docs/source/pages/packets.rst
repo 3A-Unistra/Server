@@ -10,6 +10,130 @@ Le contenu des paquets est au format JSON.
     "name": "testpacket123"
     }
 
+Paquets lobby
+-------------
+
+InternalInitConnection
+^^^^^^^^^^^^^^^^^^^^^^
+Paquet envoyé lorsque un joueur se connecte.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+
+LaunchGame
+^^^^^^^^^^
+Paquet envoyé *par le client* lorsque le host du lobby lance la partie.
+
+**contenu du paquet :**
+ * id du joueur lançant la partie (*player_token*)
+
+GetInRoom
+^^^^^^^^^
+Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+ * id de la salle (*id_room*)
+ * mot de passe (*password*)
+
+
+GetInRoomSuccess
+^^^^^^^^^^^^^^^^
+Paquet envoyé au client pour signifier le succès de son entrée dans une partie
+
+*ce paquet ne contient pas d'informations*
+
+
+GetOutRoom
+^^^^^^^^^^
+Paquet envoyé *par le client* lorsque un joueur veut sortir d'un lobby de partie.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+
+
+GetOutRoomSuccess
+^^^^^^^^^^^^^^^^^
+Paquet envoyé au client pour confirmer le succès de la sortie du lobby de partie
+
+*ce paquet ne contient pas d'informations*
+
+
+
+CreateGame
+^^^^^^^^^^
+Paquet envoyé *par le client* lorsqu'il veut créer une partie
+
+**contenu du paquet :**
+ * id du player créant la partie (*player_token*)
+ * nombre de joueurs (*max_nb_players*)
+ * partie privé ou public (*is_private*)
+ * montant de base pour chaque joueur (*starting_balance*)
+ * mot de passe (peut être un champ vide) (*password*)
+
+
+CreateGameSuccess
+^^^^^^^^^^^^^^^^^
+
+Paquet envoyé par le serveur pour confirmer la création d'une partie
+
+**contenu du packet :**
+ * id du player (*player_token*)
+
+AppletPrepare
+^^^^^^^^^^^^^
+
+Paquet envoyé par le serveur au WebSocket du lobby, voir **Paquets démarrage**
+A partir de ce moment là, la partie web devra démarrer l'applet unity et se déconnecter du WebSocket "lobby".
+L'applet unity webgl devra se connecter au WebSocket de la partie et envoyer le paquet AppletReady.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+
+BroadcastUpdatedRoom
+^^^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé lorsque qu'un lobby change de statut (soit le nombre de joueurs, soit la partie est lancé, etc).
+Ce paquet est envoyé à tout les joueurs qui sont dans le lobby (pas in-game).
+
+**contenu du paquet :**
+ * id du lobby (*id_room*)
+ * l'ancien nombre de joueurs (*old_nb_players*)
+ * le nouveau nombre de joueurs (*new_nb_players*)
+ * le statut de la partie (*state*)
+ * le joueur ajouté ou supprimé (peut-être un champ vide) (*player_added_or_del*)
+
+
+AddBot
+^^^^^^
+
+Paquet envoyé *par le client* (le host) lorsqu'il ajoute un bot à la partie
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+ * id du room (*id_room*)
+ * difficulté du bot (*bot_difficulty*)
+
+
+DeleteRoom
+^^^^^^^^^^
+
+Paquet envoyé *par le client* lorsqu'un joueur veut supprimer la partie (avant qu'elle soit lancée).
+Ce paquet ne peut être envoyé que par l'hôte de la partie.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+ * id de la partie (*id_room*)
+
+
+DeleteRoomSuccess
+^^^^^^^^^^^^^^^^^
+Paquet envoyé au client pour lui signaler le succès de la suppression d'une partie.
+Les autres joueurs seront prévenus via un BroadcastUpdatedRoom avec le champ *state* à CLOSED.
+
+*ce paquet ne contient pas d'informations*
+
+
 Paquets demarrage
 -----------------
 
@@ -31,32 +155,6 @@ paquets (pendant ce temps les données échangées seront refusées par le serve
 Si le client reçoit ce message, alors la connexion est valide.
 Dans le cas contraire, le serveur ferme la connexion WebSocket avec le client.
 
-LaunchGame
-^^^^^^^^^^
-Paquet envoyé *par le client* lorsque le host du lobby lance la partie.
-
-**contenu du paquet :**
- * id du joueur lançant la partie (*id_player*)
-
-GetInRoom
-^^^^^^^^^
-Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
-
-**contenu du paquet :**
- * id du joueur (*id_player*)
- * id de la salle (*id_room*)
- * booleen indiquant si la salle comporte un mot de passe (*is_protected*)
- * mot de passe (*password*)
-
-AppletPrepare
-^^^^^^^^^^^^^
-
-Paquet envoyé par le serveur au WebSocket du lobby, voir **Paquets démarrage**
-A partir de ce moment là, la partie web devra démarrer l'applet unity et se déconnecter du WebSocket "lobby".
-L'applet unity webgl devra se connecter au WebSocket de la partie et envoyer le paquet AppletReady.
-
-**contenu du paquet :**
- * id du joueur (*id_player*)
 
 
 AppletReady

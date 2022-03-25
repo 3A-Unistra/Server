@@ -6,6 +6,7 @@ import names
 from . import Player
 from .cards import ChanceCard, CommunityCard, CardActionType, Card
 from .squares import Square
+from django.conf import settings
 
 
 class Board:
@@ -21,10 +22,13 @@ class Board:
     current_player_index: int
     prison_square_index: int
     round: int
+    starting_balance: int
 
     # Options
     option_go_case_double_money: bool
     option_auction_enabled: bool
+    option_password: str
+    option_is_private: bool
 
     # Card indexes
     community_card_indexes = {
@@ -49,6 +53,9 @@ class Board:
         self.round = 0
         self.option_go_case_double_money = False
         self.option_auction_enabled = False
+        self.option_password = ""
+        self.option_is_private = False
+        self.starting_balance = getattr(settings, "MONEY_START", 1000)
         self.search_card_indexes()
 
     def search_card_indexes(self):

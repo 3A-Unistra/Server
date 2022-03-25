@@ -5,11 +5,10 @@ import uuid
 from enum import Enum
 from threading import Thread
 from queue import Queue
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.conf import settings
 import pause
 
 from server.game_handler.data import Board, Player, Card
@@ -22,8 +21,14 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
-    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, RoundRandomCard, \
-    PlayerPayDebt
+    GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
+    GetOutRoomSuccess, CreateGame, CreateGameSuccess, \
+    BroadcastUpdatedRoom, PlayerEnterPrison, PlayerMove, \
+    PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
+    AddBot, DeleteRoom, DeleteRoomSuccess
+
+from server.game_handler.models import User
+from django.conf import settings
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
     FreeParkingSquare, OwnableSquare, ChanceSquare, CommunitySquare, \
     GoToJailSquare, Square
@@ -83,6 +88,7 @@ class Game(Thread):
     CONFIG: {}
     # reference to games dict
     games: {}
+    host_player: Player
 
     def __init__(self, uid: str = str(uuid.uuid4()), **kwargs):
         super(Game, self).__init__(daemon=True, name="Game_%s" % uid, **kwargs)
@@ -171,12 +177,124 @@ class Game(Thread):
                 return
 
         if self.state is GameState.LOBBY:
-            if isinstance(packet, GameStart):
-                # set state to waiting players
-                # the server will wait AppletReady packets.
+            if isinstance(packet, GetInRoom):
+
+                try:  # get user from database
+                    user = User.objects.get(id=packet.player_token)
+                except User.DoesNotExist:
+                    return
+
+                if packet.password != "":
+                    if packet.password != self.board.option_password:
+                        self.send_packet(channel_name=packet.player_token,
+                                         packet=ExceptionPacket(code=4201))
+                        return
+                # if game is full
+                if len(self.board.players) == self.board.players_nb:
+                    self.send_packet(channel_name=packet.player_token,
+                                     packet=ExceptionPacket(code=4202))
+                    return
+
+                # get current number of players for update
+                nb_players = len(self.board.players)
+                # all the checks are fine, add the player to the game
+                self.board.add_player(
+                    Player(user=user, channel_name=self.channel_layer,
+                           bot=False))
+                # send success of getting in room
+                self.send_packet(channel_name=packet.player_token,
+                                 packet=GetInRoomSuccess())
+
+                # broadcast to lobby group
+                update = BroadcastUpdatedRoom(id_room=self.uid,
+                                              old_nb_players=nb_players,
+                                              new_nb_players=nb_players + 1,
+                                              state="LOBBY",
+                                              player=packet.player_token)
+                self.send_packet_lobby(update)
+
+            elif isinstance(packet, GetOutRoom):
+                # check if player is part of the current room
+                if not self.board.player_exists(packet.player_token):
+                    self.send_packet(channel_name=packet.player_token,
+                                     packet=ExceptionPacket(code=4203))
+                    return
+
+                # if player is the host of the game
+                if packet.player_token != self.host_player:
+                    self.send_packet(channel_name=packet.player_token,
+                                     packet=ExceptionPacket(code=4204))
+                    return
+
+                # if checks passed, kick out player
+                nb_players = len(self.board.players)
+                self.board.remove_player(
+                    self.board.get_player(packet.player_token))
+                # maybe broadcast to let every player in the room know this
+                # player is leaving : this might also be done with the
+                # broadcast of the updated room status
+                self.send_packet(packet.player_token, GetOutRoomSuccess())
+
+                # broadcast updated room status
+                update = BroadcastUpdatedRoom(id_room=self.uid,
+                                              old_nb_players=nb_players,
+                                              new_nb_players=nb_players - 1,
+                                              state="LOBBY",
+                                              player=packet.player_token)
+                self.send_packet_lobby(update)
+
+            elif isinstance(packet, LaunchGame):
+                # check if player_token is the token of the game host
+                if packet.player_token != self.host_player:
+                    return  # ignore the launch request
+
+                self.broadcast_packet(packet=AppletPrepare())
+                # putting the game in waiting mode (waiting for AppletReady
+                # from all the players)
                 self.state = GameState.WAITING_PLAYERS
+                # setting timeout to wait for the players to send AppletReady
                 self.set_timeout(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
+                # broadcasting update to players
+                nb_players = len(self.board.players)
+                update = BroadcastUpdatedRoom(id_room=self.uid,
+                                              old_nb_players=nb_players,
+                                              new_nb_players=nb_players,
+                                              state="WAITING_PLAYERS")
+                self.send_packet_lobby(update)
+
+                # remove players from lobby group
+                async_to_sync(
+                    self.channel_layer.group_discard)("lobby",
+                                                      packet.player_token)
+
+            elif isinstance(packet, AddBot):
+                # check if the host is the one sending the packet
+                if packet.player_token != self.host_player:
+                    self.send_packet(channel_name=packet.player_token,
+                                     packet=ExceptionPacket(code=4205))
+                    return
+
+                # check if game is not full
+                if len(self.board.players) == self.board.players_nb:
+                    self.send_packet(channel_name=packet.player_token,
+                                     packet=ExceptionPacket(code=4202))
+                    return
+
+                # add bot to the game
+                nb_players = len(self.board.players)
+                p = Player(bot=True, bot_name=self.board.get_random_bot_name(),
+                           bot_level=packet.bot_difficulty)
+                self.board.add_player(p)
+
+                # broadcast updated room status
+                update = BroadcastUpdatedRoom(id_room=self.uid,
+                                              old_nb_players=nb_players,
+                                              new_nb_players=nb_players + 1,
+                                              state="LOBBY",
+                                              player=p.bot_name)
+                self.send_packet_lobby(update)
+
         else:
             # If state is not lobby
             # Check for packet validity
@@ -925,6 +1043,18 @@ class Game(Thread):
             self.uid, {"type": "game_update", "packet": packet.serialize()}
         )
 
+    def send_packet_lobby(self, packet: Packet):
+        """
+        sends packet to lobby group.
+        lobby group : all players that are connected to a game in lobby mode
+        :param packet: packet to be sent
+        """
+        async_to_sync(self.channel_layer.send)(
+            "lobby", {
+                'type': 'send.lobby.packet',
+                'packet': packet.serialize()
+            })
+
     def send_packet_to_player(self, player: Player, packet: Packet):
         if player.bot is True:
             return
@@ -948,12 +1078,21 @@ class Game(Thread):
 
 
 class Engine:
-    games: dict[str, Game]
+    games: Dict[str, Game]
     squares: List[Square]
     cards: List[Card]
 
     def __init__(self, **kwargs):
         self.games = {}
+
+    def player_exists(self, player_token: str) -> bool:
+        """
+        Checks if a player exists in any of the game instances
+        """
+        for game in self.games.values():
+            if game.board.player_exists(player_token):
+                return True
+        return False
 
     def add_game(self, game: Game):
         """
@@ -1009,3 +1148,93 @@ class Engine:
         # Blocking function that adds packet to queue
         self.games[game_uid].packets_queue.put(
             QueuePacket(packet=packet, channel_name=channel_name))
+
+    def delete_room(self, packet):
+        """
+        delete instance of game as specified by the DeleteRoom packet
+        warning : sender of the pocket must be host of the game
+        :param packet: packet envoyé
+        """
+
+        if not isinstance(packet, DeleteRoom):
+            return
+
+        id_room = packet.id_room
+
+        if id_room not in self.games:
+            self.send_packet(game_uid=id_room,
+                             packet=ExceptionPacket(code=4207),
+                             channel_name=packet.player_token)
+            return
+
+        # if player sending it isn't host of the game
+        if packet.player_token != self.games[id_room].host_player:
+            self.send_packet(game_uid=id_room,
+                             packet=ExceptionPacket(code=4206),
+                             channel_name=packet.player_token)
+            return
+
+        nb_players = len(self.games[id_room].board.players)
+
+        # sending update
+        self.games[id_room].send_packet_lobby(BroadcastUpdatedRoom(
+            id_room=id_room, old_nb_players=nb_players, new_nb_players=1,
+            state="CLOSED"))
+
+        # sending success
+        self.send_packet(game_uid=id_room, packet=DeleteRoomSuccess(),
+                         channel_name=packet.player_token)
+
+        self.remove_game(id_room)
+
+    def create_game(self, packet):
+        """
+        creating a new game based on the CreateGame packet specification
+         sent by a host
+        :param packet: MUST BE CREATEGAME INSTANCE otherwise useless
+        """
+        if not isinstance(packet, CreateGame):
+            return
+
+        # if player is already in another game
+        if self.player_exists(packet.player_token):
+            return  # or maybe send error
+
+        new_game = Game()
+        if len(self.games) > getattr(settings, "MAX_NUMBER_OF_GAMES", 10):
+            self.send_packet(game_uid=new_game.uid,
+                             packet=ExceptionPacket(code=4206),
+                             channel_name=packet.player_token)
+            self.remove_game(new_game.uid)
+            return
+
+        # adding a new game
+        id_new_game = new_game.uid
+        self.add_game(new_game)
+
+        # adding host to the game
+        self.games[id_new_game].board.add_player(Player(
+            channel_name=packet.player_token, bot=False))
+        # giving him host status
+        self.games[id_new_game].host_player = packet.player_token
+        # setting up the numbers of players
+        self.games[id_new_game].board.players_nb = packet.max_nb_players
+        # setting up password
+        self.games[id_new_game].board.option_password = packet.password
+        # setting up privacy
+        self.games[id_new_game].board.option_is_private = packet.is_private
+        # setting up starting balance
+        if packet.starting_balance != 0:
+            self.games[id_new_game].board.starting_balance = \
+                packet.starting_balance
+        else:
+            self.games[id_new_game].board.starting_balance = \
+                getattr(settings, "MONEY_START", 1000)
+        # sending CreateGameSuccess to host
+        self.send_packet(game_uid=id_new_game,
+                         packet=CreateGameSuccess(packet.player_token),
+                         channel_name=packet.player_token)
+        # sending updated room status
+        self.games[id_new_game].send_packet_lobby(BroadcastUpdatedRoom(
+            id_room=id_new_game, old_nb_players=0, new_nb_players=1,
+            state="LOBBY", player=packet.player_token))

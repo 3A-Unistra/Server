@@ -2,10 +2,9 @@
 import uuid
 
 from django.db import models
-from django.db.models import Model
 
 
-class User(Model):
+class User(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     login = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=64)
@@ -18,7 +17,7 @@ class User(Model):
         db_table = 'users'
 
 
-class UserFriend(Model):
+class UserFriend(models.Model):
     user = models.ForeignKey(User, related_name='friends_user',
                              on_delete=models.CASCADE)
     friend = models.ForeignKey(User, related_name='friends_friend',
@@ -29,7 +28,7 @@ class UserFriend(Model):
         unique_together = ('user', 'friend')
 
 
-class Game(Model):
+class Game(models.Model):
     name = models.CharField(max_length=64)
     duration = models.IntegerField()
     date = models.DateTimeField(auto_now_add=True, blank=True)
@@ -38,7 +37,7 @@ class Game(Model):
         db_table = 'games'
 
 
-class GameUser(Model):
+class GameUser(models.Model):
     user = models.ForeignKey(User, related_name='users_stats',
                              on_delete=models.CASCADE, null=True)
     game = models.ForeignKey(Game, related_name='users_game',
