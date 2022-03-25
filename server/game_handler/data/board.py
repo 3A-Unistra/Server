@@ -6,7 +6,7 @@ import names
 from . import Player
 from .cards import ChanceCard, CommunityCard, CardActionType, Card
 from django.conf import settings
-from .squares import Square, JailSquare
+from .squares import Square, JailSquare, StationSquare, CompanySquare
 
 
 class Board:
@@ -296,3 +296,35 @@ class Board:
                 if debt.creditor is not None:
                     continue
                 debt.creditor = new_target
+
+    def find_closest_station_index(self, player: Player) -> int:
+        """
+        :param player: Player (get player position)
+        :return: Index of clostest station, or -1 if not found
+        """
+        position = player.position
+        squares_len = len(self.squares)
+
+        for i in range(squares_len):
+            position = (position + 1) % squares_len
+
+            if isinstance(self.squares[position], StationSquare):
+                return position
+
+        return -1
+
+    def find_closest_museum_index(self, player: Player) -> int:
+        """
+        :param player: Player (get player position)
+        :return: Index of clostest station, or -1 if not found
+        """
+        position = player.position
+        squares_len = len(self.squares)
+
+        for i in range(squares_len):
+            position = (position + 1) % squares_len
+
+            if isinstance(self.squares[position], CompanySquare):
+                return position
+
+        return -1

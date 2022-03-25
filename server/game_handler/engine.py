@@ -12,7 +12,6 @@ from typing import Optional, List, Dict
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import pause
-from django.contrib.staticfiles import finders
 
 from server.game_handler.data import Board, Player, Card
 from server.game_handler.data.cards import ChanceCard, CardActionType, \
@@ -782,54 +781,47 @@ class Game(Thread):
             if isinstance(card, ChanceCard):
                 player.jail_cards['chance'] = True
                 card.available = False
-                return
 
-            if isinstance(card, CommunityCard):
+            elif isinstance(card, CommunityCard):
                 player.jail_cards['community'] = True
                 card.available = False
-                return
 
         # Receive new injected money
-        if card.action_type is CardActionType.RECEIVE_BANK:
+        elif card.action_type is CardActionType.RECEIVE_BANK:
             self.player_balance_receive(player=player,
                                         amount=card.action_value,
                                         reason="card_receive_bank")
-            return
 
         # Give to bank = give money to board
-        if card.action_type is CardActionType.GIVE_BOARD:
+        elif card.action_type is CardActionType.GIVE_BOARD:
             self.player_balance_pay(player=player,
                                     receiver=None,
                                     amount=card.action_value,
                                     reason="card_give_board")
-            return
 
-        if card.action_type is CardActionType.MOVE_BACKWARD:
+        elif card.action_type is CardActionType.MOVE_BACKWARD:
             self.board.move_player(player=player,
                                    cases=-card.action_value)
             # No actions for passed go
             self.proceed_move_player_actions(player=player,
                                              backward=True)
-            return
 
-        if card.action_type is CardActionType.GOTO_POSITION:
+        elif card.action_type is CardActionType.GOTO_POSITION:
             passed_go = card.action_value < player.position
             player.position = card.action_value
             # Move player actions
             self.proceed_move_player_actions(player=player,
                                              passed_go=passed_go)
-            return
 
-        if card.action_type is CardActionType.GOTO_JAIL:
+        elif card.action_type is CardActionType.GOTO_JAIL:
             player.enter_prison()
             player.position = self.board.prison_square_index
 
             self.broadcast_packet(PlayerEnterPrison(
                 player_token=player.get_id(),
             ))
-            return
 
-        if card.action_type is CardActionType.GIVE_ALL:
+        elif card.action_type is CardActionType.GIVE_ALL:
             # Give money to all players
             for receiver in self.board.players:
                 if receiver == player:
@@ -840,9 +832,8 @@ class Game(Thread):
                                         reason="card_give_all_send",
                                         receiver_reason="card_give_all"
                                                         "_receive")
-            return
 
-        if card.action_type is CardActionType.RECEIVE_ALL:
+        elif card.action_type is CardActionType.RECEIVE_ALL:
             # Receive money from all players
             for sender in self.board.players:
                 if sender == player:
@@ -854,6 +845,15 @@ class Game(Thread):
                                         reason="card_receive_all_send",
                                         receiver_reason="card_receive_all"
                                                         "_receive")
+
+        elif card.action_type is CardActionType.CLOSEST_STATION:
+            pass
+
+        elif card.action_type is CardActionType.CLOSEST_MUSEUM:
+            pass
+
+        elif card.action_type is CardActionType.GIVE_BOARD_HOUSES:
+            pass
 
     def player_balance_pay(self, player: Player, receiver: Optional[Player],
                            amount: int,
