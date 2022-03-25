@@ -9,7 +9,6 @@ from typing import Optional, List
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.conf import settings
 import pause
 
 from server.game_handler.data import Board, Player, Card
@@ -29,7 +28,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, DeleteRoom, DeleteRoomSuccess
 
 from server.game_handler.models import User
-from server.settings.common import MAX_NUMBER_OF_GAMES
+from django.conf import settings
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
     FreeParkingSquare, OwnableSquare, ChanceSquare, CommunitySquare, \
     GoToJailSquare, Square
@@ -1202,7 +1201,7 @@ class Engine:
             return  # or maybe send error
 
         new_game = Game()
-        if len(self.games) > MAX_NUMBER_OF_GAMES:
+        if len(self.games) > getattr(settings, "MAX_NUMBER_OF_GAMES", 10):
             self.send_packet(game_uid=new_game.uid,
                              packet=ExceptionPacket(code=4206),
                              channel_name=packet.player_token)
@@ -1225,8 +1224,12 @@ class Engine:
         # setting up privacy
         self.games[id_new_game].board.option_is_private = packet.is_private
         # setting up starting balance
-        self.games[id_new_game].board.starting_balance = \
-            packet.starting_balance
+        if packet.starting_balance != 0:
+            self.games[id_new_game].board.starting_balance = \
+                packet.starting_balance
+        else:
+            self.games[id_new_game].board.starting_balance = \
+                getattr(settings, "MONEY_START", 1000)
         # sending CreateGameSuccess to host
         self.send_packet(game_uid=id_new_game,
                          packet=CreateGameSuccess(packet.player_token),

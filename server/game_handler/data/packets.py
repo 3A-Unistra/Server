@@ -2,7 +2,6 @@ import json
 from enum import Enum
 
 from .exceptions import PacketException
-from ...settings.common import DEFAULT_STARTING_BALANCE
 
 
 class Packet:
@@ -748,7 +747,7 @@ class CreateGame(LobbyPacket):
 
     def __init__(self, player_token: str = "", password: str = "",
                  max_nb_players: int = 0, is_private: bool = False,
-                 starting_balance: int = DEFAULT_STARTING_BALANCE):
+                 starting_balance: int = 0):
         super().__init__("CreateGame")
         self.player_token = player_token
         self.password = password

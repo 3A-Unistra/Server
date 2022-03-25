@@ -133,10 +133,6 @@ ENGINE_CONFIG = {
 
     'MAX_DOUBLES_JAIL': 3,
     'MAX_JAIL_TURNS': 3,
-    'JAIL_LEAVE_PRICE': 50
+    'JAIL_LEAVE_PRICE': 50,
+    'MAX_NUMBER_OF_GAMES': 10
 }
-
-# idk if this is an appropriate starting balance
-DEFAULT_STARTING_BALANCE = 100000
-
-MAX_NUMBER_OF_GAMES = 10
