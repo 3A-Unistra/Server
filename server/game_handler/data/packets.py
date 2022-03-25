@@ -779,13 +779,16 @@ class AddBot(LobbyPacket):
 
 class DeleteRoom(LobbyPacket):
     player_token: str
+    id_room: str
 
-    def __init__(self, player_token: str):
+    def __init__(self, player_token: str, id_room: str):
         super().__init__("DeleteRoom")
         self.player_token = player_token
+        self.id_room = id_room
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
+        self.id_room = obj['id_room']
 
 
 class DeleteRoomSuccess(LobbyPacket):

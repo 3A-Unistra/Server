@@ -122,6 +122,7 @@ Ce paquet ne peut être envoyé que par l'hôte de la partie.
 
 **contenu du paquet :**
  * id du joueur (*player_token*)
+ * id de la partie (*id_room*)
 
 
 DeleteRoomSuccess

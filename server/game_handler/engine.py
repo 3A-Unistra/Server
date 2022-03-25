@@ -22,7 +22,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, \
     GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
     GetOutRoomSuccess, CreateGame, CreateGameSuccess, BroadcastUpdatedRoom, \
-    AddBot
+    AddBot, DeleteRoom, DeleteRoomSuccess
 from server.game_handler.data.squares import GoSquare
 from server.game_handler.models import User
 
@@ -723,8 +723,50 @@ class Engine:
         self.games[game_uid].packets_queue.put(
             QueuePacket(packet=packet, channel_name=channel_name))
 
-    def create_game(self, packet):
+    def delete_room(self, packet):
+        """
+        delete instance of game as specified by the DeleteRoom packet
+        warning : sender of the pocket must be host of the game
+        :param packet: packet envoyé
+        """
 
+        if not isinstance(packet, DeleteRoom):
+            return
+
+        id_room = packet.id_room
+
+        if id_room not in self.games:
+            self.send_packet(game_uid=id_room,
+                             packet=ExceptionPacket(code=4207),
+                             channel_name=packet.player_token)
+            return
+
+        # if player sending it isn't host of the game
+        if packet.player_token != self.games[id_room].host_player:
+            self.send_packet(game_uid=id_room,
+                             packet=ExceptionPacket(code=4206),
+                             channel_name=packet.player_token)
+            return
+
+        nb_players = len(self.games[id_room].board.players)
+
+        # sending update
+        self.games[id_room].send_packet_lobby(BroadcastUpdatedRoom(
+            id_room=id_room, old_nb_players=nb_players, new_nb_players=1,
+            state="CLOSED"))
+
+        # sending success
+        self.send_packet(game_uid=id_room, packet=DeleteRoomSuccess(),
+                         channel_name=packet.player_token)
+
+        self.remove_game(id_room)
+
+    def create_game(self, packet):
+        """
+        creating a new game based on the CreateGame packet specification
+         sent by a host
+        :param packet: MUST BE CREATEGAME INSTANCE otherwise useless
+        """
         if not isinstance(packet, CreateGame):
             return
 
