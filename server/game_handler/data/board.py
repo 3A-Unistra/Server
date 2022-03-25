@@ -5,8 +5,8 @@ import names
 
 from . import Player
 from .cards import ChanceCard, CommunityCard, CardActionType, Card
-from .squares import Square
 from django.conf import settings
+from .squares import Square, JailSquare
 
 
 class Board:
@@ -56,19 +56,30 @@ class Board:
         self.option_password = ""
         self.option_is_private = False
         self.starting_balance = getattr(settings, "MONEY_START", 1000)
+        self.search_square_indexes()
         self.search_card_indexes()
+
+    def search_square_indexes(self):
+        """
+        Search special square indexes
+        """
+        for i in range(len(self.squares)):
+            square = self.squares[i]
+            if isinstance(square, JailSquare):
+                self.prison_square_index = i
+                break
 
     def search_card_indexes(self):
         """
         Search special card indexes (leave_jail)
         Writes in <chance or community>_card_indexes
         """
-        for i in range(0, len(self.chance_deck)):
+        for i in range(len(self.chance_deck)):
             card = self.chance_deck[i]
             if card.action_type == CardActionType.LEAVE_JAIL:
                 self.chance_card_indexes['leave_jail'] = i
                 break
-        for i in range(0, len(self.community_deck)):
+        for i in range(len(self.community_deck)):
             card = self.community_deck[i]
             if card.action_type == CardActionType.LEAVE_JAIL:
                 self.community_card_indexes['leave_jail'] = i

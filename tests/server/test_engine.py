@@ -1,4 +1,8 @@
+import json
+import os
 from unittest import TestCase
+
+from django.conf import settings
 
 from server.game_handler.data import Player, Card
 from server.game_handler.data.cards import CardActionType, ChanceCard, \
@@ -33,6 +37,9 @@ class TestPacket(TestCase):
         self.engine.add_game(game)
 
         assert len(self.engine.games) == 1
+        assert game.board.prison_square_index == 10
+        assert game.board.chance_card_indexes['leave_jail'] == 15
+        assert game.board.community_card_indexes['leave_jail'] == 15
         assert game.state == GameState.LOBBY
 
         game.proceed_stop()
@@ -251,3 +258,19 @@ class TestPacket(TestCase):
 
         assert player1.jail_cards['community']
         assert not card.available
+
+    def test_load_json(self):
+        assert len(self.engine.squares) != 0
+        assert len(self.engine.chance_deck) != 0
+        assert len(self.engine.community_deck) != 0
+
+        squares_path = os.path.join(settings.STATIC_ROOT, 'data/squares.json')
+        with open(squares_path) as squares_file:
+            squares = json.load(squares_file)
+            assert len(self.engine.squares) == len(squares)
+
+        cards_path = os.path.join(settings.STATIC_ROOT, 'data/cards.json')
+        with open(cards_path) as cards_file:
+            cards_json = json.load(cards_file)
+            assert len(cards_json) == (len(self.engine.chance_deck) + len(
+                self.engine.community_deck))
