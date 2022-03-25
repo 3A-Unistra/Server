@@ -283,15 +283,16 @@ class Game(Thread):
 
                 # add bot to the game
                 nb_players = len(self.board.players)
-                self.board.add_player(Player(
-                    bot_name=self.board.get_random_bot_name(),
-                    bot_level=packet.bot_difficulty))
+                p = Player(bot=True, bot_name=self.board.get_random_bot_name(),
+                           bot_level=packet.bot_difficulty)
+                self.board.add_player(p)
 
                 # broadcast updated room status
                 update = BroadcastUpdatedRoom(id_room=self.uid,
                                               old_nb_players=nb_players,
                                               new_nb_players=nb_players + 1,
-                                              state="LOBBY")
+                                              state="LOBBY",
+                                              player=p.bot_name)
                 self.send_packet_lobby(update)
 
         else:
