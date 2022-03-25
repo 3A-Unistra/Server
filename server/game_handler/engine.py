@@ -5,7 +5,7 @@ import uuid
 from enum import Enum
 from threading import Thread
 from queue import Queue
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -1078,7 +1078,7 @@ class Game(Thread):
 
 
 class Engine:
-    games: dict[str, Game]
+    games: Dict[str, Game]
     squares: List[Square]
     cards: List[Card]
 

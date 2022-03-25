@@ -1,5 +1,6 @@
 import json
 from enum import Enum
+from typing import Dict
 
 from .exceptions import PacketException
 
@@ -812,7 +813,7 @@ class DeleteRoomSuccess(LobbyPacket):
 
 
 class PacketUtils:
-    packets: dict = {
+    packets = {
         # Utility packets
         "Exception": ExceptionPacket,
         "Ping": PingPacket,
@@ -876,11 +877,11 @@ class PacketUtils:
     }
 
     @staticmethod
-    def is_packet(obj: dict) -> bool:
+    def is_packet(obj: Dict) -> bool:
         return "name" in obj
 
     @staticmethod
-    def deserialize_packet(obj: dict) -> "Packet":
+    def deserialize_packet(obj: Dict) -> "Packet":
         if not PacketUtils.is_packet(obj):
             raise PacketException("Could not deserialize packet")
 
