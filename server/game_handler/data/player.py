@@ -1,9 +1,30 @@
+import collections
 import random
 import uuid
-from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from datetime import datetime
+from typing import Optional, Tuple, List
 
 from server.game_handler.models import User
+
+
+class PlayerDebt:
+    """
+    When creditor is None, creditor is the bank
+    """
+    creditor: Optional["Player"]
+    amount: int
+    reason: str
+
+    def __init__(self, creditor: Optional["Player"], amount: int = 0,
+                 reason: str = ""):
+        self.creditor = creditor
+        self.amount = amount
+        self.reason = reason
+
+    def __str__(self):
+        name = self.creditor.get_name() if self.creditor \
+                                           is not None else "BANK"
+        return "%d for %s" % (self.amount, name)
 
 
 class Player:
@@ -44,8 +65,11 @@ class Player:
     ping: bool = True
     ping_timeout: datetime
 
-    # Temps values
+    # Temp values
     start_dice_throw_received: bool
+
+    # Dept system
+    debts: collections.deque[PlayerDebt]
 
     def __init__(self, user: Optional[User] = None, channel_name: str = None,
                  bot: bool = True, bot_name: str = None, bot_level: int = 0):
@@ -59,6 +83,7 @@ class Player:
         self.channel_name = channel_name
         self.current_dices = (0, 0)
         self.start_dice_throw_received = False
+        self.debts = collections.deque()
 
         if bot is True:
             self.online = True
@@ -85,7 +110,7 @@ class Player:
         if self.bot:
             if self.user is None or self.user.name is None:
                 return self.bot_name
-            return 'Bot %s' % self.bot_name
+            return 'Bot %s' % self.user.name
         return self.user.name
 
     def roll_dices(self) -> int:
@@ -114,6 +139,33 @@ class Player:
         self.jail_turns = 0
         self.in_jail = False
 
+    def is_bankrupt(self) -> bool:
+        """
+        A player is bankrupt if he has debts
+        :return: Player is bankrupt or not
+        """
+        return len(self.debts) > 0
+
+    def has_debts(self) -> bool:
+        return self.is_bankrupt()
+
+    def add_debt(self, creditor: Optional["Player"], amount: int,
+                 reason: str = ""):
+        self.debts.append(PlayerDebt(
+            creditor=creditor,
+            amount=amount,
+            reason=reason
+        ))
+
+    def get_debts_for(self, creditor: Optional["Player"]):
+        return [a for a in self.debts if a.creditor == creditor]
+
+    def get_total_debts(self) -> int:
+        """
+        :return: Total debts
+        """
+        return sum([debt.amount for debt in self.debts])
+
     def get_coherent_infos(self) -> dict:
         return {
             'player_token': self.get_id(),
@@ -138,6 +190,8 @@ class Player:
     def __eq__(self, other):
         # For equality: player == other_player
         # Like: player.get_id() == other_player.get_id()
+        if other is None:
+            return False
         if isinstance(other, Player):
             return self.get_id() == other.get_id()
         return False

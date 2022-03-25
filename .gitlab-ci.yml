@@ -22,6 +22,21 @@ test:3.9:
   tags:
     - gitlab-org
 
+test:coverage:
+  stage: test
+  script:
+    - apk add python3-dev gcc libc-dev libffi-dev
+    - pip install -r requirements.txt
+    - pip install pytest pytest-cov
+    - coverage run -m pytest
+    - coverage report
+    - coverage xml
+  artifacts:
+    reports:
+      cobertura: coverage.xml
+  tags:
+    - gitlab-org
+
 pages:
   stage: test
   script:

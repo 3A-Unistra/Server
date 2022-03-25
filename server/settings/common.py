@@ -132,7 +132,8 @@ ENGINE_CONFIG = {
     'MONEY_GO': 200,
 
     'MAX_DOUBLES_JAIL': 3,
-    'MAX_JAIL_TURNS': 3
+    'MAX_JAIL_TURNS': 3,
+    'JAIL_LEAVE_PRICE': 50
 }
 
 # idk if this is an appropriate starting balance

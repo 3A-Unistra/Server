@@ -3,7 +3,8 @@ from typing import List, Optional
 
 import names
 
-from . import Card, Player
+from . import Player
+from .cards import ChanceCard, CommunityCard, CardActionType, Card
 from .squares import Square
 from ...settings.common import DEFAULT_STARTING_BALANCE
 
@@ -11,15 +12,15 @@ from ...settings.common import DEFAULT_STARTING_BALANCE
 class Board:
     squares: List[Square]
     cases_count: int
-    community_deck: List[Card]
-    chance_deck: List[Card]
-    prison_square: int
+    community_deck: List[CommunityCard]
+    chance_deck: List[ChanceCard]
     board_money: int
     players: List[Player]
     players_nb: int
     bots_nb: int
     bot_names: []
     current_player_index: int
+    prison_square_index: int
     round: int
     starting_balance: int
 
@@ -28,17 +29,25 @@ class Board:
     option_auction_enabled: bool
     option_password: str
 
+    # Card indexes
+    community_card_indexes = {
+        'leave_jail': -1
+    }
+    chance_card_indexes = {
+        'leave_jail': -1
+    }
+
     def __init__(self, squares=None):
         self.squares = [] if squares is None else squares
         self.cases_count = len(self.squares)
         self.community_deck = []
         self.chance_deck = []
-        self.prison_square = 0
         self.board_money = 0
         self.players = []
         self.players_nb = 0
         self.bots_nb = 0
         self.current_player_index = 0
+        self.prison_square_index = 0
         self.bot_names: []
         self.round = 0
         self.option_go_case_double_money = False
@@ -46,6 +55,23 @@ class Board:
         self.option_password = ""
         self.option_is_private = False
         self.starting_balance = DEFAULT_STARTING_BALANCE
+        self.search_card_indexes()
+
+    def search_card_indexes(self):
+        """
+        Search special card indexes (leave_jail)
+        Writes in <chance or community>_card_indexes
+        """
+        for i in range(0, len(self.chance_deck)):
+            card = self.chance_deck[i]
+            if card.action_type == CardActionType.LEAVE_JAIL:
+                self.chance_card_indexes['leave_jail'] = i
+                break
+        for i in range(0, len(self.community_deck)):
+            card = self.community_deck[i]
+            if card.action_type == CardActionType.LEAVE_JAIL:
+                self.community_card_indexes['leave_jail'] = i
+                break
 
     def next_player(self) -> Player:
         """
@@ -203,7 +229,58 @@ class Board:
         :param player: Player to move
         :return: If player reached "0" (start) case
         """
+        return self.move_player(player=player, cases=player.dices_value())
+
+    def move_player(self, player: Player, cases: int) -> bool:
+        """
+        :param player: Player to move
+        :param cases: Cases to move
+        :return: If player reached "0" (start) case
+        """
         temp_position = player.position
         player.position = (player.position
-                           + player.dices_value()) % self.cases_count
+                           + cases) % self.cases_count
         return player.position < temp_position
+
+    def draw_random_card(self, deck: List[Card]) -> Optional[Card]:
+        available_deck = [card for card in deck if card.available]
+
+        if len(available_deck) == 0:
+            return None
+
+        return random.choice(available_deck)
+
+    def draw_random_chance_card(self) -> Optional[ChanceCard]:
+        """
+        :return: Randomly drawn chance card, (+ jail card if available)
+                Could be None if no card was found or available
+        """
+        return self.draw_random_card(self.chance_deck)
+
+    def draw_random_community_card(self) -> Optional[CommunityCard]:
+        """
+        :return: Randomly drawn community card, (+ jail card if available)
+                Could be None if no card was found or available
+        """
+        return self.draw_random_card(self.community_deck)
+
+    def use_chance_jail_card(self, player: Player):
+        player.jail_cards['chance'] = False
+        self.chance_deck[
+            self.chance_card_indexes['leave_jail']].available = True
+
+    def use_community_jail_card(self, player: Player):
+        player.jail_cards['community'] = False
+        self.community_deck[
+            self.community_card_indexes['leave_jail']].available = True
+
+    def retarget_player_bank_debts(self, new_target: Player):
+        """
+        change all debts targeting the bank (None) to this player (new_target)
+        :param new_target: Target
+        """
+        for player in self.players:
+            for debt in player.debts:
+                if debt.creditor is not None:
+                    continue
+                debt.creditor = new_target

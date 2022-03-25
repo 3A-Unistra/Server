@@ -2,3 +2,9 @@
 source = server/
 omit = setup.py
        .tox/*
+       server/asgi.py
+       server/game_handler/migrations/*
+       server/game_handler/routing.py
+       server/settings/*
+       server/urls.py
+       server/wsgi.py

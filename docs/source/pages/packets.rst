@@ -260,21 +260,15 @@ Notifie les clients qu'une nouvelle manche démarre.
 **contenu du paquet :**
  * identifiant du joueur qui joue. (*current_player*)
 
-RoundDiceThrow
-^^^^^^^^^^^^^^
-(*envoyé par le client*). Envoyé lorque le client à qui c'est le tout appuye sur le bouton pour lancer le dé.
-
-**contenu du paquet :**
- * identifiant du joueur. (*id_player*)
-
-
 RoundDiceResults
 ^^^^^^^^^^^^^^^^
 Paquet contenant le résultat du lancer de dé du joueur. Envoyé à tout les joueurs, le résultat des lancers de dés étant publique.
 
 **contenu du paquet :**
- * identifiant du joueur (*id_player*)
- * résultat du lancer de dé (*dice_result*)
+ * identifiant du joueur (*player_token*)
+ * result : int(enum(ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD_CHANCE = 2, JAIL_CARD_COMMUNITY = 3))
+ * résultat dé 1 : (*dice1*)
+ * résultat dé 2 : (*dice2*)
 
 Exception
 ^^^^^^^^^
@@ -294,7 +288,8 @@ entre trois possibilités : ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD = 2.
 Seul le joueur dont c'est le tour peut envoyer ce paquet.
 
 **contenu du paquet :**
- * choice : int(enum(ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD = 2))
+ * id du joueur qui a choisi (*player_token*)
+ * choice : int(enum(ROLL_DICES = 0, JAIL_PAY = 1, JAIL_CARD_CHANCE = 2, JAIL_CARD_COMMUNITY = 3))
 
 PlayerMove
 ^^^^^^^^^^
@@ -310,9 +305,9 @@ RoundRandomCard
 Si le joueur tombe sur une case communautaire ou une case de chance, ce paquet est envoyé à tout le monde.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * indiquer si c'est une case communautaire ou de chance (*is_communautaire*)
- * contenu de la carte tiré aléatoirement (*card_content*)
+ * id du joueur (*player_token*)
+ * indiquer si c'est une case communautaire ou de chance (*is_community*)
+ * id de la carte tirée aléatoirement (*card_id*)
 
 PlayerUpdateBalance
 ^^^^^^^^^^^^^^^^^^^
@@ -323,7 +318,18 @@ Lorsque la somme d'argent d'un joueur modifie, ce paquet est envoyé à tout les
  * id du joueur dont la somme a changé (*player_token*)
  * Balance qu'il avait (*old_balance*)
  * Nouvelle balance (*new_balance*)
- * raison
+ * raison (*reason*)
+
+PlayerPayDebt
+^^^^^^^^^^^^^
+
+Lorsqu'un joueur rembourse sa dette.
+
+**contenu du paquet :**
+ * id du joueur qui rembourse sa dette (*player_token*)
+ * id ou vide (banque) du receveur (*player_to*)
+ * montant de la dette remboursé (*amount*)
+ * raison (*reason*)
 
 PlayerEnterPrison
 ^^^^^^^^^^^^^^^^^
