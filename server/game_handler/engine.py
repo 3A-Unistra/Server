@@ -22,13 +22,12 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
-    PlayerEnterPrison, PlayerMove, PlayerUpdateBalance, \
     GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
-    GetOutRoomSuccess, CreateGame, CreateGameSuccess, \    
+    GetOutRoomSuccess, CreateGame, CreateGameSuccess, \
     BroadcastUpdatedRoom, PlayerEnterPrison, PlayerMove, \
-    PlayerUpdateBalance,RoundRandomCard, PlayerPayDebt, \
+    PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
     AddBot, DeleteRoom, DeleteRoomSuccess
-from server.game_handler.data.squares import GoSquare
+
 from server.game_handler.models import User
 from server.settings.common import MAX_NUMBER_OF_GAMES
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
@@ -210,7 +209,7 @@ class Game(Thread):
                 # broadcast to lobby group
                 update = BroadcastUpdatedRoom(id_room=self.uid,
                                               old_nb_players=nb_players,
-                                              new_nb_players=nb_players+1,
+                                              new_nb_players=nb_players + 1,
                                               state="LOBBY",
                                               player=packet.player_token)
                 self.send_packet_lobby(update)
@@ -240,7 +239,7 @@ class Game(Thread):
                 # broadcast updated room status
                 update = BroadcastUpdatedRoom(id_room=self.uid,
                                               old_nb_players=nb_players,
-                                              new_nb_players=nb_players-1,
+                                              new_nb_players=nb_players - 1,
                                               state="LOBBY",
                                               player=packet.player_token)
                 self.send_packet_lobby(update)

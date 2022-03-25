@@ -104,7 +104,6 @@ class LaunchGame(Packet):
         super(LaunchGame, self).__init__(self.__class__.__name__)
         self.player_token = player_token
 
-
     def deserialize(self, obj: object):
         self.player_token = obj["player_token"]
 
