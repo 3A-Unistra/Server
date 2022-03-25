@@ -137,3 +137,5 @@ ENGINE_CONFIG = {
 
 # idk if this is an appropriate starting balance
 DEFAULT_STARTING_BALANCE = 100000
+
+MAX_NUMBER_OF_GAMES = 10

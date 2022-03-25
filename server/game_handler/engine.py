@@ -25,6 +25,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, DeleteRoom, DeleteRoomSuccess
 from server.game_handler.data.squares import GoSquare
 from server.game_handler.models import User
+from server.settings.common import MAX_NUMBER_OF_GAMES
 
 """
 States:
@@ -208,7 +209,8 @@ class Game(Thread):
                 update = BroadcastUpdatedRoom(id_room=self.uid,
                                               old_nb_players=nb_players,
                                               new_nb_players=nb_players+1,
-                                              state="LOBBY")
+                                              state="LOBBY",
+                                              player=packet.player_token)
                 self.send_packet_lobby(update)
 
             elif isinstance(packet, GetOutRoom):
@@ -237,7 +239,8 @@ class Game(Thread):
                 update = BroadcastUpdatedRoom(id_room=self.uid,
                                               old_nb_players=nb_players,
                                               new_nb_players=nb_players-1,
-                                              state="LOBBY")
+                                              state="LOBBY",
+                                              player=packet.player_token)
                 self.send_packet_lobby(update)
 
             elif isinstance(packet, LaunchGame):
@@ -774,8 +777,15 @@ class Engine:
         if self.player_exists(packet.player_token):
             return  # or maybe send error
 
-        # adding a new game
         new_game = Game()
+        if len(self.games) > MAX_NUMBER_OF_GAMES:
+            self.send_packet(game_uid=new_game.uid,
+                             packet=ExceptionPacket(code=4206),
+                             channel_name=packet.player_token)
+            self.remove_game(new_game.uid)
+            return
+
+        # adding a new game
         id_new_game = new_game.uid
         self.add_game(new_game)
 
@@ -800,4 +810,4 @@ class Engine:
         # sending updated room status
         self.games[id_new_game].send_packet_lobby(BroadcastUpdatedRoom(
             id_room=id_new_game, old_nb_players=0, new_nb_players=1,
-            state="LOBBY"))
+            state="LOBBY", player=packet.player_token))

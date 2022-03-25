@@ -101,6 +101,7 @@ Ce paquet est envoyé à tout les joueurs qui sont dans le lobby (pas in-game).
  * l'ancien nombre de joueurs (*old_nb_players*)
  * le nouveau nombre de joueurs (*new_nb_players*)
  * le statut de la partie (*state*)
+ * le joueur ajouté ou supprimé (peut-être un champ vide) (*player_added_or_del*)
 
 
 AddBot

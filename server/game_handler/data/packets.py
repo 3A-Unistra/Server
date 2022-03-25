@@ -144,21 +144,24 @@ class BroadcastUpdatedRoom(LobbyPacket):
     id_room: str
     old_nb_players: int
     new_nb_players: int
+    player_added_or_del: str
     state: str
 
     def __init__(self, id_room: str, old_nb_players: int, new_nb_players: int,
-                 state: str):
+                 state: str, player: str = None):
         super().__init__("BroadcastUpdatedRoom")
         self.id_room = id_room
         self.old_nb_players = old_nb_players
         self.new_nb_players = new_nb_players
         self.state = state
+        self.player_added_or_del = player
 
     def deserialize(self, obj: object):
         self.id_room = obj['id_room']
         self.old_nb_players = obj['old_nb_players']
         self.new_nb_players = obj['new_nb_players']
         self.state = obj['state']
+        self.player_added_or_del = obj['player_added_or_del']
 
 
 class PingPacket(PlayerPacket):
