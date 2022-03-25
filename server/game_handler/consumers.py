@@ -190,6 +190,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
 
         self.player_token = self.scope['user'].id
 
+        #TODO: internalplayerconnect
         packet = InternalCheckPlayerValidity(
             player_token=self.player_token)
 
@@ -202,7 +203,6 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             {
                 'type': 'process.lobby.packets',
                 'content': packet.serialize(),
-                'game_token': self.game_token,
                 'channel_name': self.channel_name
             }
         )
@@ -217,10 +217,17 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         if isinstance(packet, InternalPacket):
             return
 
+        # ????
+        # TODO: Send infos to engine here
+
     async def disconnect(self, code):
         # removing player from the lobby group
+
         async_to_sync(self.channel_layer.group_discard)("lobby",
                                                         self.channel_name)
+
+        # if game_token != None; send internalplayerdisconnect to engine
+        # to remove player?
         return
 
     async def send_lobby_packet(self, content):
@@ -278,5 +285,24 @@ class GameEngineConsumer(SyncConsumer):
             # send error packet (or ignore)
             return
 
+        # if internal packet:
+        # engine.send_game_infos(channel_name)
+
         if isinstance(packet, CreateGame):
             self.engine.create_game(packet)
+
+        # Getouinroom ???
+
+        # Check if packet is not None and game token exists
+        if packet is None or 'game_token' not in content:
+            return
+
+        game_token = content['game_token']
+
+        # get channel name
+        channel_name = content[
+            'channel_name'] if 'channel_name' in content else ''
+
+        # Send packet to game thread
+        self.engine.send_packet(game_uid=game_token, packet=packet,
+                                channel_name=channel_name)

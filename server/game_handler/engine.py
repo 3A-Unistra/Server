@@ -199,18 +199,23 @@ class Game(Thread):
                 # get current number of players for update
                 nb_players = len(self.board.players)
                 # all the checks are fine, add the player to the game
+                #TODO: channel_name != channel_layer
                 self.board.add_player(
-                    Player(user=user, channel_name=self.channel_layer,
+                    Player(user=user, channel_name=queue_packet.channel_name,
                            bot=False))
                 # send success of getting in room
                 self.send_packet(channel_name=packet.player_token,
                                  packet=GetInRoomSuccess())
 
+                # TODO: GetInRoomSuccess => send game infos
+
                 # broadcast to lobby group
                 update = BroadcastUpdatedRoom(id_room=self.uid,
+                                              # TODO: only nb_players
                                               old_nb_players=nb_players,
                                               new_nb_players=nb_players + 1,
                                               state="LOBBY",
+                                              # TODO: self.state.value
                                               player=packet.player_token)
                 self.send_packet_lobby(update)
 
