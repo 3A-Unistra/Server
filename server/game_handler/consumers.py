@@ -231,7 +231,6 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
 
     async def disconnect(self, code):
         # removing player from the lobby group
-
         async_to_sync(self.channel_layer.group_discard)("lobby",
                                                         self.channel_name)
 
@@ -297,7 +296,7 @@ class GameEngineConsumer(SyncConsumer):
         # if internal packet:
         if isinstance(packet, InternalLobbyConnect):
             # TODO: send info about all the rooms
-            self.engine.send_all_room_updates(channel_name=packet.player_token)
+            self.engine.send_all_lobby_status(player_token=packet.player_token)
 
         if not isinstance(packet, LobbyPacket):
             return

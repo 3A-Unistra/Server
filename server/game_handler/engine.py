@@ -223,3 +223,18 @@ class Engine:
             nb_players=1,
             reason=reason,
             player=packet.player_token))
+
+    def send_all_lobby_status(self, player_token: str):
+        """
+        send status of all the games that are in LOBBY state
+        :param player_token: player_token to send the status to
+        """
+        for game in self.games:
+            if self.games[game].state == GameState.LOBBY:
+                packet = BroadcastUpdatedRoom(
+                    game_token=game,
+                    nb_players=len(self.games[game].board.players)
+                    reason=UpdateReason(0).value
+                )
+                self.games[game].send_packet(player_token, packet)
+
