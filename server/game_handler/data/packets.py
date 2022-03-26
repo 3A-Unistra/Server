@@ -1,8 +1,8 @@
 import json
 from enum import Enum
+from typing import Dict
 
 from .exceptions import PacketException
-from ...settings.common import DEFAULT_STARTING_BALANCE
 
 
 class Packet:
@@ -748,7 +748,7 @@ class CreateGame(LobbyPacket):
 
     def __init__(self, player_token: str = "", password: str = "",
                  max_nb_players: int = 0, is_private: bool = False,
-                 starting_balance: int = DEFAULT_STARTING_BALANCE):
+                 starting_balance: int = 0):
         super().__init__("CreateGame")
         self.player_token = player_token
         self.password = password
@@ -813,7 +813,7 @@ class DeleteRoomSuccess(LobbyPacket):
 
 
 class PacketUtils:
-    packets: dict = {
+    packets = {
         # Utility packets
         "Exception": ExceptionPacket,
         "Ping": PingPacket,
@@ -877,11 +877,11 @@ class PacketUtils:
     }
 
     @staticmethod
-    def is_packet(obj: dict) -> bool:
+    def is_packet(obj: Dict) -> bool:
         return "name" in obj
 
     @staticmethod
-    def deserialize_packet(obj: dict) -> "Packet":
+    def deserialize_packet(obj: Dict) -> "Packet":
         if not PacketUtils.is_packet(obj):
             raise PacketException("Could not deserialize packet")
 

@@ -2,7 +2,7 @@ import collections
 import random
 import uuid
 from datetime import datetime
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Deque
 
 from server.game_handler.models import User
 
@@ -69,7 +69,7 @@ class Player:
     start_dice_throw_received: bool
 
     # Dept system
-    debts: collections.deque[PlayerDebt]
+    debts: Deque[PlayerDebt]
 
     def __init__(self, user: Optional[User] = None, channel_name: str = None,
                  bot: bool = True, bot_name: str = None, bot_level: int = 0):

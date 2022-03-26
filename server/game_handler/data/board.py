@@ -5,13 +5,13 @@ import names
 
 from . import Player
 from .cards import ChanceCard, CommunityCard, CardActionType, Card
-from .squares import Square
-from ...settings.common import DEFAULT_STARTING_BALANCE
+from django.conf import settings
+from .squares import Square, JailSquare, StationSquare, CompanySquare, \
+    OwnableSquare, PropertySquare
 
 
 class Board:
     squares: List[Square]
-    cases_count: int
     community_deck: List[CommunityCard]
     chance_deck: List[ChanceCard]
     board_money: int
@@ -28,6 +28,7 @@ class Board:
     option_go_case_double_money: bool
     option_auction_enabled: bool
     option_password: str
+    option_is_private: bool
 
     # Card indexes
     community_card_indexes = {
@@ -39,7 +40,6 @@ class Board:
 
     def __init__(self, squares=None):
         self.squares = [] if squares is None else squares
-        self.cases_count = len(self.squares)
         self.community_deck = []
         self.chance_deck = []
         self.board_money = 0
@@ -47,27 +47,38 @@ class Board:
         self.players_nb = 0
         self.bots_nb = 0
         self.current_player_index = 0
-        self.prison_square_index = 0
+        self.prison_square_index = -1
         self.bot_names: []
         self.round = 0
         self.option_go_case_double_money = False
         self.option_auction_enabled = False
         self.option_password = ""
         self.option_is_private = False
-        self.starting_balance = DEFAULT_STARTING_BALANCE
+        self.starting_balance = getattr(settings, "MONEY_START", 1000)
+        self.search_square_indexes()
         self.search_card_indexes()
+
+    def search_square_indexes(self):
+        """
+        Search special square indexes
+        """
+        for i in range(len(self.squares)):
+            square = self.squares[i]
+            if isinstance(square, JailSquare):
+                self.prison_square_index = i
+                break
 
     def search_card_indexes(self):
         """
         Search special card indexes (leave_jail)
         Writes in <chance or community>_card_indexes
         """
-        for i in range(0, len(self.chance_deck)):
+        for i in range(len(self.chance_deck)):
             card = self.chance_deck[i]
             if card.action_type == CardActionType.LEAVE_JAIL:
                 self.chance_card_indexes['leave_jail'] = i
                 break
-        for i in range(0, len(self.community_deck)):
+        for i in range(len(self.community_deck)):
             card = self.community_deck[i]
             if card.action_type == CardActionType.LEAVE_JAIL:
                 self.community_card_indexes['leave_jail'] = i
@@ -93,7 +104,7 @@ class Board:
         return self.players[self.current_player_index]
 
     def get_player_idx(self, player: Player) -> int:
-        for i in range(0, self.players_nb):
+        for i in range(len(self.players)):
             if self.players[i] == player:
                 return i
         return -1
@@ -239,7 +250,7 @@ class Board:
         """
         temp_position = player.position
         player.position = (player.position
-                           + cases) % self.cases_count
+                           + cases) % len(self.squares)
         return player.position < temp_position
 
     def draw_random_card(self, deck: List[Card]) -> Optional[Card]:
@@ -284,3 +295,75 @@ class Board:
                 if debt.creditor is not None:
                     continue
                 debt.creditor = new_target
+
+    def find_closest_station_index(self, player: Player) -> int:
+        """
+        :param player: Player (get player position)
+        :return: Index of closest station, or -1 if not found
+        """
+        position = player.position
+        squares_len = len(self.squares)
+
+        for i in range(squares_len):
+            position = (position + 1) % squares_len
+
+            if isinstance(self.squares[position], StationSquare):
+                return position
+
+        return -1
+
+    def find_closest_company_index(self, player: Player) -> int:
+        """
+        :param player: Player (get player position)
+        :return: Index of closest company, or -1 if not found
+        """
+        position = player.position
+        squares_len = len(self.squares)
+
+        for i in range(squares_len):
+            position = (position + 1) % squares_len
+
+            if isinstance(self.squares[position], CompanySquare):
+                return position
+
+        return -1
+
+    def get_ownable_squares(self) -> List[OwnableSquare]:
+        """
+        :return: List of ownable squares
+        """
+        result = []
+        for square in self.squares:
+            if isinstance(square, OwnableSquare):
+                result.append(result)
+        return result
+
+    def get_property_squares(self) -> List[PropertySquare]:
+        """
+        :return: List of property squares
+        """
+        result = []
+        for square in self.squares:
+            if isinstance(square, PropertySquare):
+                result.append(square)
+        return result
+
+    def get_player_buildings_count(self, player: Player) -> (int, int):
+        """
+        Get total houses and hotels count
+        :param player: Player (owner)
+        :return: (houses, hotels) Total houses and hotels count
+        """
+        houses = 0
+        hotels = 0
+
+        for square in self.get_property_squares():
+            if square.owner != player:
+                continue
+
+            if square.has_hotel():
+                hotels += 1
+            else:
+                houses += square.nb_house
+
+        return houses, hotels
