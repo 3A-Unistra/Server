@@ -6,12 +6,12 @@ import names
 from . import Player
 from .cards import ChanceCard, CommunityCard, CardActionType, Card
 from django.conf import settings
-from .squares import Square, JailSquare, StationSquare, CompanySquare
+from .squares import Square, JailSquare, StationSquare, CompanySquare, \
+    OwnableSquare, PropertySquare
 
 
 class Board:
     squares: List[Square]
-    cases_count: int
     community_deck: List[CommunityCard]
     chance_deck: List[ChanceCard]
     board_money: int
@@ -40,7 +40,6 @@ class Board:
 
     def __init__(self, squares=None):
         self.squares = [] if squares is None else squares
-        self.cases_count = len(self.squares)
         self.community_deck = []
         self.chance_deck = []
         self.board_money = 0
@@ -251,7 +250,7 @@ class Board:
         """
         temp_position = player.position
         player.position = (player.position
-                           + cases) % self.cases_count
+                           + cases) % len(self.squares)
         return player.position < temp_position
 
     def draw_random_card(self, deck: List[Card]) -> Optional[Card]:
@@ -328,3 +327,43 @@ class Board:
                 return position
 
         return -1
+
+    def get_ownable_squares(self) -> List[OwnableSquare]:
+        """
+        :return: List of ownable squares
+        """
+        result = []
+        for square in self.squares:
+            if isinstance(square, OwnableSquare):
+                result.append(result)
+        return result
+
+    def get_property_squares(self) -> List[PropertySquare]:
+        """
+        :return: List of property squares
+        """
+        result = []
+        for square in self.squares:
+            if isinstance(square, PropertySquare):
+                result.append(square)
+        return result
+
+    def get_player_buildings_count(self, player: Player) -> (int, int):
+        """
+        Get total houses and hotels count
+        :param player: Player (owner)
+        :return: (houses, hotels) Total houses and hotels count
+        """
+        houses = 0
+        hotels = 0
+
+        for square in self.get_property_squares():
+            if square.owner != player:
+                continue
+
+            if square.has_hotel():
+                hotels += 1
+            else:
+                houses += square.nb_house
+
+        return houses, hotels

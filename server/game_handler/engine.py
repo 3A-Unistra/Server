@@ -847,13 +847,43 @@ class Game(Thread):
                                                         "_receive")
 
         elif card.action_type is CardActionType.CLOSEST_STATION:
-            pass
+            # find the closest station
+            idx = self.board.find_closest_station_index(player)
+
+            if idx == -1:
+                return
+
+            player.position = idx
+
+            self.broadcast_packet(PlayerMove(
+                player_token=player.get_id(),
+                destination=player.position
+            ))
 
         elif card.action_type is CardActionType.CLOSEST_COMPANY:
-            pass
+            # find the closest company
+            idx = self.board.find_closest_company_index(player)
+
+            if idx == -1:
+                return
+
+            player.position = idx
+
+            self.broadcast_packet(PlayerMove(
+                player_token=player.get_id(),
+                destination=player.position
+            ))
 
         elif card.action_type is CardActionType.GIVE_BOARD_HOUSES:
-            pass
+            houses, hotels = self.board.get_player_buildings_count(player)
+
+            # houses * value + hotels + alt
+            amount = houses * card.action_value + hotels * card.alt
+
+            self.player_balance_pay(player=player,
+                                    receiver=None,
+                                    amount=amount,
+                                    reason="card_give_board_houses")
 
     def player_balance_pay(self, player: Player, receiver: Optional[Player],
                            amount: int,

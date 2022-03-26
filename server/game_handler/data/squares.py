@@ -129,6 +129,9 @@ class PropertySquare(OwnableSquare):
         # TODO
         pass
 
+    def has_hotel(self):
+        return self.nb_house > 4
+
     def deserialize(self, obj: dict):
         super().deserialize(obj)
         self.house_price = int(obj['house_price'])
