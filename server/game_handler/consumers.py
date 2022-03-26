@@ -270,12 +270,10 @@ class GameEngineConsumer(SyncConsumer):
             packet = PacketUtils.deserialize_packet(packet_content)
         except PacketException:
             # send error packet (or ignore)
-            print("prout2")
             return
 
         # Check if packet is not None and game token exists
         if packet is None or 'game_token' not in content:
-            print("prout")
             return
 
         game_token = content['game_token']
@@ -283,8 +281,6 @@ class GameEngineConsumer(SyncConsumer):
         # get channel name
         channel_name = content[
             'channel_name'] if 'channel_name' in content else ''
-
-        print("process packets")
 
         # Send packet to game thread
         try:
@@ -294,8 +290,6 @@ class GameEngineConsumer(SyncConsumer):
 
             # if game not exists send error packet
             packet = ExceptionPacket(code=4102)
-
-            print("Game not exists")
 
             async_to_sync(self.channel_layer.send)(
                 channel_name, {
