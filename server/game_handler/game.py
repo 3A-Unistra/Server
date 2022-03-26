@@ -192,21 +192,20 @@ class Game(Thread):
                                      packet=ExceptionPacket(code=4202))
                     return
 
-                # get current number of players for update
-                nb_players = len(self.board.players)
                 # all the checks are fine, add the player to the game
                 self.board.add_player(
                     Player(user=user, channel_name=self.channel_layer,
                            bot=False))
+
+                nb_players = len(self.board.players)
+
                 # send success of getting in room
                 self.send_packet(channel_name=packet.player_token,
                                  packet=GetInRoomSuccess())
 
                 # broadcast to lobby group
-                update = BroadcastUpdatedRoom(id_room=self.uid,
-                                              old_nb_players=nb_players,
-                                              new_nb_players=nb_players + 1,
-                                              state="LOBBY",
+                update = BroadcastUpdatedRoom(game_token=self.uid,
+                                              nb_players=nb_players,
                                               player=packet.player_token)
                 self.send_packet_lobby(update)
 
@@ -224,7 +223,6 @@ class Game(Thread):
                     return
 
                 # if checks passed, kick out player
-                nb_players = len(self.board.players)
                 self.board.remove_player(
                     self.board.get_player(packet.player_token))
                 # maybe broadcast to let every player in the room know this
@@ -232,11 +230,10 @@ class Game(Thread):
                 # broadcast of the updated room status
                 self.send_packet(packet.player_token, GetOutRoomSuccess())
 
+                nb_players = len(self.board.players)
                 # broadcast updated room status
-                update = BroadcastUpdatedRoom(id_room=self.uid,
-                                              old_nb_players=nb_players,
-                                              new_nb_players=nb_players - 1,
-                                              state="LOBBY",
+                update = BroadcastUpdatedRoom(game_token=self.uid,
+                                              nb_players=nb_players,
                                               player=packet.player_token)
                 self.send_packet_lobby(update)
 
@@ -254,10 +251,9 @@ class Game(Thread):
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
                 # broadcasting update to players
                 nb_players = len(self.board.players)
-                update = BroadcastUpdatedRoom(id_room=self.uid,
-                                              old_nb_players=nb_players,
-                                              new_nb_players=nb_players,
-                                              state="WAITING_PLAYERS")
+                update = BroadcastUpdatedRoom(game_token=self.uid,
+                                              nb_players=nb_players,
+                                              player=packet.player_token)
                 self.send_packet_lobby(update)
 
                 # remove players from lobby group
@@ -285,7 +281,7 @@ class Game(Thread):
                 self.board.add_player(p)
 
                 # broadcast updated room status
-                update = BroadcastUpdatedRoom(id_room=self.uid,
+                update = BroadcastUpdatedRoom(game_token=self.uid,
                                               old_nb_players=nb_players,
                                               new_nb_players=nb_players + 1,
                                               state="LOBBY",

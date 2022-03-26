@@ -9,7 +9,7 @@ from .data.exceptions import PacketException
 from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
     PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
-    CreateGame
+    CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -190,11 +190,12 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
 
         self.player_token = self.scope['user'].id
 
-        #TODO: internalplayerconnect
-        packet = InternalCheckPlayerValidity(
+        # sending the internal packet to the EngineConsumer
+        # TODO: in response, we should send the list of the room status
+        packet = InternalLobbyConnect(
             player_token=self.player_token)
 
-        # adding player to the group
+        # adding player to the lobby group
         async_to_sync(self.channel_layer.group_add)("lobby", self.channel_name)
 
         # send to game engine worker
@@ -217,8 +218,16 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         if isinstance(packet, InternalPacket):
             return
 
-        # ????
-        # TODO: Send infos to engine here
+        # send to game engine consumer
+        # TODO: game engine consumer must handle the packets
+        await self.channel_layer.send(
+            'game_engine',
+            {
+                'type': 'process.lobby.packets',
+                'content': packet.serialize(),
+                'channel_name': self.channel_name
+            }
+        )
 
     async def disconnect(self, code):
         # removing player from the lobby group
@@ -277,7 +286,7 @@ class GameEngineConsumer(SyncConsumer):
 
     def process_lobby_packet(self, content):
         """
-        packets for creating game are handled here
+        lobby packets are handled here
         """
         try:
             packet = PacketUtils.deserialize_packet(content)
@@ -286,12 +295,18 @@ class GameEngineConsumer(SyncConsumer):
             return
 
         # if internal packet:
-        # engine.send_game_infos(channel_name)
+        if isinstance(packet, InternalLobbyConnect):
+            # TODO: send info about all the rooms
+            self.engine.send_all_room_updates(channel_name=packet.player_token)
+
+        if not isinstance(packet, LobbyPacket):
+            return
 
         if isinstance(packet, CreateGame):
             self.engine.create_game(packet)
 
-        # Getouinroom ???
+        if isinstance(packet, DeleteRoom):
+            self.engine.delete_room(packet)
 
         # Check if packet is not None and game token exists
         if packet is None or 'game_token' not in content:

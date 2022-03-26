@@ -33,7 +33,7 @@ Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
 
 **contenu du paquet :**
  * id du joueur (*player_token*)
- * id de la salle (*id_room*)
+ * id de la salle (*game_token*)
  * mot de passe (*password*)
 
 
@@ -97,11 +97,10 @@ Paquet envoyé lorsque qu'un lobby change de statut (soit le nombre de joueurs, 
 Ce paquet est envoyé à tout les joueurs qui sont dans le lobby (pas in-game).
 
 **contenu du paquet :**
- * id du lobby (*id_room*)
- * l'ancien nombre de joueurs (*old_nb_players*)
- * le nouveau nombre de joueurs (*new_nb_players*)
- * le statut de la partie (*state*)
- * le joueur ajouté ou supprimé (peut-être un champ vide) (*player_added_or_del*)
+ * id du lobby (*game_token*)
+ * le nombre de jour (*nb_players*)
+ * le joueur ajouté ou supprimé (peut-être un champ vide) (*player*)
+ * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
 
 
 AddBot
@@ -111,7 +110,7 @@ Paquet envoyé *par le client* (le host) lorsqu'il ajoute un bot à la partie
 
 **contenu du paquet :**
  * id du joueur (*player_token*)
- * id du room (*id_room*)
+ * id du room (*game_token*)
  * difficulté du bot (*bot_difficulty*)
 
 
@@ -123,7 +122,7 @@ Ce paquet ne peut être envoyé que par l'hôte de la partie.
 
 **contenu du paquet :**
  * id du joueur (*player_token*)
- * id de la partie (*id_room*)
+ * id de la partie (*game_token*)
 
 
 DeleteRoomSuccess

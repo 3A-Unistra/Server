@@ -81,19 +81,19 @@ class PlayerValid(Packet):
 
 class GetInRoom(LobbyPacket):
     player_token: str
-    id_room: str
+    game_token: str
     password: str
 
-    def __init__(self, player_token: str = "", id_room: str = "",
+    def __init__(self, player_token: str = "", game_token: str = "",
                  password: str = ""):
         super(GetInRoom, self).__init__(self.__class__.__name__)
         self.player_token = player_token
-        self.id_room = id_room
+        self.game_token = game_token
         self.password = password
 
     def deserialize(self, obj: object):
         self.player_token = obj["player_token"]
-        self.id_room = obj["id_room"]
+        self.game_token = obj["game_token"]
         self.password = obj["password"]
 
 
@@ -140,28 +140,38 @@ class GetOutRoomSuccess(LobbyPacket):
         super().__init__("GetOutRoomSuccess")
 
 
-class BroadcastUpdatedRoom(LobbyPacket):
-    id_room: str
-    old_nb_players: int
-    new_nb_players: int
-    player_added_or_del: str
-    state: str
+class UpdateReason(Enum):
+    NEW_CONNECTION = 0
+    NEW_PLAYER = 1
+    PLAYER_LEFT = 2
+    ROOM_DELETED = 3
+    ROOM_CREATED = 4
+    HOST_LEFT = 5
+    
+    @staticmethod
+    def has_value(value):
+        return value in set(item.value for item in UpdateReason)
 
-    def __init__(self, id_room: str, old_nb_players: int, new_nb_players: int,
-                 state: str, player: str = None):
+
+class BroadcastUpdatedRoom(LobbyPacket):
+    game_token: str
+    nb_players: int
+    player: str
+    reason: int
+
+    def __init__(self, game_token: str, nb_players: int, reason: int,
+                 player: str = None):
         super().__init__("BroadcastUpdatedRoom")
-        self.id_room = id_room
-        self.old_nb_players = old_nb_players
-        self.new_nb_players = new_nb_players
-        self.state = state
-        self.player_added_or_del = player
+        self.game_token = game_token
+        self.nb_players = nb_players
+        self.player = player
+        self.reason = reason
 
     def deserialize(self, obj: object):
-        self.id_room = obj['id_room']
-        self.old_nb_players = obj['old_nb_players']
-        self.new_nb_players = obj['new_nb_players']
-        self.state = obj['state']
-        self.player_added_or_del = obj['player_added_or_del']
+        self.game_token = obj['game_token']
+        self.nb_players = obj['nb_players']
+        self.player = obj['player']
+        self.reason = obj['reason']
 
 
 class PingPacket(PlayerPacket):
@@ -776,40 +786,48 @@ class CreateGameSuccess(LobbyPacket):
 
 class AddBot(LobbyPacket):
     player_token: str
-    id_room: str
+    game_token: str
     bot_difficulty: int
 
-    def __init__(self, player_token: str, id_room: str = "",
+    def __init__(self, player_token: str, game_token: str = "",
                  bot_difficulty: int = 0):
         super().__init__("AddBot")
         self.player_token = player_token
-        self.id_room = id_room
+        self.game_token = game_token
         self.bot_difficulty = bot_difficulty
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
         self.bot_difficulty = obj['bot_difficulty']
-        self.id_room = obj['id_room']
+        self.game_token = obj['game_token']
 
 
 class DeleteRoom(LobbyPacket):
     player_token: str
-    id_room: str
+    game_token: str
 
-    def __init__(self, player_token: str, id_room: str):
+    def __init__(self, player_token: str, game_token: str):
         super().__init__("DeleteRoom")
         self.player_token = player_token
-        self.id_room = id_room
+        self.game_token = game_token
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
-        self.id_room = obj['id_room']
+        self.game_token = obj['game_token']
 
 
 class DeleteRoomSuccess(LobbyPacket):
 
     def __init__(self):
         super().__init__("DeleteRoomSuccess")
+
+
+class InternalLobbyConnect(InternalPacket):
+    player_token: str
+
+    def __init__(self, player_token: str):
+        super().__init__("DeleteRoomSuccess")
+        self.player_token = player_token
 
 
 class PacketUtils:
@@ -873,7 +891,8 @@ class PacketUtils:
         "AddBot": AddBot,
         # Internal packets
         "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
-        "InternalPlayerDisconnect": InternalPlayerDisconnect
+        "InternalPlayerDisconnect": InternalPlayerDisconnect,
+        "InternalLobbyConnect": InternalLobbyConnect
     }
 
     @staticmethod

@@ -15,7 +15,6 @@ from server.game_handler.data.squares import Square, SquareUtils
 from server.game_handler.game import Game, GameState, QueuePacket
 
 
-
 class Engine:
     games: Dict[str, Game]
     squares: List[Square]
@@ -139,33 +138,33 @@ class Engine:
         if not isinstance(packet, DeleteRoom):
             return
 
-        id_room = packet.id_room
+        game_token = packet.game_token
 
-        if id_room not in self.games:
-            self.send_packet(game_uid=id_room,
+        if game_token not in self.games:
+            self.send_packet(game_uid=game_token,
                              packet=ExceptionPacket(code=4207),
                              channel_name=packet.player_token)
             return
 
         # if player sending it isn't host of the game
-        if packet.player_token != self.games[id_room].host_player:
-            self.send_packet(game_uid=id_room,
+        if packet.player_token != self.games[game_token].host_player:
+            self.send_packet(game_uid=game_token,
                              packet=ExceptionPacket(code=4206),
                              channel_name=packet.player_token)
             return
 
-        nb_players = len(self.games[id_room].board.players)
+        nb_players = len(self.games[game_token].board.players)
 
         # sending update
-        self.games[id_room].send_packet_lobby(BroadcastUpdatedRoom(
-            id_room=id_room, old_nb_players=nb_players, new_nb_players=1,
+        self.games[game_token].send_packet_lobby(BroadcastUpdatedRoom(
+            game_token=game_token, old_nb_players=nb_players, new_nb_players=1,
             state="CLOSED"))
 
         # sending success
-        self.send_packet(game_uid=id_room, packet=DeleteRoomSuccess(),
+        self.send_packet(game_uid=game_token, packet=DeleteRoomSuccess(),
                          channel_name=packet.player_token)
 
-        self.remove_game(id_room)
+        self.remove_game(game_token)
 
     def create_game(self, packet):
         """
@@ -216,5 +215,5 @@ class Engine:
                          channel_name=packet.player_token)
         # sending updated room status
         self.games[id_new_game].send_packet_lobby(BroadcastUpdatedRoom(
-            id_room=id_new_game, old_nb_players=0, new_nb_players=1,
+            game_token=id_new_game, old_nb_players=0, new_nb_players=1,
             state="LOBBY", player=packet.player_token))
