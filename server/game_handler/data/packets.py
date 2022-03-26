@@ -330,7 +330,7 @@ class RoundDiceResults(PlayerPacket):
     def deserialize(self, obj: object):
         super().deserialize(obj)
         # TODO check enum validity
-        self.result = RoundDiceChoiceResult(int(obj['result']))
+        self.result = int(obj['result'])
         self.dice1 = int(obj['dice1'])
         self.dice2 = int(obj['dice2'])
 
@@ -420,6 +420,17 @@ class PlayerExitPrison(PlayerPacket):
     def __init__(self, player_token: str = ""):
         super().__init__(name=self.__class__.__name__,
                          player_token=player_token)
+
+
+class ActionEnd(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+
+
+class ActionTimeout(Packet):
+    def __init__(self):
+        super().__init__(name=self.__class__.__name__)
 
 
 class ActionExchange(PlayerPacket):
@@ -834,6 +845,9 @@ class PacketUtils:
         "PlayerPayDebt": PlayerPayDebt,
         "PlayerEnterPrison": PlayerEnterPrison,
         "PlayerExitPrison": PlayerExitPrison,
+        # Tour actions
+        "ActionEnd": ActionEnd,
+        "ActionTimeout": ActionTimeout,
         "ActionExchange": ActionExchange,
         "ActionExchangePlayerSelect": ActionExchangePlayerSelect,
         "ActionExchangeTradeSelect": ActionExchangeTradeSelect,

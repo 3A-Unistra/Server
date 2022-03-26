@@ -21,7 +21,8 @@ class Board:
     bot_names: []
     current_player_index: int
     prison_square_index: int
-    round: int
+    current_round: int
+    remaining_round_players: int
     starting_balance: int
 
     # Options
@@ -29,6 +30,7 @@ class Board:
     option_auction_enabled: bool
     option_password: str
     option_is_private: bool
+    option_max_rounds: int  # > 0 => activated
 
     # Card indexes
     community_card_indexes = {
@@ -49,11 +51,13 @@ class Board:
         self.current_player_index = 0
         self.prison_square_index = -1
         self.bot_names: []
-        self.round = 0
+        self.current_round = 0
+        self.remaining_round_players = 0
         self.option_go_case_double_money = False
         self.option_auction_enabled = False
         self.option_password = ""
         self.option_is_private = False
+        self.option_max_rounds = 0
         self.starting_balance = getattr(settings, "MONEY_START", 1000)
         self.search_square_indexes()
         self.search_card_indexes()
@@ -91,6 +95,9 @@ class Board:
         """
         i = 0
         curr_idx = self.current_player_index
+
+        # update remaining round players
+        self.remaining_round_players -= 1
 
         while i < self.players_nb:
             curr_idx = (curr_idx + 1) % self.players_nb
@@ -159,11 +166,7 @@ class Board:
         """
         :return: Offline players (bots that are not connected)
         """
-        offline = []
-        for player in self.players:
-            if player.online is False:
-                offline.append(player)
-        return offline
+        return [player for player in self.players if not player.online]
 
     def bot_name_used(self, name: str) -> bool:
         for player in self.players:
@@ -195,21 +198,20 @@ class Board:
         """
         :return: Online players, bots included
         """
-        players = []
-        for player in self.players:
-            if player.online is True:
-                players.append(player)
-        return players
+        return [player for player in self.players if player.online]
 
     def get_online_real_players(self) -> List[Player]:
         """
         :return: Online players, bots excluded
         """
-        players = []
-        for player in self.players:
-            if player.online is True and player.bot is False:
-                players.append(player)
-        return players
+        return [player for player in self.players if
+                (player.online and not player.bot)]
+
+    def get_non_bankrupt_players(self) -> List[Player]:
+        """
+        :return: Non bankrupted players (bots included)
+        """
+        return [player for player in self.players if not player.bankrupt]
 
     def get_highest_dice(self) -> Optional[Player]:
         """
@@ -367,3 +369,13 @@ class Board:
                 houses += square.nb_house
 
         return houses, hotels
+
+    def compute_current_round(self) -> int:
+        """
+        Computes current round, (current_tour += 1) if all players have played.
+        :return: Computed current round
+        """
+        if self.remaining_round_players == 0:
+            self.remaining_round_players = len(self.get_non_bankrupt_players())
+            self.current_round += 1
+        return self.current_round

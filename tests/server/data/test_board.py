@@ -103,6 +103,21 @@ class TestPacket(TestCase):
         player3.connect()
         assert board.get_online_players_count() == 3
 
+    def test_get_non_bankrupt_players(self):
+        board = self.create_board()
+        player1, player2, player3 = create_players()
+        board.add_player(player1)
+        board.add_player(player2)
+        board.add_player(player3)
+
+        assert len(board.get_non_bankrupt_players()) == 3
+
+        player1.bankrupt = True
+        assert len(board.get_non_bankrupt_players()) == 2
+
+        player2.bankrupt = True
+        assert len(board.get_non_bankrupt_players()) == 1
+
     def test_get_online_real_players_count(self):
         board = self.create_board()
         player1, player2, player3 = create_players()

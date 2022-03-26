@@ -22,7 +22,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
     GetOutRoomSuccess, BroadcastUpdatedRoom, PlayerEnterPrison, PlayerMove, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
-    AddBot
+    AddBot, ActionEnd, ActionTimeout
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -373,6 +373,16 @@ class Game(Thread):
                 self.proceed_dice_choice(player=player, choice=choice)
                 return
 
+        if self.state is GameState.ACTION_TIMEOUT_WAIT:
+            if isinstance(packet, ActionEnd):
+                player = self.board.get_player(packet.player_token)
+
+                # Check if player is current player, else ignore
+                if player != self.board.get_current_player():
+                    return
+
+                self.proceed_action_tour_end()
+
     def process_logic(self):
         # TODO: Check #34 in comments
 
@@ -399,21 +409,21 @@ class Game(Thread):
                 # x Seconds timeout before game start
                 self.start_begin_dice()
 
-            if self.state is GameState.START_DICE:
+            elif self.state is GameState.START_DICE:
                 self.check_start_dice()
 
-            if self.state is GameState.START_DICE_REROLL:
+            elif self.state is GameState.START_DICE_REROLL:
                 self.start_begin_dice()
 
-            if self.state is GameState.FIRST_ROUND_START_WAIT:
+            elif self.state is GameState.FIRST_ROUND_START_WAIT:
                 self.start_round(first=True)
 
-            if self.state is GameState.ROUND_START_WAIT:
+            elif self.state is GameState.ROUND_START_WAIT:
                 self.start_round()
 
             # If player has not sent his choice to the server,
             # process to timeout choice
-            if self.state is GameState.ROUND_DICE_CHOICE_WAIT:
+            elif self.state is GameState.ROUND_DICE_CHOICE_WAIT:
                 player = self.board.get_current_player()
                 choice = RoundDiceChoiceResult.ROLL_DICES
 
@@ -423,6 +433,10 @@ class Game(Thread):
                     choice = RoundDiceChoiceResult.JAIL_PAY
 
                 self.proceed_dice_choice(player=player, choice=choice)
+
+            elif self.state is GameState.ACTION_TIMEOUT_WAIT:
+                # Tour is ended
+                self.proceed_action_tour_end()
 
     def proceed_stop(self):
         # Delete game
@@ -520,7 +534,13 @@ class Game(Thread):
         state.ROUND_DICE_CHOICE_WAIT -> timeout_expired()
                                                     -> proceed_dice_choice()
         """
-        if not first:
+        if first:
+            # set remaining round players,
+            # 3 remaining - 1 = 2 players remaining to get to next round
+            self.board.remaining_round_players = len(
+                self.board.get_non_bankrupt_players()) - 1
+        else:
+            # remaining players - 1
             self.board.next_player()
 
         # Get current player
@@ -539,6 +559,61 @@ class Game(Thread):
         # set timeout for dice choice wait
         self.state = GameState.ROUND_DICE_CHOICE_WAIT
         self.set_timeout(seconds=self.CONFIG.get('ROUND_DICE_CHOICE_WAIT'))
+
+    def proceed_action_tour_end(self):
+        """
+        Process to tour end, cancel all actions and check if player is bankrupt
+        """
+        # TODO : process loose
+        self.broadcast_packet(ActionTimeout())
+
+        # Check if player is bankrupt
+        self.check_current_player_bankrupt()
+
+        # Check game status (if game is win or no players connected > return)
+        if self.check_game_status():
+            return
+
+        # Set state to round_start_wait, this will execute round_start()
+        self.state = GameState.ROUND_START_WAIT
+        self.set_timeout(seconds=self.CONFIG.get('ROUND_START_WAIT'))
+
+    def check_current_player_bankrupt(self):
+        """
+        Check if the current player is bankrupt, if this is the case, we remove
+        it from the game.
+        """
+
+        current_player = self.board.get_current_player()
+
+        if current_player.is_bankrupt():
+            # TODO: defeat.
+            pass
+
+    def check_game_status(self) -> bool:
+        """
+        Check's if game is win, check's if at least 1 player is still connected
+        Checks if total_rounds < max_rounds
+        :return Game is win or no players connected
+        """
+        if self.board.get_online_real_players_count() == 0:
+            # TODO : END GAME ?
+            return True
+
+        # Win
+        if len(self.board.get_non_bankrupt_players()) == 0:
+            # TODO: proceed to win
+            return True
+
+        # Max rounds option is activated
+        if self.board.option_max_rounds > 0:
+            # Check if current_round is greater than option
+            if self.board.compute_current_round() >= \
+                    self.board.option_max_rounds:
+                # TODO: proceed to check win.
+                return True
+
+        return False
 
     def proceed_heartbeat(self):
         """
