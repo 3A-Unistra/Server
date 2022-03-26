@@ -180,6 +180,7 @@ Lorsque tous les joueurs sont prêts et ont chargé le jeu.
 
 .. code-block:: json
     :caption: Informations dans la variable players du paquet GameStart
+
     {
       "name": "GameStart",
       "game_name": "GameExample",
