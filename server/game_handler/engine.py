@@ -15,10 +15,41 @@ from server.game_handler.game import Game, GameState, QueuePacket
 class Engine:
     games: Dict[str, Game]
     squares: List[Square]
-    cards: List[Card]
+    chance_deck: List[ChanceCard]
+    community_deck: List[CommunityCard]
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.games = {}
+        self.squares = []
+        self.chance_deck = []
+        self.community_deck = []
+        self.__load_json()
+
+    def __load_json(self):
+        squares_path = os.path.join(settings.STATIC_ROOT, 'data/squares.json')
+        with open(squares_path) as squares_file:
+            squares_json = json.load(squares_file)
+            self.squares = []
+            for j_square in squares_json:
+                square = SquareUtils.load_from_json(j_square)
+                if square is None:
+                    continue
+                self.squares.append(square)
+
+        cards_path = os.path.join(settings.STATIC_ROOT, 'data/cards.json')
+        with open(cards_path) as cards_file:
+            cards_json = json.load(cards_file)
+            self.cards = []
+            for j_card in cards_json:
+                card = CardUtils.load_from_json(j_card)
+
+                if card is None:
+                    continue
+
+                if isinstance(card, ChanceCard):
+                    self.chance_deck.append(card)
+                elif isinstance(card, CommunityCard):
+                    self.community_deck.append(card)
 
     def player_exists(self, player_token: str) -> bool:
         """
@@ -37,6 +68,16 @@ class Engine:
         """
         if game.uid in self.games:
             return
+
+        # set loaded cards
+        game.board.squares = self.squares.copy()
+        game.board.chance_deck = self.chance_deck.copy()
+        game.board.community_deck = self.community_deck.copy()
+
+        # search card indexes
+        game.board.search_card_indexes()
+        # search square indexes
+        game.board.search_square_indexes()
 
         # Reference to games dict (delete game)
         game.games = self.games
