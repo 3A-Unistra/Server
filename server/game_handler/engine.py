@@ -1,3 +1,5 @@
+import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import time
@@ -13,7 +15,7 @@ import pause
 
 from server.game_handler.data import Board, Player, Card
 from server.game_handler.data.cards import ChanceCard, CardActionType, \
-    CommunityCard
+    CommunityCard, CardUtils
 from server.game_handler.data.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import PlayerPacket, Packet, \
@@ -31,7 +33,7 @@ from server.game_handler.models import User
 from django.conf import settings
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
     FreeParkingSquare, OwnableSquare, ChanceSquare, CommunitySquare, \
-    GoToJailSquare, Square
+    GoToJailSquare, Square, SquareUtils
 
 
 class GameState(Enum):
@@ -779,54 +781,47 @@ class Game(Thread):
             if isinstance(card, ChanceCard):
                 player.jail_cards['chance'] = True
                 card.available = False
-                return
 
-            if isinstance(card, CommunityCard):
+            elif isinstance(card, CommunityCard):
                 player.jail_cards['community'] = True
                 card.available = False
-                return
 
         # Receive new injected money
-        if card.action_type is CardActionType.RECEIVE_BANK:
+        elif card.action_type is CardActionType.RECEIVE_BANK:
             self.player_balance_receive(player=player,
                                         amount=card.action_value,
                                         reason="card_receive_bank")
-            return
 
         # Give to bank = give money to board
-        if card.action_type is CardActionType.GIVE_BOARD:
+        elif card.action_type is CardActionType.GIVE_BOARD:
             self.player_balance_pay(player=player,
                                     receiver=None,
                                     amount=card.action_value,
                                     reason="card_give_board")
-            return
 
-        if card.action_type is CardActionType.MOVE_BACKWARD:
+        elif card.action_type is CardActionType.MOVE_BACKWARD:
             self.board.move_player(player=player,
                                    cases=-card.action_value)
             # No actions for passed go
             self.proceed_move_player_actions(player=player,
                                              backward=True)
-            return
 
-        if card.action_type is CardActionType.GOTO_POSITION:
+        elif card.action_type is CardActionType.GOTO_POSITION:
             passed_go = card.action_value < player.position
             player.position = card.action_value
             # Move player actions
             self.proceed_move_player_actions(player=player,
                                              passed_go=passed_go)
-            return
 
-        if card.action_type is CardActionType.GOTO_JAIL:
+        elif card.action_type is CardActionType.GOTO_JAIL:
             player.enter_prison()
             player.position = self.board.prison_square_index
 
             self.broadcast_packet(PlayerEnterPrison(
                 player_token=player.get_id(),
             ))
-            return
 
-        if card.action_type is CardActionType.GIVE_ALL:
+        elif card.action_type is CardActionType.GIVE_ALL:
             # Give money to all players
             for receiver in self.board.players:
                 if receiver == player:
@@ -837,9 +832,8 @@ class Game(Thread):
                                         reason="card_give_all_send",
                                         receiver_reason="card_give_all"
                                                         "_receive")
-            return
 
-        if card.action_type is CardActionType.RECEIVE_ALL:
+        elif card.action_type is CardActionType.RECEIVE_ALL:
             # Receive money from all players
             for sender in self.board.players:
                 if sender == player:
@@ -851,6 +845,45 @@ class Game(Thread):
                                         reason="card_receive_all_send",
                                         receiver_reason="card_receive_all"
                                                         "_receive")
+
+        elif card.action_type is CardActionType.CLOSEST_STATION:
+            # find the closest station
+            idx = self.board.find_closest_station_index(player)
+
+            if idx == -1:
+                return
+
+            player.position = idx
+
+            self.broadcast_packet(PlayerMove(
+                player_token=player.get_id(),
+                destination=player.position
+            ))
+
+        elif card.action_type is CardActionType.CLOSEST_COMPANY:
+            # find the closest company
+            idx = self.board.find_closest_company_index(player)
+
+            if idx == -1:
+                return
+
+            player.position = idx
+
+            self.broadcast_packet(PlayerMove(
+                player_token=player.get_id(),
+                destination=player.position
+            ))
+
+        elif card.action_type is CardActionType.GIVE_BOARD_HOUSES:
+            houses, hotels = self.board.get_player_buildings_count(player)
+
+            # houses * value + hotels + alt
+            amount = houses * card.action_value + hotels * card.alt
+
+            self.player_balance_pay(player=player,
+                                    receiver=None,
+                                    amount=amount,
+                                    reason="card_give_board_houses")
 
     def player_balance_pay(self, player: Player, receiver: Optional[Player],
                            amount: int,
@@ -1080,10 +1113,41 @@ class Game(Thread):
 class Engine:
     games: Dict[str, Game]
     squares: List[Square]
-    cards: List[Card]
+    chance_deck: List[ChanceCard]
+    community_deck: List[CommunityCard]
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.games = {}
+        self.squares = []
+        self.chance_deck = []
+        self.community_deck = []
+        self.__load_json()
+
+    def __load_json(self):
+        squares_path = os.path.join(settings.STATIC_ROOT, 'data/squares.json')
+        with open(squares_path) as squares_file:
+            squares_json = json.load(squares_file)
+            self.squares = []
+            for j_square in squares_json:
+                square = SquareUtils.load_from_json(j_square)
+                if square is None:
+                    continue
+                self.squares.append(square)
+
+        cards_path = os.path.join(settings.STATIC_ROOT, 'data/cards.json')
+        with open(cards_path) as cards_file:
+            cards_json = json.load(cards_file)
+            self.cards = []
+            for j_card in cards_json:
+                card = CardUtils.load_from_json(j_card)
+
+                if card is None:
+                    continue
+
+                if isinstance(card, ChanceCard):
+                    self.chance_deck.append(card)
+                elif isinstance(card, CommunityCard):
+                    self.community_deck.append(card)
 
     def player_exists(self, player_token: str) -> bool:
         """
@@ -1102,6 +1166,16 @@ class Engine:
         """
         if game.uid in self.games:
             return
+
+        # set loaded cards
+        game.board.squares = self.squares.copy()
+        game.board.chance_deck = self.chance_deck.copy()
+        game.board.community_deck = self.community_deck.copy()
+
+        # search card indexes
+        game.board.search_card_indexes()
+        # search square indexes
+        game.board.search_square_indexes()
 
         # Reference to games dict (delete game)
         game.games = self.games
