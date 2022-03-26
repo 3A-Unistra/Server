@@ -155,8 +155,12 @@ class Engine:
 
         nb_players = len(self.games[game_token].board.players)
 
+        # TODO: everyone goes back to lobby group and leaves game group
+
         # sending update
         reason = UpdateReason(3).value
+
+        # TODO: this should be sent to lobby group
         self.games[game_token].send_packet_lobby(BroadcastUpdatedRoom(
             game_token=game_token,
             nb_players=nb_players,
@@ -218,6 +222,8 @@ class Engine:
                          channel_name=packet.player_token)
         # sending updated room status
         reason = UpdateReason(4).value
+
+        # TODO: this should be sent to lobby and game group
         new_game.send_packet_lobby(BroadcastUpdatedRoom(
             game_token=id_new_game,
             nb_players=1,

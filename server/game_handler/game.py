@@ -197,6 +197,9 @@ class Game(Thread):
                     Player(user=user, channel_name=self.channel_layer,
                            bot=False))
 
+                # TODO: player leaves lobby group
+                # TODO: add player to the game group
+
                 nb_players = len(self.board.players)
 
                 # send success of getting in room
@@ -205,6 +208,7 @@ class Game(Thread):
 
                 # broadcast to lobby group
                 reason = UpdateReason(1).value
+                # TODO: this should be sent to lobby and to game group
                 update = BroadcastUpdatedRoom(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
@@ -224,6 +228,9 @@ class Game(Thread):
                                      packet=ExceptionPacket(code=4204))
                     return
 
+                # TODO: player leaves game group
+                # TODO: add player to the lobby group
+
                 # if checks passed, kick out player
                 self.board.remove_player(
                     self.board.get_player(packet.player_token))
@@ -235,6 +242,8 @@ class Game(Thread):
                 nb_players = len(self.board.players)
                 # broadcast updated room status
                 reason = UpdateReason(2).value
+
+                # TODO: this should be sent to lobby and to game group
                 update = BroadcastUpdatedRoom(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
@@ -256,6 +265,8 @@ class Game(Thread):
                 # broadcasting update to players
                 reason = UpdateReason(6).value
                 nb_players = len(self.board.players)
+
+                # TODO: this should be sent to lobby and to game group
                 update = BroadcastUpdatedRoom(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
@@ -288,6 +299,8 @@ class Game(Thread):
                 # broadcast updated room status
                 nb_players = len(self.board.players)
                 reason = UpdateReason(7).value
+
+                # TODO: this should be sent to lobby and to game group
                 update = BroadcastUpdatedRoom(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
