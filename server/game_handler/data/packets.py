@@ -57,7 +57,7 @@ class InternalCheckPlayerValidity(InternalPacket):
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
-        self.valid = bool(obj['valid'])
+        self.valid = obj['valid']
 
 
 class InternalPlayerDisconnect(InternalPacket):

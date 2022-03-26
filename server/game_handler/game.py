@@ -148,7 +148,7 @@ class Game(Thread):
     def process_packet(self, queue_packet: QueuePacket):
         packet: Packet = queue_packet.packet
 
-        if self.state > GameState.LOBBY:
+        if self.state.value > GameState.LOBBY.value:
             # Heartbeat only in "game"
             if isinstance(packet, PingPacket):
                 player = self.board.get_player(packet.player_token)
@@ -165,8 +165,8 @@ class Game(Thread):
         # check player validity
         if isinstance(packet, InternalCheckPlayerValidity):
             # Only accept connection, if player exists and game is started
-            valid = self.board.player_exists(
-                packet.player_token) and self.state > GameState.LOBBY
+            valid = self.board.player_exists(packet.player_token) and self.\
+                state.value > GameState.LOBBY.value
             self.send_packet(
                 channel_name=queue_packet.channel_name,
                 packet=InternalCheckPlayerValidity(valid=valid))

@@ -1,6 +1,5 @@
 import json
 import logging
-from urllib.parse import parse_qs
 
 from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
@@ -166,8 +165,12 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
 
         # Send validity token
         if isinstance(packet, InternalCheckPlayerValidity):
+            self.valid = packet.valid
+            # TODO : check
             if packet.valid:
                 packet = PlayerValid()
+            else:
+                return await self.close(4100)
 
         # If PlayerDisconnect received, force WebSocket close.
         if isinstance(packet, PlayerDisconnect):
