@@ -22,7 +22,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
     GetOutRoomSuccess, BroadcastUpdatedRoom, PlayerEnterPrison, PlayerMove, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
-    AddBot
+    AddBot, UpdateReason
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -204,8 +204,10 @@ class Game(Thread):
                                  packet=GetInRoomSuccess())
 
                 # broadcast to lobby group
+                reason = UpdateReason(1).value
                 update = BroadcastUpdatedRoom(game_token=self.uid,
                                               nb_players=nb_players,
+                                              reason=reason,
                                               player=packet.player_token)
                 self.send_packet_lobby(update)
 
@@ -232,8 +234,10 @@ class Game(Thread):
 
                 nb_players = len(self.board.players)
                 # broadcast updated room status
+                reason = UpdateReason(2).value
                 update = BroadcastUpdatedRoom(game_token=self.uid,
                                               nb_players=nb_players,
+                                              reason=reason,
                                               player=packet.player_token)
                 self.send_packet_lobby(update)
 
@@ -250,9 +254,11 @@ class Game(Thread):
                 self.set_timeout(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
                 # broadcasting update to players
+                reason = UpdateReason(6).value
                 nb_players = len(self.board.players)
                 update = BroadcastUpdatedRoom(game_token=self.uid,
                                               nb_players=nb_players,
+                                              reason=reason,
                                               player=packet.player_token)
                 self.send_packet_lobby(update)
 
@@ -275,17 +281,17 @@ class Game(Thread):
                     return
 
                 # add bot to the game
-                nb_players = len(self.board.players)
                 p = Player(bot=True, bot_name=self.board.get_random_bot_name(),
                            bot_level=packet.bot_difficulty)
                 self.board.add_player(p)
 
                 # broadcast updated room status
+                nb_players = len(self.board.players)
+                reason = UpdateReason(7).value
                 update = BroadcastUpdatedRoom(game_token=self.uid,
-                                              old_nb_players=nb_players,
-                                              new_nb_players=nb_players + 1,
-                                              state="LOBBY",
-                                              player=p.bot_name)
+                                              nb_players=nb_players,
+                                              reason=reason,
+                                              player=packet.player_token)
                 self.send_packet_lobby(update)
 
         else:

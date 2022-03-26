@@ -147,7 +147,9 @@ class UpdateReason(Enum):
     ROOM_DELETED = 3
     ROOM_CREATED = 4
     HOST_LEFT = 5
-    
+    LAUNCHING_GAME = 6
+    NEW_BOT = 7
+
     @staticmethod
     def has_value(value):
         return value in set(item.value for item in UpdateReason)

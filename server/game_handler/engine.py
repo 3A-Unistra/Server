@@ -8,7 +8,7 @@ from server.game_handler.data.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
     CreateGame, CreateGameSuccess, BroadcastUpdatedRoom, DeleteRoom, \
-    DeleteRoomSuccess
+    DeleteRoomSuccess, UpdateReason
 
 from django.conf import settings
 from server.game_handler.data.squares import Square, SquareUtils
@@ -156,9 +156,12 @@ class Engine:
         nb_players = len(self.games[game_token].board.players)
 
         # sending update
+        reason = UpdateReason(3).value
         self.games[game_token].send_packet_lobby(BroadcastUpdatedRoom(
-            game_token=game_token, old_nb_players=nb_players, new_nb_players=1,
-            state="CLOSED"))
+            game_token=game_token,
+            nb_players=nb_players,
+            reason=reason,
+            player=packet.player_token))
 
         # sending success
         self.send_packet(game_uid=game_token, packet=DeleteRoomSuccess(),
@@ -214,6 +217,9 @@ class Engine:
                          packet=CreateGameSuccess(packet.player_token),
                          channel_name=packet.player_token)
         # sending updated room status
+        reason = UpdateReason(4).value
         self.games[id_new_game].send_packet_lobby(BroadcastUpdatedRoom(
-            game_token=id_new_game, old_nb_players=0, new_nb_players=1,
-            state="LOBBY", player=packet.player_token))
+            game_token=id_new_game,
+            nb_players=1,
+            reason=reason,
+            player=packet.player_token))
