@@ -14,7 +14,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'game_handler'
+
+    # External apps
+    'channels',
+
+    # Local
+
+    'server.game_handler'
 ]
 
 MIDDLEWARE = [
@@ -93,9 +99,9 @@ JWT_KEY = '@xxw!3fx@wjfi+%t-#m5^m4n&r#(-gz$nz2o24tij%9a&w'
 
 # django channels layers
 
-REDIS_HOST = os.getenv('REDIS_HOST')
-REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
-REDIS_PORT = os.getenv('REDIS_PORT')
+REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')
+REDIS_PORT = os.getenv('REDIS_PORT', 6379)
 REDIS_CONNECTION_STRING = "redis://:%s@%s:%s/0" % (
     REDIS_PASSWORD, REDIS_HOST, REDIS_PORT)
 
@@ -113,7 +119,7 @@ CHANNEL_LAYERS = {
 }
 
 # If server is localhost then SERVER_OFFLINE should be True
-SERVER_OFFLINE = False
+SERVER_OFFLINE = os.getenv('SERVER_OFFLINE', 'False').lower() in ('true', '1')
 
 ENGINE_CONFIG = {
     'TICK_RATE': 20,

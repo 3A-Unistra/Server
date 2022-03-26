@@ -899,7 +899,7 @@ class PacketUtils:
         if not PacketUtils.is_packet(obj):
             raise PacketException("Could not deserialize packet")
 
-        packet_name = obj["name"]
+        packet_name = obj.get("name")
 
         if packet_name not in PacketUtils.packets:
             raise PacketException("Invalid packet")
