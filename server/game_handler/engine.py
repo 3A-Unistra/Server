@@ -1,6 +1,9 @@
+import json
+import os
 from typing import List, Dict
 
-from server.game_handler.data import Player, Card
+from server.game_handler.data import Player
+from server.game_handler.data.cards import ChanceCard, CommunityCard, CardUtils
 from server.game_handler.data.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
@@ -8,7 +11,7 @@ from server.game_handler.data.packets import Packet, ExceptionPacket, \
     DeleteRoomSuccess
 
 from django.conf import settings
-from server.game_handler.data.squares import Square
+from server.game_handler.data.squares import Square, SquareUtils
 from server.game_handler.game import Game, GameState, QueuePacket
 
 
