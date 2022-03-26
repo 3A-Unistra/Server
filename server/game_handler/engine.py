@@ -195,22 +195,22 @@ class Engine:
         self.add_game(new_game)
 
         # adding host to the game
-        self.games[id_new_game].board.add_player(Player(
+        new_game.board.add_player(Player(
             channel_name=packet.player_token, bot=False))
         # giving him host status
-        self.games[id_new_game].host_player = packet.player_token
+        new_game.host_player = packet.player_token
         # setting up the numbers of players
-        self.games[id_new_game].board.players_nb = packet.max_nb_players
+        new_game.board.players_nb = packet.max_nb_players
         # setting up password
-        self.games[id_new_game].board.option_password = packet.password
+        new_game.board.option_password = packet.password
         # setting up privacy
-        self.games[id_new_game].board.option_is_private = packet.is_private
+        new_game.board.option_is_private = packet.is_private
         # setting up starting balance
         if packet.starting_balance != 0:
-            self.games[id_new_game].board.starting_balance = \
+            new_game.board.starting_balance = \
                 packet.starting_balance
         else:
-            self.games[id_new_game].board.starting_balance = \
+            new_game.board.starting_balance = \
                 getattr(settings, "MONEY_START", 1000)
         # sending CreateGameSuccess to host
         self.send_packet(game_uid=id_new_game,
@@ -218,7 +218,7 @@ class Engine:
                          channel_name=packet.player_token)
         # sending updated room status
         reason = UpdateReason(4).value
-        self.games[id_new_game].send_packet_lobby(BroadcastUpdatedRoom(
+        new_game.send_packet_lobby(BroadcastUpdatedRoom(
             game_token=id_new_game,
             nb_players=1,
             reason=reason,
@@ -233,8 +233,7 @@ class Engine:
             if self.games[game].state == GameState.LOBBY:
                 packet = BroadcastUpdatedRoom(
                     game_token=game,
-                    nb_players=len(self.games[game].board.players)
+                    nb_players=len(self.games[game].board.players),
                     reason=UpdateReason(0).value
                 )
                 self.games[game].send_packet(player_token, packet)
-
