@@ -263,9 +263,10 @@ class GameEngineConsumer(SyncConsumer):
         Only packets for existing games are processed here
         :param content: JSON received from PlayerConsumer
         """
-
         if 'content' not in content:
             return
+
+        log.info("process_packets_info")
 
         packet_content = json.loads(content['content'])
 
