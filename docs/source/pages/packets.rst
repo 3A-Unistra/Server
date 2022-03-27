@@ -67,9 +67,14 @@ Paquet envoyé *par le client* lorsqu'il veut créer une partie
 **contenu du paquet :**
  * id du player créant la partie (*player_token*)
  * nombre de joueurs (*max_nb_players*)
+ * mot de passe (peut être un champ vide) (*password*)
+ * nom de la partie
  * partie privé ou public (*is_private*)
  * montant de base pour chaque joueur (*starting_balance*)
- * mot de passe (peut être un champ vide) (*password*)
+ * activer/désactiver enchère
+ * activer désactiver doublage d’argent sur la case GO
+ * nombre de tour maximum
+ * acheter dès le premier tour (si false, seule possibilité = échange)
 
 
 CreateGameSuccess
