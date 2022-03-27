@@ -82,6 +82,8 @@ class Game(Thread):
     packets_queue: Queue
     timeout: datetime
     start_date: datetime
+
+    public_name: str
     CONFIG: {}
     # reference to games dict
     games: {}

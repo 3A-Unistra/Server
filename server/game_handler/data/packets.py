@@ -754,25 +754,49 @@ class ActionSellHouseSucceed(Packet):
 class CreateGame(LobbyPacket):
     player_token: str
     password: str
+    name: str
     max_nb_players: int
     starting_balance: int
     is_private: bool
+    option_auction: bool
+    option_double_on_start: bool
+    option_max_time: int
+    option_maxnb_rounds: int
+    option_first_round_buy: bool
 
     def __init__(self, player_token: str = "", password: str = "",
-                 max_nb_players: int = 0, is_private: bool = False,
-                 starting_balance: int = 0):
+                 name: str = "", max_nb_players: int = 0,
+                 is_private: bool = False, starting_balance: int = 0,
+                 option_auction: bool = False,
+                 option_double_on_start: bool = False,
+                 option_max_time: int = 0,
+                 option_maxnb_rounds: int = 0,
+                 option_first_round_buy: bool = False):
+
         super().__init__("CreateGame")
         self.player_token = player_token
         self.password = password
         self.max_nb_players = max_nb_players
         self.is_private = is_private
         self.starting_balance = starting_balance
+        self.name = name
+        self.option_auction = option_auction
+        self.option_double_on_start = option_double_on_start
+        self.option_max_time = option_max_time
+        self.option_maxnb_rounds = option_maxnb_rounds
+        self.option_first_round_buy = option_first_round_buy
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
         self.password = obj['password']
         self.max_nb_players = obj['max']
         self.is_private = obj['is_private']
+        self.name = obj['name']
+        self.option_auction = obj['option_auction']
+        self.option_double_on_start = obj['option_double_on_start']
+        self.option_max_time = obj['option_max_time']
+        self.option_maxnb_rounds = obj['option_maxnb_rounds']
+        self.option_first_round_buy = obj['option_first_round_buy']
 
 
 class CreateGameSuccess(LobbyPacket):

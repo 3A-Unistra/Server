@@ -29,6 +29,9 @@ class Board:
     option_auction_enabled: bool
     option_password: str
     option_is_private: bool
+    option_maxnb_rounds: int
+    option_max_time: int  # max time per rounds
+    option_first_round_buy: bool
 
     # Card indexes
     community_card_indexes = {
@@ -54,9 +57,51 @@ class Board:
         self.option_auction_enabled = False
         self.option_password = ""
         self.option_is_private = False
-        self.starting_balance = getattr(settings, "MONEY_START", 1000)
+        self.starting_balance = getattr(settings, "MONEY_START_DEFAULT", 1000)
+        self.option_maxnb_rounds = 0
+        self.option_max_time = 0
+        self.option_first_round_buy = False
         self.search_square_indexes()
         self.search_card_indexes()
+
+    def set_option_max_time(self, given_time):
+        """
+        this function set the max_time option if the max_time is within the
+        [min, max] (else, default value is used
+        :param given_time: a time
+        """
+        if given_time < getattr(settings, 'TIME_ROUNDS_MIN') or \
+                given_time > getattr(settings, 'TIME_ROUNDS_MAX'):
+            self.option_max_time = getattr(settings, 'TIME_ROUNDS_DEFAULT')
+
+        else:
+            self.option_max_time = given_time
+
+    def set_option_maxnb_rounds(self, nb_rounds):
+        """
+        this function set the max_nb_rounds option if the max_time is within
+        the [min, max] (else, default value is used)
+        :param nb_rounds: a number of rounds
+        """
+        if nb_rounds < getattr(settings, 'NB_ROUNDS_MIN') or \
+                nb_rounds > getattr(settings, 'NB_ROUNDS_MAX'):
+            self.option_maxnb_rounds = getattr(settings, 'NB_ROUNDS_DEFAULT')
+
+        else:
+            self.option_maxnb_rounds = nb_rounds
+
+    def set_option_start_balance(self, balance):
+        """
+        this function set the max_nb_rounds option if the max_time is within
+        the [min, max] (else, default value is used)
+        :param balance: balance
+        """
+        if balance < getattr(settings, 'MONEY_START_MIN') or \
+                balance > getattr(settings, 'MONEY_START_MAX'):
+            self.starting_balance = getattr(settings, 'MONEY_START_DEFAULT')
+
+        else:
+            self.starting_balance = balance
 
     def search_square_indexes(self):
         """

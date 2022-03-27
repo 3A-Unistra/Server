@@ -209,21 +209,18 @@ class Engine:
         # adding host to the game
         new_game.board.add_player(Player(
             channel_name=packet.player_token, bot=False))
-        # giving him host status
+
         new_game.host_player = packet.player_token
-        # setting up the numbers of players
         new_game.board.players_nb = packet.max_nb_players
-        # setting up password
         new_game.board.option_password = packet.password
-        # setting up privacy
         new_game.board.option_is_private = packet.is_private
-        # setting up starting balance
-        if packet.starting_balance != 0:
-            new_game.board.starting_balance = \
-                packet.starting_balance
-        else:
-            new_game.board.starting_balance = \
-                getattr(settings, "MONEY_START", 1000)
+        new_game.public_name = packet.name
+        new_game.board.option_first_round_buy = packet.option_first_round_buy
+        new_game.board.option_auction_enabled = packet.option_auction
+        new_game.board.set_option_max_time(packet.option_max_time)
+        new_game.board.set_option_maxnb_rounds(packet.option_maxnb_rounds)
+        new_game.board.set_option_start_balance(packet.starting_balance)
+
         # sending CreateGameSuccess to host
         self.send_packet(game_uid=id_new_game,
                          packet=CreateGameSuccess(packet.player_token),
