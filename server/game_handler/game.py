@@ -197,8 +197,14 @@ class Game(Thread):
                     Player(user=user, channel_name=self.channel_layer,
                            bot=False))
 
-                # TODO: player leaves lobby group
-                # TODO: add player to the game group
+                # player leaves lobby group
+                async_to_sync(
+                    self.channel_layer.group_discard)("lobby",
+                                                      packet.player_token)
+                # add player to this specific game group
+                async_to_sync(
+                    self.channel_layer.group_add)(self.uid,
+                                                  packet.player_token)
 
                 nb_players = len(self.board.players)
 
@@ -213,7 +219,10 @@ class Game(Thread):
                                               nb_players=nb_players,
                                               reason=reason,
                                               player=packet.player_token)
-                self.send_packet_lobby(update)
+                # sending to the lobby people
+                self.send_packet_groups(update, "lobby")
+                # sending to the people in the game
+                self.send_packet_groups(update, self.uid)
 
             elif isinstance(packet, GetOutRoom):
                 # check if player is part of the current room
@@ -228,27 +237,31 @@ class Game(Thread):
                                      packet=ExceptionPacket(code=4204))
                     return
 
-                # TODO: player leaves game group
-                # TODO: add player to the lobby group
+                # player leaves game group
+                async_to_sync(
+                    self.channel_layer.group_discard)(self.uid,
+                                                      packet.player_token)
+                # add player to the lobby group
+                async_to_sync(
+                    self.channel_layer.group_add)(self.uid,
+                                                  packet.player_token)
 
                 # if checks passed, kick out player
                 self.board.remove_player(
                     self.board.get_player(packet.player_token))
-                # maybe broadcast to let every player in the room know this
-                # player is leaving : this might also be done with the
-                # broadcast of the updated room status
+
                 self.send_packet(packet.player_token, GetOutRoomSuccess())
 
                 nb_players = len(self.board.players)
                 # broadcast updated room status
                 reason = UpdateReason(2).value
-
-                # TODO: this should be sent to lobby and to game group
+                # this should be sent to lobby and to game group
                 update = BroadcastUpdatedRoom(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
                                               player=packet.player_token)
-                self.send_packet_lobby(update)
+                self.send_packet_groups(update, "lobby")
+                self.send_packet_groups(update, self.uid)
 
             elif isinstance(packet, LaunchGame):
                 # check if player_token is the token of the game host
@@ -266,17 +279,13 @@ class Game(Thread):
                 reason = UpdateReason(6).value
                 nb_players = len(self.board.players)
 
-                # TODO: this should be sent to lobby and to game group
+                # this should be sent to lobby and to game group
                 update = BroadcastUpdatedRoom(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
                                               player=packet.player_token)
-                self.send_packet_lobby(update)
-
-                # remove players from lobby group
-                async_to_sync(
-                    self.channel_layer.group_discard)("lobby",
-                                                      packet.player_token)
+                self.send_packet_groups(update, "lobby")
+                self.send_packet_groups(update, self.uid)
 
             elif isinstance(packet, AddBot):
                 # check if the host is the one sending the packet
@@ -300,12 +309,13 @@ class Game(Thread):
                 nb_players = len(self.board.players)
                 reason = UpdateReason(7).value
 
-                # TODO: this should be sent to lobby and to game group
+                # this should be sent to lobby and to game group
                 update = BroadcastUpdatedRoom(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
                                               player=packet.player_token)
-                self.send_packet_lobby(update)
+                self.send_packet_groups(update, "lobby")
+                self.send_packet_groups(update, self.uid)
 
         else:
             # If state is not lobby
@@ -1055,14 +1065,14 @@ class Game(Thread):
             self.uid, {"type": "game_update", "packet": packet.serialize()}
         )
 
-    def send_packet_lobby(self, packet: Packet):
+    def send_packet_groups(self, packet: Packet, group_name: str):
         """
         sends packet to lobby group.
         lobby group : all players that are connected to a game in lobby mode
         :param packet: packet to be sent
         """
         async_to_sync(self.channel_layer.send)(
-            "lobby", {
+            group_name, {
                 'type': 'send.lobby.packet',
                 'packet': packet.serialize()
             })

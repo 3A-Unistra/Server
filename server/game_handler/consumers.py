@@ -295,7 +295,7 @@ class GameEngineConsumer(SyncConsumer):
 
         # if internal packet:
         if isinstance(packet, InternalLobbyConnect):
-            # TODO: send info about all the rooms
+            # sending infos about all the lobbies
             self.engine.send_all_lobby_status(player_token=packet.player_token)
 
         if not isinstance(packet, LobbyPacket):

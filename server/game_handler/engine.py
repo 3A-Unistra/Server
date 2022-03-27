@@ -2,6 +2,8 @@ import json
 import os
 from typing import List, Dict
 
+from asgiref.sync import async_to_sync
+
 from server.game_handler.data import Player
 from server.game_handler.data.cards import ChanceCard, CommunityCard, CardUtils
 from server.game_handler.data.exceptions import \
@@ -155,17 +157,23 @@ class Engine:
 
         nb_players = len(self.games[game_token].board.players)
 
-        # TODO: everyone goes back to lobby group and leaves game group
+        # everyone goes back to lobby group and leaves game group
+        for player in self.games[game_token].board.players:
+            current = self.games[game_token]
+            async_to_sync(
+                    current.channel_layer.group_discard)(current.uid,
+                                                         player.channel_name)
+            async_to_sync(
+                current.channel_layer.group_add)("lobby",
+                                                 player.channel_name)
 
-        # sending update
+        # sending update to lobby group
         reason = UpdateReason(3).value
-
-        # TODO: this should be sent to lobby group
-        self.games[game_token].send_packet_lobby(BroadcastUpdatedRoom(
+        self.games[game_token].send_packet_groups(BroadcastUpdatedRoom(
             game_token=game_token,
             nb_players=nb_players,
             reason=reason,
-            player=packet.player_token))
+            player=packet.player_token), "lobby")
 
         # sending success
         self.send_packet(game_uid=game_token, packet=DeleteRoomSuccess(),
@@ -223,12 +231,17 @@ class Engine:
         # sending updated room status
         reason = UpdateReason(4).value
 
-        # TODO: this should be sent to lobby and game group
-        new_game.send_packet_lobby(BroadcastUpdatedRoom(
+        # this is sent to lobby no need to send it to game group, host is alone
+        update = BroadcastUpdatedRoom(
             game_token=id_new_game,
             nb_players=1,
             reason=reason,
-            player=packet.player_token))
+            player=packet.player_token)
+        new_game.send_packet_groups(update, "lobby")
+        # adding host to the game group
+        async_to_sync(
+            new_game.channel_layer.group_discard)(new_game.uid,
+                                                  packet.player_token)
 
     def send_all_lobby_status(self, player_token: str):
         """
