@@ -379,3 +379,25 @@ class Board:
             self.remaining_round_players = len(self.get_non_bankrupt_players())
             self.current_round += 1
         return self.current_round
+
+    def get_owned_squares(self, player: Player) -> List[OwnableSquare]:
+        """
+        List of owned squares by player
+        :param player: Owner
+        :return: List of owned squares
+        """
+        return [square for square in self.squares if
+                isinstance(square, OwnableSquare)
+                and square.owner == player]
+
+    def get_rent(self, case: OwnableSquare) -> int:
+        """
+        get rent of case.
+        - StationSquare: count how many stations the player have
+        - CompanySquare: roll dices? or last dices?
+        - PropertySquare: if houses==0, check if all properties with same color
+                        if houses > 0, calculate rent
+        :param case: Case where a player should pay a rent
+        :return: Computed rent
+        """
+        pass

@@ -838,7 +838,7 @@ class Game(Thread):
 
     def process_card_actions(self, player: Player, card: Card):
         """
-        All actions handled here # TODO:
+        All actions handled here
 
         :param player: Player who drawn card
         :param card: Card to handle action

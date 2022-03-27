@@ -28,6 +28,7 @@ test:coverage:
     - coverage report
     - coverage xml
   artifacts:
+    expire_in: 1 day
     reports:
       cobertura: coverage.xml
 
@@ -51,6 +52,7 @@ pages:
     - pip install -U sphinx_rtd_theme
     - sphinx-build -b html docs/source public
   artifacts:
+    expire_in: 1 day
     paths:
       - public
   only:

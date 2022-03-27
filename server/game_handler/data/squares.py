@@ -116,18 +116,22 @@ class JailSquare(Square):
 class PropertySquare(OwnableSquare):
     nb_house: int
     house_price: int  # same as hotel_price
-    house_rents: {}
+    rents: {}  # 0 : base_rent | 5 : hotel_rent
+    color: str
 
     def __init__(self, id_: int = 0, house_price: int = 0,
-                 house_rents: {} = None):
+                 rents: {} = None, color: str = ""):
         super().__init__(id_)
         self.nb_house = 0
         self.house_price = house_price
-        self.house_rents = house_rents
+        self.rents = rents
+        self.color = color
 
     def get_rent(self) -> int:
-        # TODO
-        pass
+        """
+        :return: Properties rent
+        """
+        return self.rents[self.nb_house]
 
     def has_hotel(self):
         return self.nb_house > 4
@@ -135,10 +139,12 @@ class PropertySquare(OwnableSquare):
     def deserialize(self, obj: dict):
         super().deserialize(obj)
         self.house_price = int(obj['house_price'])
-        self.house_rents = {}
+        self.rents = {0: obj['base_rent']}
 
-        for i in range(5):
-            self.house_rents[i] = obj['rent_%d' % (i + 1)]
+        for i in range(1, 6):
+            self.rents[i] = obj['rent_%d' % (i + 1)]
+
+        self.color = '%s%s%s' % (obj['r'], obj['g'], obj['b'])
 
 
 class SquareUtils:
