@@ -209,7 +209,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             player_token=self.player_token)
 
         # adding player to the group
-        async_to_sync(self.channel_layer.group_add)("lobby", self.channel_name)
+        await self.channel_layer.group_add("lobby", self.channel_name)
 
         # send to game engine worker
         await self.channel_layer.send(
@@ -221,6 +221,9 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
                 'channel_name': self.channel_name
             }
         )
+
+        # Dont forget to accept connection
+        await self.accept()
 
     async def receive_json(self, content, **kwargs):
         try:
@@ -234,9 +237,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
 
     async def disconnect(self, code):
         # removing player from the lobby group
-        async_to_sync(self.channel_layer.group_discard)("lobby",
-                                                        self.channel_name)
-        return
+        await self.channel_layer.group_discard("lobby", self.channel_name)
 
     async def send_lobby_packet(self, content):
         packet = content.get('packet', None)
