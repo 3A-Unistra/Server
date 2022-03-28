@@ -96,17 +96,48 @@ L'applet unity webgl devra se connecter au WebSocket de la partie et envoyer le 
 **contenu du paquet :**
  * id du joueur (*player_token*)
 
-BroadcastUpdatedRoom
+BroadCastUpdateLobby
 ^^^^^^^^^^^^^^^^^^^^
-
-Paquet envoyé lorsque qu'un lobby change de statut (soit le nombre de joueurs, soit la partie est lancé, etc).
-Ce paquet est envoyé à tout les joueurs qui sont dans le lobby (pas in-game).
+Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby en particulier change. Il est aussi utilisé
+ pour donner les infos de tous les lobbys lors de la connexion initial d'un joueur.
 
 **contenu du paquet :**
  * id du lobby (*game_token*)
- * le nombre de jour (*nb_players*)
+ * nom de la partie (*name*)
+ * le nombre de joueur (*nb_players*)
+ * le nombre de joueurs max (*max_nb_players*)
+ * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
+
+BroadCastUpdateRoom
+^^^^^^^^^^^^^^^^^^^
+Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladite salle change.
+
+**contenu du paquet :**
+ * id du lobby (*game_token*)
+ * le nombre de joueur (*nb_players*)
  * le joueur ajouté ou supprimé (peut-être un champ vide) (*player*)
  * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
+
+
+StatusRoom
+^^^^^^^^^^
+
+Ce paquet est envoyé lorsqu'un joueur rejoint une salle. Ce paquet comporte tout les détails de la partie.
+
+
+**contenu du paquet :**
+ * id du lobby (*game_token*)
+ * nom de la partie (*name*)
+ * le nombre de joueur (*nb_players*)
+ * le nombre de joueurs max (*max_nb_players*)
+ * la liste des joueurs (*players*)
+ * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
+ * option enchère activé ou désactivé (*option_auction*)
+ * option double on start (*option_double_on_start*)
+ * temps maximum par tour (*option_max_time*)
+ * nombre de rounds maximum (*option_maxnb_rounds*)
+ * possibilité d'acheter au premier tour activé/désactivé (*option_first_round_buy*)
+ * argent de base (*starting_balance*)
 
 
 AddBot
