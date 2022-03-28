@@ -33,6 +33,8 @@ class Board:
     option_max_time: int  # max time per rounds
     option_first_round_buy: bool
 
+    CONFIG = {}
+
     # Card indexes
     community_card_indexes = {
         'leave_jail': -1
@@ -61,6 +63,7 @@ class Board:
         self.option_maxnb_rounds = 0
         self.option_max_time = 0
         self.option_first_round_buy = False
+        self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
         self.search_square_indexes()
         self.search_card_indexes()
 
@@ -70,9 +73,9 @@ class Board:
         [min, max] (else, default value is used
         :param given_time: a time
         """
-        if given_time < getattr(settings, 'TIME_ROUNDS_MIN') or \
-                given_time > getattr(settings, 'TIME_ROUNDS_MAX'):
-            self.option_max_time = getattr(settings, 'TIME_ROUNDS_DEFAULT')
+        if given_time < self.CONFIG.get('TIME_ROUNDS_MIN') or \
+                given_time > self.CONFIG.get('TIME_ROUNDS_MAX'):
+            self.option_max_time = self.CONFIG.get('TIME_ROUNDS_DEFAULT')
 
         else:
             self.option_max_time = given_time
@@ -83,9 +86,9 @@ class Board:
         the [min, max] (else, default value is used)
         :param nb_rounds: a number of rounds
         """
-        if nb_rounds < getattr(settings, 'NB_ROUNDS_MIN') or \
-                nb_rounds > getattr(settings, 'NB_ROUNDS_MAX'):
-            self.option_maxnb_rounds = getattr(settings, 'NB_ROUNDS_DEFAULT')
+        if nb_rounds < self.CONFIG.get('NB_ROUNDS_MIN') or \
+                nb_rounds > self.CONFIG.get('NB_ROUNDS_MAX'):
+            self.option_maxnb_rounds = self.CONFIG.get('NB_ROUNDS_DEFAULT')
 
         else:
             self.option_maxnb_rounds = nb_rounds
@@ -96,9 +99,9 @@ class Board:
         the [min, max] (else, default value is used)
         :param balance: balance
         """
-        if balance < getattr(settings, 'MONEY_START_MIN') or \
-                balance > getattr(settings, 'MONEY_START_MAX'):
-            self.starting_balance = getattr(settings, 'MONEY_START_DEFAULT')
+        if balance < self.CONFIG.get('MONEY_START_MIN') or \
+                balance > self.CONFIG.get('MONEY_START_MAX'):
+            self.starting_balance = self.CONFIG.get('MONEY_START_DEFAULT')
 
         else:
             self.starting_balance = balance
