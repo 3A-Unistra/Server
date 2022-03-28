@@ -9,8 +9,8 @@ from server.game_handler.data.cards import ChanceCard, CommunityCard, CardUtils
 from server.game_handler.data.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
-    CreateGame, CreateGameSuccess, BroadcastUpdatedRoom, DeleteRoom, \
-    DeleteRoomSuccess, UpdateReason
+    CreateGame, CreateGameSuccess, BroadcastUpdateRoom, DeleteRoom, \
+    DeleteRoomSuccess, UpdateReason, BroadcastUpdateLobby
 
 from django.conf import settings
 from server.game_handler.data.squares import Square, SquareUtils
@@ -169,11 +169,11 @@ class Engine:
 
         # sending update to lobby group
         reason = UpdateReason(3).value
-        self.games[game_token].send_packet_groups(BroadcastUpdatedRoom(
+        self.games[game_token].send_packet_groups(BroadcastUpdateLobby(
             game_token=game_token,
             nb_players=nb_players,
             reason=reason,
-            player=packet.player_token), "lobby")
+            nb_player_max=self.games[game_token].board.players_nb), "lobby")
 
         # sending success
         self.send_packet(game_uid=game_token, packet=DeleteRoomSuccess(),
@@ -229,11 +229,11 @@ class Engine:
         reason = UpdateReason(4).value
 
         # this is sent to lobby no need to send it to game group, host is alone
-        update = BroadcastUpdatedRoom(
+        update = BroadcastUpdateLobby(
             game_token=id_new_game,
             nb_players=1,
             reason=reason,
-            player=packet.player_token)
+            nb_player_max=packet.max_nb_players)
         new_game.send_packet_groups(update, "lobby")
         # adding host to the game group
         async_to_sync(
@@ -247,9 +247,10 @@ class Engine:
         """
         for game in self.games:
             if self.games[game].state == GameState.LOBBY:
-                packet = BroadcastUpdatedRoom(
+                packet = BroadcastUpdateLobby(
                     game_token=game,
                     nb_players=len(self.games[game].board.players),
-                    reason=UpdateReason(0).value
+                    reason=UpdateReason(0).value,
+                    nb_player_max=self.games[game].board.players_nb
                 )
                 self.games[game].send_packet(player_token, packet)

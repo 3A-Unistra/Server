@@ -1,6 +1,6 @@
 import json
 from enum import Enum
-from typing import Dict
+from typing import Dict, List
 
 from .exceptions import PacketException
 
@@ -155,7 +155,72 @@ class UpdateReason(Enum):
         return value in set(item.value for item in UpdateReason)
 
 
-class BroadcastUpdatedRoom(LobbyPacket):
+class StatusRoom(LobbyPacket):
+    game_token: str
+    name: str
+    nb_players: int
+    max_nb_players: int
+    players: List[str]  # list of players
+    option_auction: bool
+    option_double_on_start: bool
+    option_max_time: int
+    option_maxnb_rounds: int
+    option_first_round_buy: bool
+    starting_balance: int
+
+    def __init__(self, game_token: str, name: str, nb_players: int,
+                 max_nb_players: int, players: List[str], option_auction: bool,
+                 option_double_on_start: bool, option_max_time: int,
+                 option_maxnb_rounds: int, option_first_round_buy: bool,
+                 starting_balance: int):
+        self.game_token = game_token
+        self.name = name
+        self.nb_players = nb_players
+        self.max_nb_players = max_nb_players
+        self.players = players
+        self.option_auction = option_auction
+        self.option_double_on_start = option_double_on_start
+        self.option_max_time = option_max_time
+        self.option_maxnb_rounds = option_maxnb_rounds
+        self.option_first_round_buy = option_first_round_buy
+        self.starting_balance = starting_balance
+
+        def deserialize(self, obj: object):
+            self.game_token = obj['game_token']
+            self.name = obj['name']
+            self.nb_players = obj['nb_players']
+            self.max_nb_players = obj['max_nb_players']
+            self.players = obj['players']
+            self.option_auction = obj['option_auction']
+            self.option_double_on_start = obj['option_double_on_start']
+            self.option_max_time = obj['option_max_time']
+            self.option_maxnb_rounds = obj['option_maxnb_rounds']
+            self.option_first_round_buy = obj['option_first_round_buy']
+            self.starting_balance = obj['starting_balance']
+
+
+class BroadcastUpdateLobby(LobbyPacket):
+    game_token: str
+    nb_players: int
+    nb_player_max: int
+    reason: int
+
+    def __init__(self, game_token: str, nb_players: int, reason: int,
+                 nb_player_max):
+        super().__init__("BroadcastUpdatedRoom")
+        self.game_token = game_token
+        self.nb_players = nb_players
+        self.nb_player_max = nb_player_max
+        self.reason = reason
+
+    def deserialize(self, obj: object):
+        self.game_token = obj['game_token']
+        self.nb_players = obj['nb_players']
+        self.nb_player_max = obj['nb_player_max']
+        self.reason = obj['reason']
+
+
+class BroadcastUpdateRoom(LobbyPacket):
     game_token: str
     nb_players: int
     player: str
@@ -911,10 +976,12 @@ class PacketUtils:
         "CreateGame": CreateGame,
         "CreateGameSuccess": CreateGameSuccess,
         "LaunchGame": LaunchGame,
-        "BroadcastUpdatedRoom": BroadcastUpdatedRoom,
         "DeleteRoom": DeleteRoom,
         "DeleteRoomSuccess": DeleteRoomSuccess,
         "AddBot": AddBot,
+        "BroadcastUpdateRoom": BroadcastUpdateRoom,
+        "BroadcastUpdateLobby": BroadcastUpdateLobby,
+        "StatusRoom": StatusRoom,
         # Internal packets
         "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
         "InternalPlayerDisconnect": InternalPlayerDisconnect,

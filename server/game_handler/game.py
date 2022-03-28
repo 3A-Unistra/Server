@@ -20,9 +20,9 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
     GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
-    GetOutRoomSuccess, BroadcastUpdatedRoom, PlayerEnterPrison, PlayerMove, \
+    GetOutRoomSuccess, BroadcastUpdateRoom, PlayerEnterPrison, PlayerMove, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
-    AddBot, UpdateReason
+    AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -214,17 +214,46 @@ class Game(Thread):
                 self.send_packet(channel_name=packet.player_token,
                                  packet=GetInRoomSuccess())
 
+                # sending status of room
+                player_uid = []
+                for player in self.board.players:
+                    player_uid.append(player.get_id())
+                status = StatusRoom(game_token=self.uid,
+                                    name=self.public_name,
+                                    nb_players=nb_players,
+                                    max_nb_players=self.board.players_nb,
+                                    # gotta change that
+                                    players=player_uid,
+                                    option_auction=self.
+                                    board.option_auction_enabled,
+                                    option_double_on_start=self.
+                                    board.option_go_case_double_money,
+                                    option_maxnb_rounds=self.
+                                    board.option_maxnb_rounds,
+                                    option_first_round_buy=self.
+                                    board.option_first_round_buy,
+                                    option_max_time=self.
+                                    board.option_max_time,
+                                    starting_balance=self.
+                                    board.starting_balance)
+                self.send_packet(packet.player_token, status)
+
                 # broadcast to lobby group
                 reason = UpdateReason(1).value
-                # TODO: this should be sent to lobby and to game group
-                update = BroadcastUpdatedRoom(game_token=self.uid,
-                                              nb_players=nb_players,
-                                              reason=reason,
-                                              player=packet.player_token)
-                # sending to the lobby people
-                self.send_packet_groups(update, "lobby")
+                # sent to lobby and to game group
+                update = BroadcastUpdateRoom(game_token=self.uid,
+                                             nb_players=nb_players,
+                                             reason=reason,
+                                             player=packet.player_token)
                 # sending to the people in the game
                 self.send_packet_groups(update, self.uid)
+                update = BroadcastUpdateLobby(game_token=self.uid,
+                                              nb_players=nb_players,
+                                              reason=reason,
+                                              nb_player_max=self.
+                                              board.players_nb)
+                # sending to the lobby people
+                self.send_packet_groups(update, "lobby")
 
             elif isinstance(packet, GetOutRoom):
                 # check if player is part of the current room
@@ -258,12 +287,17 @@ class Game(Thread):
                 # broadcast updated room status
                 reason = UpdateReason(2).value
                 # this should be sent to lobby and to game group
-                update = BroadcastUpdatedRoom(game_token=self.uid,
+                update = BroadcastUpdateRoom(game_token=self.uid,
+                                             nb_players=nb_players,
+                                             reason=reason,
+                                             player=packet.player_token)
+                self.send_packet_groups(update, self.uid)
+                update = BroadcastUpdateLobby(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
-                                              player=packet.player_token)
+                                              nb_player_max=self.
+                                              board.players_nb)
                 self.send_packet_groups(update, "lobby")
-                self.send_packet_groups(update, self.uid)
 
             elif isinstance(packet, LaunchGame):
                 # check if player_token is the token of the game host
@@ -282,12 +316,17 @@ class Game(Thread):
                 nb_players = len(self.board.players)
 
                 # this should be sent to lobby and to game group
-                update = BroadcastUpdatedRoom(game_token=self.uid,
+                update = BroadcastUpdateRoom(game_token=self.uid,
+                                             nb_players=nb_players,
+                                             reason=reason,
+                                             player=packet.player_token)
+                self.send_packet_groups(update, self.uid)
+                update = BroadcastUpdateLobby(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
-                                              player=packet.player_token)
+                                              nb_player_max=self.
+                                              board.players_nb)
                 self.send_packet_groups(update, "lobby")
-                self.send_packet_groups(update, self.uid)
 
             elif isinstance(packet, AddBot):
                 # check if the host is the one sending the packet
@@ -312,12 +351,17 @@ class Game(Thread):
                 reason = UpdateReason(7).value
 
                 # this should be sent to lobby and to game group
-                update = BroadcastUpdatedRoom(game_token=self.uid,
+                update = BroadcastUpdateRoom(game_token=self.uid,
+                                             nb_players=nb_players,
+                                             reason=reason,
+                                             player=packet.player_token)
+                self.send_packet_groups(update, self.uid)
+                update = BroadcastUpdateLobby(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
-                                              player=packet.player_token)
+                                              nb_player_max=self.
+                                              board.players_nb)
                 self.send_packet_groups(update, "lobby")
-                self.send_packet_groups(update, self.uid)
 
         else:
             # If state is not lobby
