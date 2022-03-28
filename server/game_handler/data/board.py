@@ -40,6 +40,10 @@ class Board:
         'leave_jail': -1
     }
 
+    # Totals
+    total_company_squares: int
+    total_properties_color_squares: {}  # {'color': 'properties_same_color'}
+
     def __init__(self, squares=None):
         self.squares = [] if squares is None else squares
         self.community_deck = []
@@ -58,7 +62,19 @@ class Board:
         self.option_password = ""
         self.option_is_private = False
         self.option_max_rounds = 0
+        self.total_company_squares = 0
+        self.total_properties_color_squares = {}
         self.starting_balance = getattr(settings, "MONEY_START", 1000)
+        self.search_square_indexes()
+        self.search_card_indexes()
+
+    def load_data(self, squares: List[Square],
+                  community_deck: List[CommunityCard],
+                  chance_deck: List[ChanceCard]):
+        self.squares = squares
+        self.community_deck = community_deck
+        self.chance_deck = chance_deck
+
         self.search_square_indexes()
         self.search_card_indexes()
 
@@ -66,11 +82,24 @@ class Board:
         """
         Search special square indexes
         """
+        self.total_company_squares = 0
+        self.total_properties_color_squares = {}
+
         for i in range(len(self.squares)):
             square = self.squares[i]
             if isinstance(square, JailSquare):
                 self.prison_square_index = i
-                break
+                continue
+
+            if isinstance(square, CompanySquare):
+                self.total_company_squares += 1
+                continue
+
+            if isinstance(square, PropertySquare):
+                if square.color in self.total_properties_color_squares:
+                    self.total_properties_color_squares[square.color] += 1
+                else:
+                    self.total_properties_color_squares[square.color] = 1
 
     def search_card_indexes(self):
         """
@@ -390,7 +419,7 @@ class Board:
                 isinstance(square, OwnableSquare)
                 and square.owner == player]
 
-    def get_rent(self, case: OwnableSquare) -> int:
+    def get_rent(self, case: OwnableSquare, dices: (int, int) = (0, 0)) -> int:
         """
         get rent of case.
         - StationSquare: count how many stations the player have
@@ -398,6 +427,29 @@ class Board:
         - PropertySquare: if houses==0, check if all properties with same color
                         if houses > 0, calculate rent
         :param case: Case where a player should pay a rent
+        :param dices: Company squares need last dices of player
         :return: Computed rent
         """
-        pass
+        owned_squares = self.get_owned_squares(player=case.owner)
+
+        if isinstance(case, StationSquare):
+            stations_count = len(
+                [a for a in owned_squares if isinstance(a, StationSquare)])
+            return stations_count * case.get_rent()
+        elif isinstance(case, CompanySquare):
+            company_count = len(
+                [a for a in owned_squares if isinstance(a, CompanySquare)])
+            # TODO: Set multiplier in config
+            multiplier = 10 if company_count == self.total_company_squares else 4
+            return multiplier * sum(dices)
+        elif isinstance(case, PropertySquare):
+            if case.nb_house == 0:
+                property_count = [a for a in owned_squares
+                                  if isinstance(a, PropertySquare)
+                                  and a.color == case.color]
+
+                if property_count == \
+                        self.total_properties_color_squares[case.color]:
+                    return case.get_rent() * 2
+
+            return case.get_rent()
