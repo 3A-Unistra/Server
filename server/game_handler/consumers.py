@@ -9,7 +9,8 @@ from .data.exceptions import PacketException
 from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
     PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
-    CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket, GetOutRoom
+    CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket, GetOutRoom, \
+    InternalLobbyDisconnect
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -191,7 +192,6 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         self.player_token = self.scope['user'].id
 
         # sending the internal packet to the EngineConsumer
-        # TODO: in response, we should send the list of the room status
         packet = InternalLobbyConnect(
             player_token=self.player_token)
 
@@ -230,11 +230,28 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
 
     async def disconnect(self, code):
         # removing player from the lobby group
-        async_to_sync(self.channel_layer.group_discard)("lobby",
-                                                        self.channel_name)
-        # if game_token != None; send internalplayerdisconnect to engine
-        # to remove player?
-        #
+
+        # if the player is in the lobby group, he is not in a waiting room
+        # therefore, we can just take him out of that group
+        lobby_group = self.channel_layer.group_channels('lobby')
+        if self.channel_name in lobby_group:
+            async_to_sync(self.channel_layer.group_discard)("lobby",
+                                                            self.channel_name)
+            return
+
+        # in case the player is in a waiting room, we have to take him out
+        # of it.  in order to do that, we use InternalLobbyDisconnect,
+        # which is handled in the EngineConsumer
+        packet = InternalLobbyDisconnect(self.channel_name)
+
+        await self.channel_layer.send(
+            'game_engine',
+            {
+                'type': 'process.lobby.packets',
+                'content': packet.serialize(),
+                'channel_name': self.channel_name
+            }
+        )
         return
 
     async def send_lobby_packet(self, content):
@@ -296,6 +313,11 @@ class GameEngineConsumer(SyncConsumer):
         if isinstance(packet, InternalLobbyConnect):
             # sending infos about all the lobbies
             self.engine.send_all_lobby_status(player_token=packet.player_token)
+            return
+
+        if isinstance(packet, InternalLobbyDisconnect):
+            self.engine.disconnect_player(packet.player_token)
+            return
 
         if not isinstance(packet, LobbyPacket):
             # not supposed to happen

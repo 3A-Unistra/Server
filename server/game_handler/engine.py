@@ -200,18 +200,27 @@ class Engine:
         if not isinstance(packet, GetOutRoom):
             return
 
-        # check if player is part of the current room
-        if not self.games[packet.game_token].board.\
-                player_exists(packet.player_token):
-            self.send_packet(channel_name=packet.player_token,
-                             packet=ExceptionPacket(code=4203))
+        # check if player is part of a room
+        if not self.player_exists(packet.player_token):
+            # ignore
             return
 
-        if len(self.games[packet.game_token].board.players) == 1:
-            self.delete_room(DeleteRoom(player_token=packet.player_token,
-                             game_token=packet.game_token))
+        game_token = packet.game_token
 
-        self.games[packet.game_token].packets_queue.put(packet)
+        if len(self.games[game_token].board.players) == 1:
+            self.delete_room(DeleteRoom(player_token=packet.player_token,
+                             game_token=game_token))
+
+            async_to_sync(self.games[game_token].channel_layer.
+                          group_add)("lobby", packet.player_token)
+
+            async_to_sync(self.games[game_token].channel_layer.
+                          group_discard)(game_token,
+                                         packet.player_token)
+
+            return
+
+        self.games[game_token].packets_queue.put(packet)
 
     def create_game(self, packet):
         """
@@ -286,3 +295,21 @@ class Engine:
                     reason=UpdateReason(0).value,
                     nb_player_max=self.games[game].board.players_nb)
                 self.games[game].send_packet(player_token, packet)
+
+    def disconnect_player(self, player_token: str):
+
+        # find out if the player is in a game and which one
+        in_game = False
+        game_token = ""
+        for game in self.games:
+            if self.games[game].board.player_exists(player_token):
+                game_token = game
+                in_game = True
+                break
+
+        if not in_game:
+            # this has been handled in the lobby consumer, should not happen
+            return
+
+        self.leave_game(GetOutRoom(player_token=player_token,
+                                   game_token=game_token))

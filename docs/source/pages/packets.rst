@@ -61,6 +61,15 @@ Paquet envoyé au client pour confirmer le succès de la sortie du lobby de part
 *ce paquet ne contient pas d'informations*
 
 
+InternalLobbyDisconnect
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Paquet interne pour gérer la déconnexion  d'un joueur dans le lobby. Ce paquet retire le joueur de la
+salle d'attente dans laquelle il est.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+
 
 CreateGame
 ^^^^^^^^^^
