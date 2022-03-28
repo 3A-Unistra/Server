@@ -9,8 +9,8 @@ from server.game_handler.data.cards import ChanceCard, CommunityCard, CardUtils
 from server.game_handler.data.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
-    CreateGame, CreateGameSuccess, BroadcastUpdateRoom, DeleteRoom, \
-    DeleteRoomSuccess, UpdateReason, BroadcastUpdateLobby
+    CreateGame, CreateGameSuccess, DeleteRoom, \
+    DeleteRoomSuccess, UpdateReason, BroadcastUpdateLobby, BroadcastUpdateRoom
 
 from django.conf import settings
 from server.game_handler.data.squares import Square, SquareUtils
@@ -175,6 +175,13 @@ class Engine:
             reason=reason,
             nb_player_max=self.games[game_token].board.players_nb), "lobby")
 
+        self.games[game_token].send_packet_groups(BroadcastUpdateRoom(
+            game_token=game_token,
+            nb_players=nb_players,
+            reason=reason,
+            player=packet.player_token),
+            packet.game_token)
+
         # sending success
         self.send_packet(game_uid=game_token, packet=DeleteRoomSuccess(),
                          channel_name=packet.player_token)
@@ -222,8 +229,9 @@ class Engine:
         new_game.board.set_option_start_balance(packet.starting_balance)
 
         # sending CreateGameSuccess to host
+        piece = new_game.board.assign_piece(packet.player_token)
         self.send_packet(game_uid=id_new_game,
-                         packet=CreateGameSuccess(packet.player_token),
+                         packet=CreateGameSuccess(packet.player_token, piece),
                          channel_name=packet.player_token)
         # sending updated room status
         reason = UpdateReason(4).value

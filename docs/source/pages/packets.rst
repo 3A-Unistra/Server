@@ -41,7 +41,8 @@ GetInRoomSuccess
 ^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour signifier le succès de son entrée dans une partie
 
-*ce paquet ne contient pas d'informations*
+**contenu du paquet :**
+ * id du pion que le joueur aura (*piece*)
 
 
 GetOutRoom
@@ -85,6 +86,7 @@ Paquet envoyé par le serveur pour confirmer la création d'une partie
 
 **contenu du packet :**
  * id du player (*player_token*)
+ * id du pion que le joueur aura (*piece*)
 
 AppletPrepare
 ^^^^^^^^^^^^^
@@ -175,15 +177,6 @@ NewHost
 Paquet envoyé à un joueur de la salle d'attente lorsque le host de la partie demande à sortir, ou s'il se deconnecte
 
 *ce paquet ne contient pas d'informations*
-
-
-AssignedPiece
-^^^^^^^^^^^^^
-
-Paquet envoyé au client pour l'informer de quelle pion il aura durant la partie
-
-**contenu du paquet :**
- * identifiant de la piece (*piece*)
 
 Paquets demarrage
 -----------------

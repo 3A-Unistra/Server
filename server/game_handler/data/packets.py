@@ -120,8 +120,14 @@ class ExceptionPacket(Packet):
 
 
 class GetInRoomSuccess(LobbyPacket):
-    def __init__(self):
+    piece: int
+
+    def __init__(self, piece: int = 0):
         super().__init__("GetInRoomSuccess")
+        self.piece = piece
+
+    def deserialize(self, obj: object):
+        self.piece = obj['piece']
 
 
 class GetOutRoom(LobbyPacket):
@@ -239,17 +245,6 @@ class BroadcastUpdateRoom(LobbyPacket):
         self.nb_players = obj['nb_players']
         self.player = obj['player']
         self.reason = obj['reason']
-
-
-class AssignedPiece(LobbyPacket):
-    piece: int
-
-    def __init__(self, piece):
-        super().__init__("NewHost")
-        self.piece = piece
-
-    def deserialize(self, obj: object):
-        self.piece = obj['piece']
 
 
 class NewHost(LobbyPacket):
@@ -882,13 +877,16 @@ class CreateGame(LobbyPacket):
 
 class CreateGameSuccess(LobbyPacket):
     player_token: str
+    piece: int
 
-    def __init__(self, player_token: str):
+    def __init__(self, player_token: str, piece: int = 0):
         super().__init__("CreateGameSuccess")
         self.player_token = player_token
+        self.piece = piece
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
+        self.piece = obj['piece']
 
 
 class AddBot(LobbyPacket):
