@@ -272,9 +272,8 @@ class Game(Thread):
                     if len(self.board.players) == 1:
                         # TODO: delete game
                         pass
-                    for i in range (len(self.board.players)):
-                        if self.board.players[i].channel_name != \
-                                self.host_player:
+                    for i in range(len(self.board.players)):
+                        if self.board.players[i] != self.host_player:
                             self.host_player = self.board.players[i]
                             self.send_packet_to_player(self.host_player,
                                                        NewHost())

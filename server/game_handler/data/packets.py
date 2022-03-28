@@ -241,7 +241,7 @@ class BroadcastUpdateRoom(LobbyPacket):
         self.reason = obj['reason']
 
 
-class NewHost(LobbyPaquet):
+class NewHost(LobbyPacket):
     def __init__(self):
         super().__init__("NewHost")
 
