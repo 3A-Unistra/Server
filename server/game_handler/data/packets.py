@@ -132,13 +132,16 @@ class GetInRoomSuccess(LobbyPacket):
 
 class GetOutRoom(LobbyPacket):
     player_token: str
+    game_token: str
 
-    def __init__(self, player_token: str = ""):
+    def __init__(self, player_token: str = "", game_token: str = ""):
         super().__init__("GetOutRoom")
         self.player_token = player_token
+        self.game_token = game_token
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
+        self.game_token = obj['game_token']
 
 
 class GetOutRoomSuccess(LobbyPacket):

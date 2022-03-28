@@ -10,7 +10,8 @@ from server.game_handler.data.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
     CreateGame, CreateGameSuccess, DeleteRoom, \
-    DeleteRoomSuccess, UpdateReason, BroadcastUpdateLobby, BroadcastUpdateRoom
+    DeleteRoomSuccess, UpdateReason, BroadcastUpdateLobby, \
+    BroadcastUpdateRoom, GetOutRoom
 
 from django.conf import settings
 from server.game_handler.data.squares import Square, SquareUtils
@@ -188,6 +189,30 @@ class Engine:
 
         self.remove_game(game_token)
 
+    def leave_game(self, packet):
+        """
+        in case the host wants to leave the game and he is the only one
+        remaining, we need to handle the GetOutRoom packet here before sending
+        it to the concerned game instance
+        :param packet: must be GetOutRoom instance
+        """
+
+        if not isinstance(packet, GetOutRoom):
+            return
+
+        # check if player is part of the current room
+        if not self.games[packet.game_token].board.\
+                player_exists(packet.player_token):
+            self.send_packet(channel_name=packet.player_token,
+                             packet=ExceptionPacket(code=4203))
+            return
+
+        if len(self.games[packet.game_token].board.players) == 1:
+            self.delete_room(DeleteRoom(player_token=packet.player_token,
+                             game_token=packet.game_token))
+
+        self.games[packet.game_token].packets_queue.put(packet)
+
     def create_game(self, packet):
         """
         creating a new game based on the CreateGame packet specification
@@ -259,6 +284,5 @@ class Engine:
                     game_token=game,
                     nb_players=len(self.games[game].board.players),
                     reason=UpdateReason(0).value,
-                    nb_player_max=self.games[game].board.players_nb
-                )
+                    nb_player_max=self.games[game].board.players_nb)
                 self.games[game].send_packet(player_token, packet)

@@ -258,21 +258,17 @@ class Game(Thread):
 
             elif isinstance(packet, GetOutRoom):
                 # check if player is part of the current room
-                if not self.board.player_exists(packet.player_token):
-                    self.send_packet(channel_name=packet.player_token,
-                                     packet=ExceptionPacket(code=4203))
-                    return
 
                 # if player is the host of the game
                 # someone else randomly takes over
                 # -->first non-host player connected
                 if packet.player_token == self.host_player:
-                    # TODO: reassign host
                     # host is alone
                     if len(self.board.players) == 1:
                         # TODO: delete game
                         pass
                     for i in range(len(self.board.players)):
+                        # reassigning host
                         if self.board.players[i] != self.host_player:
                             self.host_player = self.board.players[i]
                             self.send_packet_to_player(self.host_player,

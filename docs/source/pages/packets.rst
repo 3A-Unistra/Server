@@ -51,6 +51,7 @@ Paquet envoyé *par le client* lorsque un joueur veut sortir d'un lobby de parti
 
 **contenu du paquet :**
  * id du joueur (*player_token*)
+ * id de la partie (*game_token*)
 
 
 GetOutRoomSuccess

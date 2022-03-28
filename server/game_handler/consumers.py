@@ -9,7 +9,7 @@ from .data.exceptions import PacketException
 from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
     PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
-    CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket
+    CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket, GetOutRoom
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -298,13 +298,20 @@ class GameEngineConsumer(SyncConsumer):
             self.engine.send_all_lobby_status(player_token=packet.player_token)
 
         if not isinstance(packet, LobbyPacket):
+            # not supposed to happen
             return
 
         if isinstance(packet, CreateGame):
             self.engine.create_game(packet)
+            return
 
         if isinstance(packet, DeleteRoom):
             self.engine.delete_room(packet)
+            return
+
+        if isinstance(packet, GetOutRoom):
+            self.engine.leave_game(packet)
+            return
 
         # Check if packet is not None and game token exists
         if packet is None or 'game_token' not in content:
