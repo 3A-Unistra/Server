@@ -241,6 +241,11 @@ class BroadcastUpdateRoom(LobbyPacket):
         self.reason = obj['reason']
 
 
+class NewHost(LobbyPaquet):
+    def __init__(self):
+        super().__init__("NewHost")
+
+
 class PingPacket(PlayerPacket):
     def __init__(self, player_token: str = ""):
         super().__init__("Ping", player_token=player_token)
@@ -982,6 +987,7 @@ class PacketUtils:
         "BroadcastUpdateRoom": BroadcastUpdateRoom,
         "BroadcastUpdateLobby": BroadcastUpdateLobby,
         "StatusRoom": StatusRoom,
+        "NewHost": NewHost,
         # Internal packets
         "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
         "InternalPlayerDisconnect": InternalPlayerDisconnect,

@@ -236,6 +236,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
 
         # if game_token != None; send internalplayerdisconnect to engine
         # to remove player?
+        #
         return
 
     async def send_lobby_packet(self, content):

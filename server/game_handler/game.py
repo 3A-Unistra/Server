@@ -22,7 +22,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
     GetOutRoomSuccess, BroadcastUpdateRoom, PlayerEnterPrison, PlayerMove, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
-    AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom
+    AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, NewHost
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -254,6 +254,7 @@ class Game(Thread):
                                               board.players_nb)
                 # sending to the lobby people
                 self.send_packet_groups(update, "lobby")
+                return
 
             elif isinstance(packet, GetOutRoom):
                 # check if player is part of the current room
@@ -263,10 +264,21 @@ class Game(Thread):
                     return
 
                 # if player is the host of the game
-                if packet.player_token != self.host_player:
-                    self.send_packet(channel_name=packet.player_token,
-                                     packet=ExceptionPacket(code=4204))
-                    return
+                # someone else randomly takes over
+                # -->first non-host player connected
+                if packet.player_token == self.host_player:
+                    # TODO: reassign host
+                    # host is alone
+                    if len(self.board.players) == 1:
+                        # TODO: delete game
+                        pass
+                    for i in range (len(self.board.players)):
+                        if self.board.players[i].channel_name != \
+                                self.host_player:
+                            self.host_player = self.board.players[i]
+                            self.send_packet_to_player(self.host_player,
+                                                       NewHost())
+                            break
 
                 # player leaves game group
                 async_to_sync(
@@ -298,6 +310,7 @@ class Game(Thread):
                                               nb_player_max=self.
                                               board.players_nb)
                 self.send_packet_groups(update, "lobby")
+                return
 
             elif isinstance(packet, LaunchGame):
                 # check if player_token is the token of the game host
@@ -327,6 +340,7 @@ class Game(Thread):
                                               nb_player_max=self.
                                               board.players_nb)
                 self.send_packet_groups(update, "lobby")
+                return
 
             elif isinstance(packet, AddBot):
                 # check if the host is the one sending the packet
@@ -362,6 +376,7 @@ class Game(Thread):
                                               nb_player_max=self.
                                               board.players_nb)
                 self.send_packet_groups(update, "lobby")
+                return
 
         else:
             # If state is not lobby

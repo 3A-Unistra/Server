@@ -169,6 +169,13 @@ Les autres joueurs seront prévenus via un BroadcastUpdatedRoom avec le champ *s
 
 *ce paquet ne contient pas d'informations*
 
+NewHost
+^^^^^^^
+
+Paquet envoyé à un joueur de la salle d'attente lorsque le host de la partie demande à sortir, ou s'il se deconnecte
+
+*ce paquet ne contient pas d'informations*
+
 
 Paquets demarrage
 -----------------
