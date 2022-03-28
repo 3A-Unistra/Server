@@ -790,14 +790,18 @@ class Game(Thread):
             # set board money to 0
             self.board.board_money = 0
         elif isinstance(case, OwnableSquare):
-            if case.has_owner():
-                # Pay rent :o
-                self.player_balance_pay(player=player,
-                                        receiver=case.owner,
-                                        amount=case.get_rent(),
-                                        reason="rent_pay",
-                                        receiver_reason="rent_receive")
+            # Pay rent :o
+            if not case.has_owner() or case.mortgaged:
+                return
 
+            # Calculate rent
+            rent = self.board.get_rent(case, player.current_dices)
+
+            self.player_balance_pay(player=player,
+                                    receiver=case.owner,
+                                    amount=rent,
+                                    reason="rent_pay",
+                                    receiver_reason="rent_receive")
         elif isinstance(case, ChanceSquare) and not backward:
             card = self.board.draw_random_chance_card()
 

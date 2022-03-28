@@ -435,21 +435,26 @@ class Board:
         if isinstance(case, StationSquare):
             stations_count = len(
                 [a for a in owned_squares if isinstance(a, StationSquare)])
-            return stations_count * case.get_rent()
+            # 1 station: x1 ; 2 stations: x2 ; 3 stations: x4 ; 4 stations: x8
+            return 2 ** (stations_count - 1) * case.get_rent()
         elif isinstance(case, CompanySquare):
             company_count = len(
                 [a for a in owned_squares if isinstance(a, CompanySquare)])
-            # TODO: Set multiplier in config
-            multiplier = 10 if company_count == self.total_company_squares else 4
+            # if player has all companies, dices are multiplied by 10
+            # else dices are multiplied by 4
+            multiplier = 10 if company_count == self.total_company_squares \
+                else 4
             return multiplier * sum(dices)
-        elif isinstance(case, PropertySquare):
-            if case.nb_house == 0:
-                property_count = [a for a in owned_squares
+        elif isinstance(case, PropertySquare) and case.nb_house == 0:
+            # Count all properties owned by the player and which have the same
+            # color
+            property_count = len([a for a in owned_squares
                                   if isinstance(a, PropertySquare)
-                                  and a.color == case.color]
+                                  and a.color == case.color])
 
-                if property_count == \
-                        self.total_properties_color_squares[case.color]:
-                    return case.get_rent() * 2
+            # If player has all properties of group, multiply rent by 2
+            if property_count == \
+                    self.total_properties_color_squares[case.color]:
+                return case.get_rent() * 2
 
-            return case.get_rent()
+        return case.get_rent()
