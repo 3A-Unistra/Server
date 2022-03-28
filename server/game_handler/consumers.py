@@ -219,7 +219,6 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             return
 
         # send to game engine consumer
-        # TODO: game engine consumer must handle the packets
         await self.channel_layer.send(
             'game_engine',
             {
@@ -233,7 +232,6 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         # removing player from the lobby group
         async_to_sync(self.channel_layer.group_discard)("lobby",
                                                         self.channel_name)
-
         # if game_token != None; send internalplayerdisconnect to engine
         # to remove player?
         #

@@ -177,6 +177,14 @@ Paquet envoyé à un joueur de la salle d'attente lorsque le host de la partie d
 *ce paquet ne contient pas d'informations*
 
 
+AssignedPiece
+^^^^^^^^^^^^^
+
+Paquet envoyé au client pour l'informer de quelle pion il aura durant la partie
+
+**contenu du paquet :**
+ * identifiant de la piece (*piece*)
+
 Paquets demarrage
 -----------------
 

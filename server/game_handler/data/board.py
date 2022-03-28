@@ -9,6 +9,8 @@ from django.conf import settings
 from .squares import Square, JailSquare, StationSquare, CompanySquare, \
     OwnableSquare, PropertySquare
 
+from server.game_handler.models import User
+
 
 class Board:
     squares: List[Square]
@@ -105,6 +107,42 @@ class Board:
 
         else:
             self.starting_balance = balance
+
+    def assign_piece(self, player_token: str):
+        """
+        assigns a piece to a player
+        If the favorite piece from the player is taken, it'll assign a random
+        non-taken piece
+        :param player_token: player id
+        """
+
+        try:  # get user from database
+            user = User.objects.get(id=player_token)
+        except User.DoesNotExist:
+            return
+
+        favorite_piece = user.piece
+        taken = False
+        for player in self.players:
+            if player.piece == favorite_piece:
+                taken = True
+                break
+
+        if taken:
+            # iterating on all the pieces to get a free one
+            for i in range(self.CONFIG.get('MAX_PIECE_NB')):
+                taken_new_piece = False
+                for player in self.players:
+                    if player.piece == i:
+                        taken_new_piece = True
+                        break
+                if not taken_new_piece:
+                    self.get_player(player_token).piece = i
+                    return i
+
+        else:
+            self.get_player(player_token).piece = favorite_piece
+            return favorite_piece
 
     def search_square_indexes(self):
         """

@@ -22,7 +22,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
     GetOutRoomSuccess, BroadcastUpdateRoom, PlayerEnterPrison, PlayerMove, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
-    AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, NewHost
+    AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, NewHost, \
+    AssignedPiece
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -199,6 +200,10 @@ class Game(Thread):
                     Player(user=user, channel_name=self.channel_layer,
                            bot=False))
 
+                piece = self.board.assign_piece(packet.player_token)
+                self.send_packet(channel_name=packet.player_token,
+                                 packet=AssignedPiece(piece=piece))
+
                 # player leaves lobby group
                 async_to_sync(
                     self.channel_layer.group_discard)("lobby",
@@ -222,7 +227,6 @@ class Game(Thread):
                                     name=self.public_name,
                                     nb_players=nb_players,
                                     max_nb_players=self.board.players_nb,
-                                    # gotta change that
                                     players=player_uid,
                                     option_auction=self.
                                     board.option_auction_enabled,

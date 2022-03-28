@@ -143,6 +143,9 @@ ENGINE_CONFIG = {
 
     'MONEY_GO': 200,
 
+    # replace w number of pieces
+    'MAX_PIECE_NB': 15,
+
     'MAX_DOUBLES_JAIL': 3,
     'MAX_JAIL_TURNS': 3,
     'JAIL_LEAVE_PRICE': 50,

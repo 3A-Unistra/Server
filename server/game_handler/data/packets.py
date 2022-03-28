@@ -241,6 +241,17 @@ class BroadcastUpdateRoom(LobbyPacket):
         self.reason = obj['reason']
 
 
+class AssignedPiece(LobbyPacket):
+    piece: int
+
+    def __init__(self, piece):
+        super().__init__("NewHost")
+        self.piece = piece
+
+    def deserialize(self, obj: object):
+        self.piece = obj['piece']
+
+
 class NewHost(LobbyPacket):
     def __init__(self):
         super().__init__("NewHost")
