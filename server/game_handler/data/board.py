@@ -452,13 +452,9 @@ class Board:
         elif isinstance(case, PropertySquare) and case.nb_house == 0:
             # Count all properties owned by the player and which have the same
             # color
-            property_count = len([a for a in owned_squares
-                                  if isinstance(a, PropertySquare)
-                                  and a.color == case.color])
-
-            # If player has all properties of group, multiply rent by 2
-            if property_count == \
-                    self.total_properties_color_squares[case.color]:
+            if self.has_property_group(color=case.color,
+                                       owned_squares=owned_squares):
+                # If player has all properties of group, multiply rent by 2
                 return case.get_rent() * 2
 
         return case.get_rent()
@@ -476,3 +472,26 @@ class Board:
         found = self.squares[property_id]
 
         return found if isinstance(found, OwnableSquare) else None
+
+    def has_property_group(self, color: str,
+                           player: Optional[Player] = None,
+                           owned_squares: List[OwnableSquare] = None) -> bool:
+        """
+        If player has the whole group or not
+        :param color: Group color
+        :param player: Owner, optional, only if owned_squares is None
+        :param owned_squares: Players owned squares
+               (if none, self.get_owned_squares(player) is called)
+        :return: If player has whole property group or not
+        """
+
+        if owned_squares is None:
+            if player is None:
+                return False
+            owned_squares = self.get_owned_squares(player)
+
+        property_count = len([a for a in owned_squares
+                              if isinstance(a, PropertySquare)
+                              and a.color == color])
+
+        return property_count == self.total_properties_color_squares[color]

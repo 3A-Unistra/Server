@@ -591,3 +591,43 @@ class TestPacket(TestCase):
         assert board.get_property(30) is None  # Go_to_jail case
         assert board.get_property(1) is not None  # First property
         assert board.get_property(39) is not None  # Last property
+
+    def test_has_property_group(self):
+        board = self.create_board()
+        player1 = Player(bot=False,
+                         user=User(id="283e3f3e-3411-44c5-9bc5-037358c47100"))
+        board.add_player(player1)
+
+        assert not board.has_property_group(color='test')
+
+        # stations
+        assert len(board.squares) > 25
+
+        # properties
+        property1 = board.squares[21]
+        property2 = board.squares[23]
+        property3 = board.squares[24]
+
+        assert isinstance(property1, PropertySquare)
+        assert isinstance(property2, PropertySquare)
+        assert isinstance(property3, PropertySquare)
+
+        # Check same group
+        assert property1.color == property2.color == property3.color
+        property1.owner = player1
+        property2.owner = player1
+        # owner of the whole group
+        property3.owner = player1
+
+        assert board.has_property_group(color=property1.color,
+                                        player=player1)
+
+        owned_squares = board.get_owned_squares(player1)
+
+        assert board.has_property_group(color=property1.color,
+                                        owned_squares=owned_squares)
+
+        property1.owner = None
+
+        assert not board.has_property_group(color=property2.color,
+                                            player=player1)
