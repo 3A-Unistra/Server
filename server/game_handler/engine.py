@@ -169,7 +169,7 @@ class Engine:
                                                  player.channel_name)
 
         # sending update to lobby group
-        reason = UpdateReason(3).value
+        reason = UpdateReason.ROOM_DELETED.value
         self.games[game_token].send_packet_groups(BroadcastUpdateLobby(
             game_token=game_token,
             nb_players=nb_players,
@@ -268,7 +268,7 @@ class Engine:
                          packet=CreateGameSuccess(packet.player_token, piece),
                          channel_name=packet.player_token)
         # sending updated room status
-        reason = UpdateReason(4).value
+        reason = UpdateReason.ROOM_CREATED.value
 
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastUpdateLobby(
@@ -292,7 +292,7 @@ class Engine:
                 packet = BroadcastUpdateLobby(
                     game_token=game,
                     nb_players=len(self.games[game].board.players),
-                    reason=UpdateReason(0).value,
+                    reason=UpdateReason.NEW_CONNECTION.value,
                     nb_player_max=self.games[game].board.players_nb)
                 self.games[game].send_packet(player_token, packet)
 

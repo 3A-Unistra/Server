@@ -239,7 +239,7 @@ class Game(Thread):
                 self.send_packet(packet.player_token, status)
 
                 # broadcast to lobby group
-                reason = UpdateReason(1).value
+                reason = UpdateReason.NEW_PLAYER.value
                 # sent to lobby and to game group
                 update = BroadcastUpdateRoom(game_token=self.uid,
                                              nb_players=nb_players,
@@ -292,7 +292,7 @@ class Game(Thread):
 
                 nb_players = len(self.board.players)
                 # broadcast updated room status
-                reason = UpdateReason(2).value
+                reason = UpdateReason.PLAYER_LEFT.value
                 # this should be sent to lobby and to game group
                 update = BroadcastUpdateRoom(game_token=self.uid,
                                              nb_players=nb_players,
@@ -320,7 +320,7 @@ class Game(Thread):
                 self.set_timeout(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
                 # broadcasting update to players
-                reason = UpdateReason(6).value
+                reason = UpdateReason.LAUNCHING_GAME.value
                 nb_players = len(self.board.players)
 
                 # this should be sent to lobby and to game group
@@ -357,7 +357,7 @@ class Game(Thread):
 
                 # broadcast updated room status
                 nb_players = len(self.board.players)
-                reason = UpdateReason(7).value
+                reason = UpdateReason.NEW_BOT.value
 
                 # this should be sent to lobby and to game group
                 update = BroadcastUpdateRoom(game_token=self.uid,
