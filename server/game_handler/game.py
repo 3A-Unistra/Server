@@ -24,13 +24,14 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
     AddBot, ActionEnd, ActionTimeout, ActionBuyProperty, \
     ActionMortgageProperty, ActionUnmortgageProperty, ActionBuyHouse, \
-    ActionSellHouse, PlayerPropertyPacket, ActionBuyPropertySucceed
+    ActionSellHouse, PlayerPropertyPacket, ActionBuyPropertySucceed, \
+    ActionMortgageSucceed
 
 from server.game_handler.models import User
 from django.conf import settings
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
     FreeParkingSquare, OwnableSquare, ChanceSquare, CommunitySquare, \
-    GoToJailSquare
+    GoToJailSquare, PropertySquare
 
 
 class GameState(Enum):
@@ -429,7 +430,37 @@ class Game(Thread):
                 return
 
             if isinstance(packet, ActionMortgageProperty):
-                pass
+
+                # owned_squares = self.board.get_owned_squares(player)
+
+                # For property squares, you can only mortgage when no houses
+                # or hotels are in the group
+                if isinstance(square, PropertySquare):
+                    pass
+
+                # TODO:
+                # for square in owned_squares:
+
+                if square.owner != player or square.mortgaged:
+                    # Ignore packet.
+                    return
+
+                # Mortgage property
+                square.mortgaged = True
+
+                # broadcast updates
+                self.broadcast_packet(ActionMortgageSucceed(
+                    player_token=player.get_id(),
+                    property_id=square.id_
+                ))
+
+                # // -> floor(div)
+                self.player_balance_update(
+                    player=player,
+                    new_balance=player.money + (square.buy_price // 2),
+                    reason="action_buy_house"
+                )
+                return
 
             if isinstance(packet, ActionUnmortgageProperty):
                 pass
