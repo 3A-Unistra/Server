@@ -434,12 +434,16 @@ class Board:
 
         if isinstance(case, StationSquare):
             stations_count = len(
-                [a for a in owned_squares if isinstance(a, StationSquare)])
+                [a for a in owned_squares if
+                 isinstance(a, StationSquare) and not a.mortgaged])
+            # 0 stations => 0
             # 1 station: x1 ; 2 stations: x2 ; 3 stations: x4 ; 4 stations: x8
-            return 2 ** (stations_count - 1) * case.get_rent()
+            return 0 if stations_count == 0 else 2 ** (
+                    stations_count - 1) * case.get_rent()
         elif isinstance(case, CompanySquare):
             company_count = len(
-                [a for a in owned_squares if isinstance(a, CompanySquare)])
+                [a for a in owned_squares if
+                 isinstance(a, CompanySquare) and not a.mortgaged])
             # if player has all companies, dices are multiplied by 10
             # else dices are multiplied by 4
             multiplier = 10 if company_count == self.total_company_squares \
