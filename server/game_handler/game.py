@@ -430,20 +430,16 @@ class Game(Thread):
                 return
 
             if isinstance(packet, ActionMortgageProperty):
-
-                # owned_squares = self.board.get_owned_squares(player)
+                if square.owner != player or square.mortgaged:
+                    # Ignore packet.
+                    return
 
                 # For property squares, you can only mortgage when no houses
                 # or hotels are in the group
                 if isinstance(square, PropertySquare):
-                    pass
-
-                # TODO:
-                # for square in owned_squares:
-
-                if square.owner != player or square.mortgaged:
-                    # Ignore packet.
-                    return
+                    if self.board.get_houses_by_owned_group(square.color,
+                                                            player=player) > 0:
+                        return
 
                 # Mortgage property
                 square.mortgaged = True
@@ -454,11 +450,10 @@ class Game(Thread):
                     property_id=square.id_
                 ))
 
-                # // -> floor(div)
                 self.player_balance_update(
                     player=player,
                     new_balance=player.money + (square.buy_price // 2),
-                    reason="action_buy_house"
+                    reason="action_mortgage"
                 )
                 return
 
