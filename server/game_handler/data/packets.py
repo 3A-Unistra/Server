@@ -177,11 +177,14 @@ class StatusRoom(LobbyPacket):
     option_first_round_buy: bool
     starting_balance: int
 
-    def __init__(self, game_token: str, name: str, nb_players: int,
-                 max_nb_players: int, players: List[str], option_auction: bool,
-                 option_double_on_start: bool, option_max_time: int,
-                 option_maxnb_rounds: int, option_first_round_buy: bool,
-                 starting_balance: int):
+    def __init__(self, game_token: str = "", name: str = "",
+                 nb_players: int = 0, max_nb_players: int = 0,
+                 players: List[str] = None, option_auction: bool = False,
+                 option_double_on_start: bool = False,
+                 option_max_time: int = 0, option_maxnb_rounds: int = 0,
+                 option_first_round_buy: bool = False,
+                 starting_balance: int = 0):
+        super().__init__("StatusRoom")
         self.game_token = game_token
         self.name = name
         self.nb_players = nb_players
@@ -194,18 +197,18 @@ class StatusRoom(LobbyPacket):
         self.option_first_round_buy = option_first_round_buy
         self.starting_balance = starting_balance
 
-        def deserialize(self, obj: object):
-            self.game_token = obj['game_token']
-            self.name = obj['name']
-            self.nb_players = obj['nb_players']
-            self.max_nb_players = obj['max_nb_players']
-            self.players = obj['players']
-            self.option_auction = obj['option_auction']
-            self.option_double_on_start = obj['option_double_on_start']
-            self.option_max_time = obj['option_max_time']
-            self.option_maxnb_rounds = obj['option_maxnb_rounds']
-            self.option_first_round_buy = obj['option_first_round_buy']
-            self.starting_balance = obj['starting_balance']
+    def deserialize(self, obj: object):
+        self.game_token = obj['game_token']
+        self.name = obj['name']
+        self.nb_players = obj['nb_players']
+        self.max_nb_players = obj['max_nb_players']
+        self.players = obj['players']
+        self.option_auction = obj['option_auction']
+        self.option_double_on_start = obj['option_double_on_start']
+        self.option_max_time = obj['option_max_time']
+        self.option_maxnb_rounds = obj['option_maxnb_rounds']
+        self.option_first_round_buy = obj['option_first_round_buy']
+        self.starting_balance = obj['starting_balance']
 
 
 class BroadcastUpdateLobby(LobbyPacket):
@@ -214,8 +217,8 @@ class BroadcastUpdateLobby(LobbyPacket):
     nb_player_max: int
     reason: int
 
-    def __init__(self, game_token: str, nb_players: int, reason: int,
-                 nb_player_max):
+    def __init__(self, game_token: str = "", nb_players: int = 0,
+                 reason: int = 0, nb_player_max: int = 0):
         super().__init__("BroadcastUpdatedRoom")
         self.game_token = game_token
         self.nb_players = nb_players
@@ -235,8 +238,8 @@ class BroadcastUpdateRoom(LobbyPacket):
     player: str
     reason: int
 
-    def __init__(self, game_token: str, nb_players: int, reason: int,
-                 player: str = None):
+    def __init__(self, game_token: str = "", nb_players: int = 0,
+                 reason: int = 0, player: str = None):
         super().__init__("BroadcastUpdatedRoom")
         self.game_token = game_token
         self.nb_players = nb_players
@@ -882,7 +885,7 @@ class CreateGameSuccess(LobbyPacket):
     player_token: str
     piece: int
 
-    def __init__(self, player_token: str, piece: int = 0):
+    def __init__(self, player_token: str = "", piece: int = 0):
         super().__init__("CreateGameSuccess")
         self.player_token = player_token
         self.piece = piece
@@ -897,7 +900,7 @@ class AddBot(LobbyPacket):
     game_token: str
     bot_difficulty: int
 
-    def __init__(self, player_token: str, game_token: str = "",
+    def __init__(self, player_token: str = "", game_token: str = "",
                  bot_difficulty: int = 0):
         super().__init__("AddBot")
         self.player_token = player_token
@@ -914,7 +917,7 @@ class DeleteRoom(LobbyPacket):
     player_token: str
     game_token: str
 
-    def __init__(self, player_token: str, game_token: str):
+    def __init__(self, player_token: str = "", game_token: str = ""):
         super().__init__("DeleteRoom")
         self.player_token = player_token
         self.game_token = game_token
@@ -933,7 +936,7 @@ class DeleteRoomSuccess(LobbyPacket):
 class InternalLobbyConnect(InternalPacket):
     player_token: str
 
-    def __init__(self, player_token: str):
+    def __init__(self, player_token: str = ""):
         super().__init__("DeleteRoomSuccess")
         self.player_token = player_token
 
@@ -944,7 +947,7 @@ class InternalLobbyConnect(InternalPacket):
 class InternalLobbyDisconnect(InternalPacket):
     player_token: str
 
-    def __init__(self, player_token: str):
+    def __init__(self, player_token: str = ""):
         super().__init__("DeleteRoomSuccess")
         self.player_token = player_token
 

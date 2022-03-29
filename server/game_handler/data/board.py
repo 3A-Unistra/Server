@@ -61,11 +61,11 @@ class Board:
         self.option_auction_enabled = False
         self.option_password = ""
         self.option_is_private = False
-        self.starting_balance = getattr(settings, "MONEY_START_DEFAULT", 1000)
         self.option_maxnb_rounds = 0
         self.option_max_time = 0
         self.option_first_round_buy = False
         self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
+        self.starting_balance = self.CONFIG.get("STARTING_BALANCE_DEFAULT")
         self.search_square_indexes()
         self.search_card_indexes()
 
@@ -128,7 +128,12 @@ class Board:
                 taken = True
                 break
 
+        if not taken:
+            self.get_player(player_token).piece = favorite_piece
+            return favorite_piece
+
         if taken:
+            taken_new_piece = False
             # iterating on all the pieces to get a free one
             for i in range(self.CONFIG.get('MAX_PIECE_NB')):
                 taken_new_piece = False
@@ -140,9 +145,7 @@ class Board:
                     self.get_player(player_token).piece = i
                     return i
 
-        else:
-            self.get_player(player_token).piece = favorite_piece
-            return favorite_piece
+        return -1   # this should not happen
 
     def search_square_indexes(self):
         """
