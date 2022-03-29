@@ -22,7 +22,9 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
     GetOutRoomSuccess, BroadcastUpdatedRoom, PlayerEnterPrison, PlayerMove, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
-    AddBot, ActionEnd, ActionTimeout
+    AddBot, ActionEnd, ActionTimeout, ActionBuyProperty, \
+    ActionMortgageProperty, ActionUnmortgageProperty, ActionBuyHouse, \
+    ActionSellHouse, PlayerPropertyPacket, ActionBuyPropertySucceed
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -382,6 +384,61 @@ class Game(Thread):
                     return
 
                 self.proceed_action_tour_end()
+
+            if not isinstance(packet, PlayerPropertyPacket):
+                return
+
+            # Get player
+            player = self.board.get_player(packet.player_token)
+
+            # Check if player is current player, else ignore
+            if player != self.board.get_current_player():
+                return
+
+            square = self.board.get_property(packet.property_id)
+
+            if square is None:
+                # Ignore packet.
+                return
+
+            if isinstance(packet, ActionBuyProperty):
+
+                # Check if player is on this property
+                if player.position != packet.property_id:
+                    return
+
+                if square.owner is not None or not player.has_enough_money(
+                        square.buy_price):
+                    # Ignore packet.
+                    return
+
+                # Set new owner
+                square.owner = player
+
+                # broadcast updates
+                self.broadcast_packet(ActionBuyPropertySucceed(
+                    player_token=player.get_id(),
+                    property_id=square.id_
+                ))
+
+                self.player_balance_update(
+                    player=player,
+                    new_balance=player.money - square.buy_price,
+                    reason="action_buy_house"
+                )
+                return
+
+            if isinstance(packet, ActionMortgageProperty):
+                pass
+
+            if isinstance(packet, ActionUnmortgageProperty):
+                pass
+
+            if isinstance(packet, ActionBuyHouse):
+                pass
+
+            if isinstance(packet, ActionSellHouse):
+                pass
 
     def process_logic(self):
         # TODO: Check #34 in comments

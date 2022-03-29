@@ -581,3 +581,13 @@ class TestPacket(TestCase):
         board = self.create_board()
         assert board.compute_current_round() == 1
         assert board.remaining_round_players == 0
+
+    def test_get_property(self):
+        board = self.create_board()
+
+        assert board.get_property(-1) is None
+        assert board.get_property(len(board.squares) + 10) is None
+        assert board.get_property(0) is None  # Start case
+        assert board.get_property(30) is None  # Go_to_jail case
+        assert board.get_property(1) is not None  # First property
+        assert board.get_property(39) is not None  # Last property

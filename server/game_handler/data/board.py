@@ -458,3 +458,17 @@ class Board:
                 return case.get_rent() * 2
 
         return case.get_rent()
+
+    def get_property(self, property_id: int) -> Optional[OwnableSquare]:
+        """
+        Get a property square instance by id
+        :param property_id: ID of property sqaure
+        :return: Property square by id,
+                None if id is not found or square is not ownable
+        """
+        if 0 > property_id or property_id >= len(self.squares):
+            return None
+
+        found = self.squares[property_id]
+
+        return found if isinstance(found, OwnableSquare) else None

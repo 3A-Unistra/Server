@@ -46,6 +46,22 @@ class InternalPacket(Packet):
     pass
 
 
+class PlayerPropertyPacket(PlayerPacket):
+    """
+    Packet for player action on properties
+    """
+    property_id: int
+
+    def __init__(self, name: str, player_token: str, property_id: int):
+        super().__init__(name, player_token)
+        self.property_id = property_id
+
+    def deserialize(self, obj: object):
+        super().deserialize(obj)
+        self.property_id = int(obj['property_id']) \
+            if 'property_id' in obj else 0
+
+
 class InternalCheckPlayerValidity(InternalPacket):
     player_token: str
     valid: bool
@@ -604,148 +620,77 @@ class AuctionConcede(Packet):
 
 class AuctionEnd(Packet):
     def __init__(self):
-        super(AuctionEnd, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
 
 
-class AuctionBuyProperty(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(AuctionBuyProperty, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionBuyProperty(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class AuctionBuyPropertySucceed(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(AuctionBuyPropertySucceed, self).__init__(
-            self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionBuyPropertySucceed(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionMortgageProperty(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(ActionMortgageProperty, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionMortgageProperty(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionMortgageSucceed(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(ActionMortgageSucceed, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionMortgageSucceed(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionUnmortgageProperty(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(ActionUnmortgageProperty, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionUnmortgageProperty(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionUnmortgageSucceed(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(ActionUnmortgageSucceed, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionUnmortgageSucceed(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionBuyHouse(Packet):
-    id_player: str
-    id_house: str
-
-    def __init__(self, id_player: str = "", id_house: str = ""):
-        super(ActionBuyHouse, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.id_house = id_house
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.id_house = obj["id_house"]
+class ActionBuyHouse(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionBuyHouseSucceed(Packet):
-    id_player: str
-    id_house: str
-
-    def __init__(self, id_player: str = "", id_house: str = ""):
-        super(ActionBuyHouseSucceed, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.id_house = id_house
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.id_house = obj["id_house"]
+class ActionBuyHouseSucceed(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionSellHouse(Packet):
-    id_player: str
-    id_house: str
-
-    def __init__(self, id_player: str = "", id_house: str = ""):
-        super(ActionSellHouse, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.id_house = id_house
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.id_house = obj["id_house"]
+class ActionSellHouse(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionSellHouseSucceed(Packet):
-    id_player: str
-    id_house: str
-
-    def __init__(self, id_player: str = "", id_house: str = ""):
-        super(ActionSellHouseSucceed, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.id_house = id_house
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.id_house = obj["id_house"]
+class ActionSellHouseSucceed(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
 # Lobby packets
@@ -861,8 +806,8 @@ class PacketUtils:
         "AuctionBid": AuctionBid,
         "AuctionConcede": AuctionConcede,
         "AuctionEnd": AuctionEnd,
-        "AuctionBuyProperty": AuctionBuyProperty,
-        "AuctionBuyPropertySucceed": AuctionBuyPropertySucceed,
+        "ActionBuyProperty": ActionBuyProperty,
+        "ActionBuyPropertySucceed": ActionBuyPropertySucceed,
         "ActionMortgageProperty": ActionMortgageProperty,
         "ActionMortgageSucceed": ActionMortgageSucceed,
         "ActionUnmortgageProperty": ActionUnmortgageProperty,
