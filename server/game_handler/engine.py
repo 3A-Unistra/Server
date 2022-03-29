@@ -170,13 +170,13 @@ class Engine:
 
         # sending update to lobby group
         reason = UpdateReason.ROOM_DELETED.value
-        self.games[game_token].send_packet_groups(BroadcastUpdateLobby(
+        self.games[game_token].send_packet_to_group(BroadcastUpdateLobby(
             game_token=game_token,
             nb_players=nb_players,
             reason=reason,
             nb_player_max=self.games[game_token].board.players_nb), "lobby")
 
-        self.games[game_token].send_packet_groups(BroadcastUpdateRoom(
+        self.games[game_token].send_packet_to_group(BroadcastUpdateRoom(
             game_token=game_token,
             nb_players=nb_players,
             reason=reason,
@@ -276,7 +276,7 @@ class Engine:
             nb_players=1,
             reason=reason,
             nb_player_max=packet.max_nb_players)
-        new_game.send_packet_groups(update, "lobby")
+        new_game.send_packet_to_group(update, "lobby")
         # adding host to the game group
         async_to_sync(
             new_game.channel_layer.group_discard)(new_game.uid,

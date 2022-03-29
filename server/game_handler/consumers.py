@@ -252,7 +252,6 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
                 'channel_name': self.channel_name
             }
         )
-        return
 
     async def send_lobby_packet(self, content):
         packet = content.get('packet', None)

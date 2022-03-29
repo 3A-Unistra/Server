@@ -246,14 +246,14 @@ class Game(Thread):
                                              reason=reason,
                                              player=packet.player_token)
                 # sending to the people in the game
-                self.send_packet_groups(update, self.uid)
+                self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
                                               nb_player_max=self.
                                               board.players_nb)
                 # sending to the lobby people
-                self.send_packet_groups(update, "lobby")
+                self.send_packet_to_group(update, "lobby")
                 return
 
             elif isinstance(packet, GetOutRoom):
@@ -298,13 +298,13 @@ class Game(Thread):
                                              nb_players=nb_players,
                                              reason=reason,
                                              player=packet.player_token)
-                self.send_packet_groups(update, self.uid)
+                self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
                                               nb_player_max=self.
                                               board.players_nb)
-                self.send_packet_groups(update, "lobby")
+                self.send_packet_to_group(update, "lobby")
                 return
 
             elif isinstance(packet, LaunchGame):
@@ -328,13 +328,13 @@ class Game(Thread):
                                              nb_players=nb_players,
                                              reason=reason,
                                              player=packet.player_token)
-                self.send_packet_groups(update, self.uid)
+                self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
                                               nb_player_max=self.
                                               board.players_nb)
-                self.send_packet_groups(update, "lobby")
+                self.send_packet_to_group(update, "lobby")
                 return
 
             elif isinstance(packet, AddBot):
@@ -364,13 +364,13 @@ class Game(Thread):
                                              nb_players=nb_players,
                                              reason=reason,
                                              player=packet.player_token)
-                self.send_packet_groups(update, self.uid)
+                self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
                                               nb_players=nb_players,
                                               reason=reason,
                                               nb_player_max=self.
                                               board.players_nb)
-                self.send_packet_groups(update, "lobby")
+                self.send_packet_to_group(update, "lobby")
                 return
 
         else:
@@ -1121,7 +1121,7 @@ class Game(Thread):
             self.uid, {"type": "game_update", "packet": packet.serialize()}
         )
 
-    def send_packet_groups(self, packet: Packet, group_name: str):
+    def send_packet_to_group(self, packet: Packet, group_name: str):
         """
         sends packet to lobby group.
         lobby group : all players that are connected to a game in lobby mode
