@@ -3,6 +3,8 @@ from unittest import TestCase
 from server.game_handler.data import Player, Board
 from server.game_handler.data.cards import CommunityCard, CardActionType, \
     ChanceCard, Card
+from server.game_handler.data.squares import OwnableSquare, StationSquare, \
+    CompanySquare, PropertySquare
 from server.game_handler.engine import Engine
 from server.game_handler.models import User
 
@@ -17,6 +19,10 @@ def create_players() -> (Player, Player, Player):
     return player1, player2, player3
 
 
+def custom_bot_name_used(self, name: str):
+    return True
+
+
 class TestPacket(TestCase):
     engine: Engine()
 
@@ -25,9 +31,11 @@ class TestPacket(TestCase):
 
     def create_board(self) -> Board:
         board = Board()
-        board.chance_deck = self.engine.chance_deck.copy()
-        board.community_deck = self.engine.community_deck.copy()
-        board.squares = self.engine.squares.copy()
+        board.load_data(
+            squares=self.engine.squares.copy(),
+            chance_deck=self.engine.chance_deck.copy(),
+            community_deck=self.engine.community_deck.copy()
+        )
         return board
 
     def test_search_card_indexes(self):
@@ -429,6 +437,16 @@ class TestPacket(TestCase):
         assert bot_name != ""
         assert bot_name.startswith("Bot")
 
+        # Custom bot name used
+        board.bot_name_used = custom_bot_name_used.__get__(board, Board)
+
+        # Should do 50 tries
+        bot_name = board.get_random_bot_name()
+
+        assert bot_name is not None
+        assert bot_name != ""
+        assert bot_name.startswith("Bot #")
+
     def test_bot_name_used(self):
         board = self.create_board()
         player1 = Player(bot=False,
@@ -449,3 +467,117 @@ class TestPacket(TestCase):
         assert board.set_current_player(player3) == -1
         assert board.set_current_player(player2) == 1
         assert board.current_player_index == 1
+
+    def test_get_owned_squares(self):
+        board = self.create_board()
+        player1 = Player(bot=False,
+                         user=User(id="283e3f3e-3411-44c5-9bc5-037358c47100"))
+        board.add_player(player1)
+
+        assert len(board.get_owned_squares(player1)) == 0
+
+        found_square = None
+
+        for square in board.squares:
+            if isinstance(square, OwnableSquare):
+                square.owner = player1
+                found_square = square
+                break
+
+        assert len(board.get_owned_squares(player1)) == 1
+
+        if found_square is not None:
+            found_square.owner = None
+
+        assert len(board.get_owned_squares(player1)) == 0
+
+    def test_get_rent(self):
+        board = self.create_board()
+        player1 = Player(bot=False,
+                         user=User(id="283e3f3e-3411-44c5-9bc5-037358c47100"))
+        board.add_player(player1)
+
+        # stations
+        assert len(board.squares) > 35
+
+        first_station = board.squares[5]
+        assert isinstance(first_station, StationSquare)
+        first_station.owner = player1
+        assert board.get_rent(first_station) == first_station.get_rent()
+
+        second_station = board.squares[15]
+        assert isinstance(second_station, StationSquare)
+        second_station.owner = player1
+        expected = 2 * second_station.get_rent()
+        assert board.get_rent(first_station) == expected
+        assert board.get_rent(second_station) == expected
+
+        third_station = board.squares[25]
+        assert isinstance(third_station, StationSquare)
+        third_station.owner = player1
+        expected = 4 * third_station.get_rent()
+        assert board.get_rent(first_station) == expected
+        assert board.get_rent(second_station) == expected
+        assert board.get_rent(second_station) == expected
+        assert board.get_rent(second_station) == expected
+
+        fourth_station = board.squares[35]
+        assert isinstance(fourth_station, StationSquare)
+        fourth_station.owner = player1
+        expected = 8 * fourth_station.get_rent()
+        assert board.get_rent(first_station) == expected
+        assert board.get_rent(second_station) == expected
+        assert board.get_rent(third_station) == expected
+        assert board.get_rent(fourth_station) == expected
+
+        # properties
+        property1 = board.squares[21]
+        property2 = board.squares[23]
+        property3 = board.squares[24]
+
+        assert isinstance(property1, PropertySquare)
+        assert isinstance(property2, PropertySquare)
+        assert isinstance(property3, PropertySquare)
+
+        # Check same group
+        assert property1.color == property2.color == property3.color
+        property1.owner = player1
+        property2.owner = player1
+        assert board.get_rent(property1) == property1.get_rent()
+
+        # owner of the whole group
+        property3.owner = player1
+        assert board.get_rent(property1) == 2 * property1.get_rent()
+        assert board.get_rent(property2) == 2 * property2.get_rent()
+        assert board.get_rent(property3) == 2 * property3.get_rent()
+
+        # property3 is mortgaged, should remain the same
+        property3.mortgaged = True
+        assert board.get_rent(property1) == 2 * property1.get_rent()
+        assert board.get_rent(property2) == 2 * property2.get_rent()
+        assert board.get_rent(property3) == 2 * property3.get_rent()
+
+        # companies
+        company1 = board.squares[12]
+        company2 = board.squares[28]
+
+        assert isinstance(company1, CompanySquare)
+        assert isinstance(company2, CompanySquare)
+
+        company1.owner = player1
+        assert board.get_rent(case=company1, dices=(1, 1)) == 2 * 4
+        assert board.get_rent(case=company1, dices=(2, 2)) == 4 * 4
+        assert board.get_rent(case=company1, dices=(3, 6)) == 9 * 4
+
+        company2.owner = player1
+        assert board.get_rent(case=company1, dices=(1, 1)) == 2 * 10
+        assert board.get_rent(case=company1, dices=(2, 2)) == 4 * 10
+        assert board.get_rent(case=company1, dices=(3, 6)) == 9 * 10
+        assert board.get_rent(case=company2, dices=(1, 1)) == 2 * 10
+        assert board.get_rent(case=company2, dices=(2, 2)) == 4 * 10
+        assert board.get_rent(case=company2, dices=(3, 6)) == 9 * 10
+
+    def test_computed_current_round(self):
+        board = self.create_board()
+        assert board.compute_current_round() == 1
+        assert board.remaining_round_players == 0

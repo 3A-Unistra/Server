@@ -139,10 +139,10 @@ class PropertySquare(OwnableSquare):
     def deserialize(self, obj: dict):
         super().deserialize(obj)
         self.house_price = int(obj['house_price'])
-        self.rents = {0: obj['base_rent']}
+        self.rents = {0: obj['rent_base']}
 
         for i in range(1, 6):
-            self.rents[i] = obj['rent_%d' % (i + 1)]
+            self.rents[i] = obj['rent_%d' % i]
 
         self.color = '%s%s%s' % (obj['r'], obj['g'], obj['b'])
 
