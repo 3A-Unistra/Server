@@ -495,3 +495,24 @@ class Board:
                               and a.color == color])
 
         return property_count == self.total_properties_color_squares[color]
+
+    def get_houses_by_owned_group(self, color: str,
+                                  player: Optional[Player] = None,
+                                  owned_squares: List[
+                                      OwnableSquare] = None) -> int:
+        """
+        Get houses by owned properties in a group
+        :param color: Group color
+        :param player: Owner, optional, only if owned_squares is None
+        :param owned_squares: Players owned squares
+               (if none, self.get_owned_squares(player) is called)
+        :return: Total houses from the properties of a group
+                (-1 if owned_squares and player are None)
+        """
+        if owned_squares is None:
+            if player is None:
+                return -1
+            owned_squares = self.get_owned_squares(player)
+
+        return sum([a.nb_house for a in owned_squares if
+                    isinstance(a, PropertySquare) and a.color == color])
