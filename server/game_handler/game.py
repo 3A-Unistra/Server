@@ -26,7 +26,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, ActionEnd, ActionTimeout, ActionBuyProperty, \
     ActionMortgageProperty, ActionUnmortgageProperty, ActionBuyHouse, \
     ActionSellHouse, PlayerPropertyPacket, ActionBuyPropertySucceed, \
-    ActionMortgageSucceed, ActionUnmortgageSucceed, ActionBuyHouseSucceed
+    ActionMortgageSucceed, ActionUnmortgageSucceed, ActionBuyHouseSucceed, \
+    ActionSellHouseSucceed
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -525,8 +526,11 @@ class Game(Thread):
                     if g_square.mortgaged:
                         return
 
+                square.nb_house += 1
+
                 # Check if all houses are distributed equally (-1/+1)
                 if not PropertySquare.is_distributed_equally(group_squares):
+                    square.nb_house -= 1
                     return
 
                 # All conditions passed ! Can proceed to buy house/hotel
@@ -534,8 +538,6 @@ class Game(Thread):
                     self.board.bank.buy_hotel()
                 else:
                     self.board.bank.buy_house()
-
-                square.nb_house += 1
 
                 # broadcast updates
                 self.broadcast_packet(ActionBuyHouseSucceed(
@@ -550,7 +552,47 @@ class Game(Thread):
                 )
 
             if isinstance(packet, ActionSellHouse):
-                pass
+                if not isinstance(packet, PropertySquare) or \
+                        square.owner != player:
+                    # Ignore packet.
+                    return
+
+                # Cannot sell a house if square has no houses
+                if square.nb_house > 0:
+                    return
+
+                # True = hotel, False = house
+                sell_hotel = square.nb_house == 5
+
+                group_squares = self.board.get_group_property_squares(
+                    color=square.color,
+                    player=player
+                )
+
+                square.nb_house -= 1
+
+                # Check if all houses are distributed equally (-1/+1)
+                if not PropertySquare.is_distributed_equally(group_squares):
+                    square.nb_house += 1
+                    return
+
+                # All conditions passed ! Can proceed to buy house/hotel
+                if sell_hotel:
+                    self.board.bank.sell_hotel()
+                else:
+                    self.board.bank.sell_house()
+
+                # broadcast updates
+                self.broadcast_packet(ActionSellHouseSucceed(
+                    player_token=player.get_id(),
+                    property_id=square.id_
+                ))
+
+                self.player_balance_receive(
+                    player=player,
+                    amount=square.house_price,
+                    reason="action_sell_house"
+                )
 
     def process_logic(self):
         # TODO: Check #34 in comments
