@@ -455,6 +455,12 @@ class ActionExchange(PlayerPacket):
                          player_token=player_token)
 
 
+class ActionExchangeAccept(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+
+
 class ActionExchangePlayerSelect(Packet):
     id_init_request: str
     id_of_requested: str
@@ -538,22 +544,19 @@ class ActionExchangeCancel(Packet):
         self.reason = obj["reason"]
 
 
-class PlayerUpdateProperty(Packet):
-    id_player: str
-    is_added: bool
-    property: str
+class PlayerUpdateProperty(PlayerPropertyPacket):
+    houses: int
 
-    def __init__(self, id_player: str = "", is_added: bool = "",
-                 property: str = ""):
-        super(PlayerUpdateProperty, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.is_added = is_added
-        self.property = property
+    def __init__(self, player_token: str = "", property_id: int = 0,
+                 houses: int = 0):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
+        self.houses = houses
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.is_added = obj["is_added"]
-        self.property = obj["property"]
+        super().deserialize(obj)
+        self.houses = int(obj["houses"])
 
 
 class ActionAuctionProperty(Packet):
@@ -797,6 +800,7 @@ class PacketUtils:
         "ActionExchangePlayerSelect": ActionExchangePlayerSelect,
         "ActionExchangeTradeSelect": ActionExchangeTradeSelect,
         "ActionExchangeSend": ActionExchangeSend,
+        "ActionExchangeAccept": ActionExchangeAccept,
         "ActionExchangeDecline": ActionExchangeDecline,
         "ActionExchangeCounter": ActionExchangeCounter,
         "ActionExchangeCancel": ActionExchangeCancel,
