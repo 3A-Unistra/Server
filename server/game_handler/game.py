@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import time
@@ -25,7 +26,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, ActionEnd, ActionTimeout, ActionBuyProperty, \
     ActionMortgageProperty, ActionUnmortgageProperty, ActionBuyHouse, \
     ActionSellHouse, PlayerPropertyPacket, ActionBuyPropertySucceed, \
-    ActionMortgageSucceed
+    ActionMortgageSucceed, ActionUnmortgageSucceed
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -458,7 +459,30 @@ class Game(Thread):
                 return
 
             if isinstance(packet, ActionUnmortgageProperty):
-                pass
+                if square.owner != player or not square.mortgaged:
+                    # Ignore packet.
+                    return
+
+                price = math.floor(0.6 * square.rent_base)
+
+                if not player.has_enough_money(price):
+                    return
+
+                # Mortgage property
+                square.mortgaged = False
+
+                # broadcast updates
+                self.broadcast_packet(ActionUnmortgageSucceed(
+                    player_token=player.get_id(),
+                    property_id=square.id_
+                ))
+
+                self.player_balance_update(
+                    player=player,
+                    new_balance=player.money - price,
+                    reason="action_unmortgage"
+                )
+                return
 
             if isinstance(packet, ActionBuyHouse):
                 pass
