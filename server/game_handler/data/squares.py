@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 from server.game_handler.data import Player
 
@@ -145,6 +145,23 @@ class PropertySquare(OwnableSquare):
             self.rents[i] = obj['rent_%d' % i]
 
         self.color = '%s%s%s' % (obj['r'], obj['g'], obj['b'])
+
+    @staticmethod
+    def is_distributed_equally(properties: List["PropertySquare"]) -> bool:
+        """
+        Check if houses are distributed equally +1/-1 max
+        :param properties: List of property squares of same group
+        :return: True if distributed equally
+        """
+        if len(properties) == 1:
+            return True
+
+        first = properties[0].nb_house
+
+        for square in properties[1:]:
+            if abs(first - square.nb_house) > 1:
+                return False
+        return True
 
 
 class SquareUtils:

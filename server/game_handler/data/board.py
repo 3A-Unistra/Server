@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import names
 
-from . import Player
+from . import Player, Bank
 from .cards import ChanceCard, CommunityCard, CardActionType, Card
 from django.conf import settings
 from .squares import Square, JailSquare, StationSquare, CompanySquare, \
@@ -14,6 +14,7 @@ class Board:
     squares: List[Square]
     community_deck: List[CommunityCard]
     chance_deck: List[ChanceCard]
+    bank: Bank
     board_money: int
     players: List[Player]
     players_nb: int
@@ -64,6 +65,7 @@ class Board:
         self.option_max_rounds = 0
         self.total_company_squares = 0
         self.total_properties_color_squares = {}
+        self.bank = Bank(0, 0)  # TODO: AFTER AKI'S MERGE
         self.starting_balance = getattr(settings, "MONEY_START", 1000)
         self.search_square_indexes()
         self.search_card_indexes()
@@ -496,10 +498,10 @@ class Board:
 
         return property_count == self.total_properties_color_squares[color]
 
-    def get_houses_by_owned_group(self, color: str,
-                                  player: Optional[Player] = None,
-                                  owned_squares: List[
-                                      OwnableSquare] = None) -> int:
+    def get_house_count_by_owned_group(self, color: str,
+                                       player: Optional[Player] = None,
+                                       owned_squares: List[
+                                           OwnableSquare] = None) -> int:
         """
         Get houses by owned properties in a group
         :param color: Group color
@@ -516,3 +518,25 @@ class Board:
 
         return sum([a.nb_house for a in owned_squares if
                     isinstance(a, PropertySquare) and a.color == color])
+
+    def get_group_property_squares(self, color: str,
+                                   player: Optional[Player] = None,
+                                   owned_squares: List[OwnableSquare]
+                                   = None) -> List[PropertySquare]:
+        """
+        Get properties of a group owned by a player
+        :param color: Group color
+        :param player: Owner, optional, only if owned_squares is None
+        :param owned_squares: Players owned squares
+               (if none, self.get_owned_squares(player) is called)
+        :raises InsufficientGroupException when player not own all properties
+                of the group
+        :return: Properties of a group ([] if owned_squares & player are None)
+        """
+        if owned_squares is None:
+            if player is None:
+                return []
+            owned_squares = self.get_owned_squares(player)
+
+        return [a for a in owned_squares if
+                isinstance(a, PropertySquare) and a.color == color]

@@ -632,15 +632,15 @@ class TestPacket(TestCase):
         assert not board.has_property_group(color=property2.color,
                                             player=player1)
 
-    def test_get_houses_by_owned_group(self):
+    def test_get_house_count_by_owned_group(self):
         board = self.create_board()
         player1 = Player(bot=False,
                          user=User(id="283e3f3e-3411-44c5-9bc5-037358c47100"))
         board.add_player(player1)
 
-        assert board.get_houses_by_owned_group(color='test') == -1
-        assert board.get_houses_by_owned_group(color='test',
-                                               player=player1) == 0
+        assert board.get_house_count_by_owned_group(color='test') == -1
+        assert board.get_house_count_by_owned_group(color='test',
+                                                    player=player1) == 0
 
         # stations
         assert len(board.squares) > 25
@@ -661,22 +661,78 @@ class TestPacket(TestCase):
         # owner of the whole group
         property3.owner = player1
 
-        assert board.get_houses_by_owned_group(color=property1.color,
-                                               player=player1) == 0
+        assert board.get_house_count_by_owned_group(color=property1.color,
+                                                    player=player1) == 0
 
         property1.nb_house += 2
         property3.nb_house += 2
 
-        assert board.get_houses_by_owned_group(color=property1.color,
-                                               player=player1) == 4
+        assert board.get_house_count_by_owned_group(color=property1.color,
+                                                    player=player1) == 4
 
         owned_squares = board.get_owned_squares(player1)
 
-        count = board.get_houses_by_owned_group(color=property1.color,
-                                                owned_squares=owned_squares)
+        count = board.get_house_count_by_owned_group(
+            color=property1.color,
+            owned_squares=owned_squares
+        )
+
         assert count == 4
 
         property1.owner = None
 
-        assert board.get_houses_by_owned_group(color=property3.color,
-                                               player=player1) == 2
+        assert board.get_house_count_by_owned_group(color=property3.color,
+                                                    player=player1) == 2
+
+    def test_get_group_property_squares(self):
+        board = self.create_board()
+        player1 = Player(bot=False,
+                         user=User(id="283e3f3e-3411-44c5-9bc5-037358c47100"))
+        board.add_player(player1)
+
+        assert len(board.get_group_property_squares(color='test')) == 0
+        assert len(board.get_group_property_squares(color='test',
+                                                    player=player1)) == 0
+
+        # stations
+        assert len(board.squares) > 25
+
+        # properties
+        property1 = board.squares[21]
+        property2 = board.squares[23]
+        property3 = board.squares[24]
+
+        assert isinstance(property1, PropertySquare)
+        assert isinstance(property2, PropertySquare)
+        assert isinstance(property3, PropertySquare)
+
+        # Check same group
+        assert property1.color == property2.color == property3.color
+        property1.owner = player1
+        property2.owner = player1
+        # owner of the whole group
+        property3.owner = player1
+
+        prop_squares = board.get_group_property_squares(color=property1.color,
+                                                        player=player1)
+
+        assert len(prop_squares) == 3
+
+        assert prop_squares[0].id_ == property1.id_
+        assert prop_squares[1].id_ == property2.id_
+        assert prop_squares[2].id_ == property3.id_
+
+        property1.owner = None
+
+        owned_squares = board.get_owned_squares(player1)
+
+        prop_squares = board.get_group_property_squares(
+            color=property1.color,
+            owned_squares=owned_squares
+        )
+
+        assert len(prop_squares) == 2
+
+        assert prop_squares[0].id_ == property2.id_
+        assert prop_squares[1].id_ == property3.id_
+

@@ -26,7 +26,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, ActionEnd, ActionTimeout, ActionBuyProperty, \
     ActionMortgageProperty, ActionUnmortgageProperty, ActionBuyHouse, \
     ActionSellHouse, PlayerPropertyPacket, ActionBuyPropertySucceed, \
-    ActionMortgageSucceed, ActionUnmortgageSucceed
+    ActionMortgageSucceed, ActionUnmortgageSucceed, ActionBuyHouseSucceed
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -438,8 +438,8 @@ class Game(Thread):
                 # For property squares, you can only mortgage when no houses
                 # or hotels are in the group
                 if isinstance(square, PropertySquare):
-                    if self.board.get_houses_by_owned_group(square.color,
-                                                            player=player) > 0:
+                    if self.board.get_house_count_by_owned_group(
+                            square.color, player=player) > 0:
                         return
 
                 # Mortgage property
@@ -451,9 +451,9 @@ class Game(Thread):
                     property_id=square.id_
                 ))
 
-                self.player_balance_update(
+                self.player_balance_receive(
                     player=player,
-                    new_balance=player.money + (square.buy_price // 2),
+                    amount=square.buy_price // 2,
                     reason="action_mortgage"
                 )
                 return
@@ -485,7 +485,69 @@ class Game(Thread):
                 return
 
             if isinstance(packet, ActionBuyHouse):
-                pass
+                if not isinstance(packet, PropertySquare) or \
+                        square.owner != player or square.mortgaged:
+                    # Ignore packet.
+                    return
+
+                # Cannot have more than 5 houses (hotel)
+                if square.nb_house >= 5:
+                    return
+
+                # True = hotel, False = house
+                buy_hotel = square.nb_house == 4
+
+                # check if bank has enough hotels
+                if buy_hotel and not self.board.bank.has_hotels():
+                    return
+
+                # check if bank has enough houses
+                if not buy_hotel and not self.board.bank.has_houses():
+                    return
+
+                # check if player has enough money
+                if not player.has_enough_money(square.house_price):
+                    return
+
+                group_squares = self.board.get_group_property_squares(
+                    color=square.color,
+                    player=player
+                )
+
+                # Check if player has all properties in group
+                if len(group_squares) != \
+                        self.board.total_properties_color_squares[
+                            square.color]:
+                    return
+
+                # Check if all properties in group are not mortgaged
+                for g_square in group_squares:
+                    if g_square.mortgaged:
+                        return
+
+                # Check if all houses are distributed equally (-1/+1)
+                if not PropertySquare.is_distributed_equally(group_squares):
+                    return
+
+                # All conditions passed ! Can proceed to buy house/hotel
+                if buy_hotel:
+                    self.board.bank.buy_hotel()
+                else:
+                    self.board.bank.buy_house()
+
+                square.nb_house += 1
+
+                # broadcast updates
+                self.broadcast_packet(ActionBuyHouseSucceed(
+                    player_token=player.get_id(),
+                    property_id=square.id_
+                ))
+
+                self.player_balance_update(
+                    player=player,
+                    new_balance=player.money - square.house_price,
+                    reason="action_buy_house"
+                )
 
             if isinstance(packet, ActionSellHouse):
                 pass
