@@ -265,8 +265,6 @@ class Engine:
         self.send_packet(game_uid=id_new_game,
                          packet=CreateGameSuccess(packet.player_token, piece),
                          channel_name=packet.player_token)
-        # sending updated room status
-        reason = UpdateReason.ROOM_CREATED.value
 
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastNewRoomToLobby(
