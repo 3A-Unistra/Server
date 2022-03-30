@@ -15,6 +15,7 @@ import pause
 from server.game_handler.data import Board, Player, Card
 from server.game_handler.data.cards import ChanceCard, CardActionType, \
     CommunityCard
+from server.game_handler.data.exchange import Exchange
 from server.game_handler.data.packets import PlayerPacket, Packet, \
     InternalCheckPlayerValidity, GameStart, ExceptionPacket, AppletReady, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
@@ -808,19 +809,94 @@ class Game(Thread):
                 reason="action_sell_house"
             )
 
-    def proceed_exchange(self, packet: Packet):
+    def proceed_exchange(self, packet: PlayerPacket):
+        exchange: Optional[Exchange] = self.board.current_exchange
+        player = self.board.get_player(packet.player_token)
 
         if isinstance(packet, ActionExchange):
-            pass
+            # Start an exchange with someone
+            if exchange is not None:
+                return
+
+            # Check if player is the current player
+            if self.board.get_current_player() != player:
+                return
+
+            self.board.current_exchange = Exchange(player)
+
+            self.broadcast_packet(ActionExchange(
+                player_token=player.get_id()
+            ))
+            return
 
         if isinstance(packet, ActionExchangePlayerSelect):
-            pass
+            # Select a player for current_exchange
+            if exchange is None or exchange.sent:
+                return
+
+            # Check if player is the current player
+            if self.board.get_current_player() != player:
+                return
+
+            selected = self.board.get_player(packet.selected_player_token)
+
+            if selected is None:
+                return
+
+            exchange.selected_player = selected
+
+            self.broadcast_packet(ActionExchangePlayerSelect(
+                player_token=player.get_id(),
+                selected_player_token=selected.get_id()
+            ))
+            return
 
         if isinstance(packet, ActionExchangeTradeSelect):
-            pass
+            # Select a property for current_exchange
+            if exchange is None or exchange.sent:
+                return
+
+            # Check if player is the current player
+            if self.board.get_current_player() != player:
+                return
+
+            # Verify property_id
+            selected_square = self.board.get_property(packet.property_id)
+
+            # Cannot exchange mortgaged squares
+            if selected_square is None or selected_square.mortgaged:
+                return
+
+            if isinstance(selected_square, PropertySquare):
+                if selected_square.nb_house > 0:
+                    return
+
+            exchange.selected_square = selected_square
+
+            self.broadcast_packet(ActionExchangeTradeSelect(
+                player_token=player.get_id(),
+                property_id=selected_square.id_
+            ))
+            return
 
         if isinstance(packet, ActionExchangeSend):
-            pass
+            # Start exchange
+            if exchange is None or exchange.sent:
+                return
+
+            # Check if player is the current player
+            if self.board.get_current_player() != player:
+                return
+
+            if exchange.selected_player is None or \
+                    exchange.selected_square is None:
+                return
+
+            exchange.sent = True
+
+            self.broadcast_packet(ActionExchangeSend(
+                player_token=player.get_id(),
+            ))
 
         if isinstance(packet, ActionExchangeAccept):
             pass

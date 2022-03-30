@@ -6,6 +6,8 @@ import names
 from . import Player, Bank
 from .cards import ChanceCard, CommunityCard, CardActionType, Card
 from django.conf import settings
+
+from .exchange import Exchange
 from .squares import Square, JailSquare, StationSquare, CompanySquare, \
     OwnableSquare, PropertySquare
 
@@ -25,6 +27,7 @@ class Board:
     current_round: int
     remaining_round_players: int
     starting_balance: int
+    current_exchange: Optional[Exchange]
 
     # Options
     option_go_case_double_money: bool
@@ -42,6 +45,7 @@ class Board:
     }
 
     # Totals
+    total_squares: int
     total_company_squares: int
     total_properties_color_squares: {}  # {'color': 'properties_same_color'}
 
@@ -63,8 +67,10 @@ class Board:
         self.option_password = ""
         self.option_is_private = False
         self.option_max_rounds = 0
+        self.total_squares = 0
         self.total_company_squares = 0
         self.total_properties_color_squares = {}
+        self.current_exchange = None
         self.bank = Bank(0, 0)  # TODO: AFTER AKI'S MERGE
         self.starting_balance = getattr(settings, "MONEY_START", 1000)
         self.search_square_indexes()
@@ -85,6 +91,7 @@ class Board:
         Search special square indexes
         """
         self.total_company_squares = 0
+        self.total_squares = len(self.squares)
         self.total_properties_color_squares = {}
 
         for i in range(len(self.squares)):
@@ -460,7 +467,7 @@ class Board:
         :return: Property square by id,
                 None if id is not found or square is not ownable
         """
-        if 0 > property_id or property_id >= len(self.squares):
+        if 0 > property_id >= self.total_squares:
             return None
 
         found = self.squares[property_id]

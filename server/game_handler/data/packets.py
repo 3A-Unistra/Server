@@ -461,66 +461,38 @@ class ActionExchangeAccept(PlayerPacket):
                          player_token=player_token)
 
 
-class ActionExchangePlayerSelect(Packet):
-    id_init_request: str
-    id_of_requested: str
-    content_trade: str
+class ActionExchangePlayerSelect(PlayerPacket):
+    selected_player_token: str
 
-    def __init__(
-            self, id_init_request: str = "", id_of_requested: str = "",
-            content_trade: str = ""
-    ):
-        super(ActionExchangePlayerSelect, self).__init__(
-            self.__class__.__name__)
-        self.id_init_request = id_init_request
-        self.id_of_requested = id_of_requested
-        self.content_trade = content_trade
+    def __init__(self, player_token: str = "",
+                 selected_player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.selected_player_token = selected_player_token
 
     def deserialize(self, obj: object):
-        self.id_init_request = obj["id_init_request"]
-        self.id_of_requested = obj["id_of_requested"]
-        self.content_trade = obj["content_trade"]
+        super().deserialize(obj)
+        self.selected_player_token = obj["selected_token"]
 
 
-class ActionExchangeTradeSelect(Packet):
-    id_init_request: str
-    id_of_requested: str
-    content_trade: str
+class ActionExchangeTradeSelect(PlayerPacket):
+    property_id: int
 
-    def __init__(
-            self, id_init_request: str = "", id_of_requested: str = "",
-            content_trade: str = ""
-    ):
-        super(ActionExchangeTradeSelect, self).__init__(
-            self.__class__.__name__)
-        self.id_init_request = id_init_request
-        self.id_of_requested = id_of_requested
-        self.content_trade = content_trade
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.property_id = property_id
 
     def deserialize(self, obj: object):
-        self.id_init_request = obj["id_init_request"]
-        self.id_of_requested = obj["id_of_requested"]
-        self.content_trade = obj["content_trade"]
+        super().deserialize(obj)
+        self.property_id = int(obj["property_id"]) if 'property_id' \
+                                                      in obj else 0
 
 
-class ActionExchangeSend(Packet):
-    id_init_request: str
-    id_of_requested: str
-    content_trade: str
-
-    def __init__(
-            self, id_init_request: str = "", id_of_requested: str = "",
-            content_trade: str = ""
-    ):
-        super(ActionExchangeSend, self).__init__(self.__class__.__name__)
-        self.id_init_request = id_init_request
-        self.id_of_requested = id_of_requested
-        self.content_trade = content_trade
-
-    def deserialize(self, obj: object):
-        self.id_init_request = obj["id_init_request"]
-        self.id_of_requested = obj["id_of_requested"]
-        self.content_trade = obj["content_trade"]
+class ActionExchangeSend(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
 class ActionExchangeDecline(Packet):
