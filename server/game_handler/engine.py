@@ -11,7 +11,7 @@ from server.game_handler.data.exceptions import \
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
     CreateGame, CreateGameSuccess, DeleteRoom, \
     DeleteRoomSuccess, UpdateReason, BroadcastUpdateLobby, \
-    BroadcastUpdateRoom, GetOutRoom
+    BroadcastUpdateRoom, GetOutRoom, BroadcastNewRoomToLobby
 
 from django.conf import settings
 from server.game_handler.data.squares import Square, SquareUtils
@@ -172,9 +172,7 @@ class Engine:
         reason = UpdateReason.ROOM_DELETED.value
         self.games[game_token].send_packet_to_group(BroadcastUpdateLobby(
             game_token=game_token,
-            nb_players=nb_players,
-            reason=reason,
-            nb_player_max=self.games[game_token].board.players_nb), "lobby")
+            reason=reason), "lobby")
 
         self.games[game_token].send_packet_to_group(BroadcastUpdateRoom(
             game_token=game_token,
@@ -271,11 +269,13 @@ class Engine:
         reason = UpdateReason.ROOM_CREATED.value
 
         # this is sent to lobby no need to send it to game group, host is alone
-        update = BroadcastUpdateLobby(
-            game_token=id_new_game,
-            nb_players=1,
-            reason=reason,
-            nb_player_max=packet.max_nb_players)
+        update = BroadcastNewRoomToLobby(
+                    game_token=new_game.uid,
+                    name=new_game.name,
+                    nb_players=len(new_game.board.players),
+                    max_nb_players=new_game.board.players_nb,
+                    is_private=new_game.board.option_is_private,
+                    has_password=(new_game.board.option_password != ""))
         new_game.send_packet_to_group(update, "lobby")
         # adding host to the game group
         async_to_sync(
@@ -288,13 +288,16 @@ class Engine:
         :param player_token: player_token to send the status to
         """
         for game in self.games:
-            if self.games[game].state == GameState.LOBBY:
-                packet = BroadcastUpdateLobby(
+            game_c = self.games[game]
+            if game_c.state == GameState.LOBBY:
+                packet = BroadcastNewRoomToLobby(
                     game_token=game,
-                    nb_players=len(self.games[game].board.players),
-                    reason=UpdateReason.NEW_CONNECTION.value,
-                    nb_player_max=self.games[game].board.players_nb)
-                self.games[game].send_packet(player_token, packet)
+                    name=game_c.name,
+                    nb_players=len(game_c.board.players),
+                    max_nb_players=game_c.board.players_nb,
+                    is_private=game_c.board.option_is_private,
+                    has_password=(game_c.board.option_password != ""))
+                game_c.send_packet(player_token, packet)
 
     def disconnect_player(self, player_token: str):
 

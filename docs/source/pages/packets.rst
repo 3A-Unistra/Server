@@ -115,9 +115,6 @@ Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby 
 
 **contenu du paquet :**
  * id du lobby (*game_token*)
- * nom de la partie (*name*)
- * le nombre de joueur (*nb_players*)
- * le nombre de joueurs max (*max_nb_players*)
  * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
 
 BroadCastUpdateRoom
@@ -130,6 +127,18 @@ Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladi
  * le joueur ajouté ou supprimé (peut-être un champ vide) (*player*)
  * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
 
+BroadcastNewRoomToLooby
+^^^^^^^^^^^^^^^^^^^^^^^
+Ce paquet est envoyé aux clients lorsque une nouvelle salle d'attente est créée. Il est aussi utilisé pour envoyer
+ l'état de toute les salles présentes lors d'une nouvelle connexion.
+
+**contenu du paquet :**
+ * id de la salle (*game_token*)
+ * nom de la salle (*name*)
+ * nombre de joueurs (*nb_players*)
+ * nombre de joueurs max (*max_nb_players*)
+ * privé ou non (*is_private*)
+ * mdp ou non (*has_password*)
 
 StatusRoom
 ^^^^^^^^^^

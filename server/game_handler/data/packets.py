@@ -211,24 +211,46 @@ class StatusRoom(LobbyPacket):
         self.starting_balance = obj['starting_balance']
 
 
+class BroadcastNewRoomToLobby(LobbyPacket):
+    game_token: str
+    name: str
+    nb_players: int
+    max_nb_players: int
+    is_private: bool
+    has_password: bool
+
+    def __init__(self, game_token: str = "", name: str = "",
+                 nb_players: int = 0, max_nb_players: int = 0,
+                 is_private: bool = False, has_password: bool = False):
+        super().__init__("BroadcastNewRoomToLobby")
+        self.game_token = game_token
+        self.name = name
+        self.nb_players = nb_players
+        self.max_nb_players = max_nb_players
+        self.is_private = is_private
+        self.has_password = has_password
+
+    def deserialize(self, obj: object):
+        self.game_token = obj['game_token']
+        self.name = obj['name']
+        self.nb_players = obj['nb_players']
+        self.max_nb_players = obj['max_nb_players']
+        self.is_private = obj['is_private']
+        self.has_password = obj['has_password']
+
+
 class BroadcastUpdateLobby(LobbyPacket):
     game_token: str
-    nb_players: int
-    nb_player_max: int
     reason: int
 
-    def __init__(self, game_token: str = "", nb_players: int = 0,
-                 reason: int = 0, nb_player_max: int = 0):
+    def __init__(self, game_token: str = "",
+                 reason: int = 0):
         super().__init__("BroadcastUpdatedRoom")
         self.game_token = game_token
-        self.nb_players = nb_players
-        self.nb_player_max = nb_player_max
         self.reason = reason
 
     def deserialize(self, obj: object):
         self.game_token = obj['game_token']
-        self.nb_players = obj['nb_players']
-        self.nb_player_max = obj['nb_player_max']
         self.reason = obj['reason']
 
 

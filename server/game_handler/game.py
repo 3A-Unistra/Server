@@ -248,10 +248,7 @@ class Game(Thread):
                 # sending to the people in the game
                 self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
-                                              nb_players=nb_players,
-                                              reason=reason,
-                                              nb_player_max=self.
-                                              board.players_nb)
+                                              reason=reason)
                 # sending to the lobby people
                 self.send_packet_to_group(update, "lobby")
                 return
@@ -300,10 +297,7 @@ class Game(Thread):
                                              player=packet.player_token)
                 self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
-                                              nb_players=nb_players,
-                                              reason=reason,
-                                              nb_player_max=self.
-                                              board.players_nb)
+                                              reason=reason)
                 self.send_packet_to_group(update, "lobby")
                 return
 
@@ -330,10 +324,7 @@ class Game(Thread):
                                              player=packet.player_token)
                 self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
-                                              nb_players=nb_players,
-                                              reason=reason,
-                                              nb_player_max=self.
-                                              board.players_nb)
+                                              reason=reason)
                 self.send_packet_to_group(update, "lobby")
                 return
 
@@ -366,10 +357,7 @@ class Game(Thread):
                                              player=packet.player_token)
                 self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
-                                              nb_players=nb_players,
-                                              reason=reason,
-                                              nb_player_max=self.
-                                              board.players_nb)
+                                              reason=reason)
                 self.send_packet_to_group(update, "lobby")
                 return
 
