@@ -245,23 +245,25 @@ class Engine:
         id_new_game = new_game.uid
         self.add_game(new_game)
 
+        board = new_game.board
+
         # adding host to the game
-        new_game.board.add_player(Player(
+        board.add_player(Player(
             channel_name=packet.player_token, bot=False))
 
         new_game.host_player = packet.player_token
-        new_game.board.players_nb = packet.max_nb_players
-        new_game.board.option_password = packet.password
-        new_game.board.option_is_private = packet.is_private
+        board.players_nb = packet.max_nb_players
+        board.option_password = packet.password
+        board.option_is_private = packet.is_private
         new_game.public_name = packet.name
-        new_game.board.option_first_round_buy = packet.option_first_round_buy
-        new_game.board.option_auction_enabled = packet.option_auction
-        new_game.board.set_option_max_time(packet.option_max_time)
-        new_game.board.set_option_maxnb_rounds(packet.option_maxnb_rounds)
-        new_game.board.set_option_start_balance(packet.starting_balance)
+        board.option_first_round_buy = packet.option_first_round_buy
+        board.option_auction_enabled = packet.option_auction
+        board.set_option_max_time(packet.option_max_time)
+        board.set_option_maxnb_rounds(packet.option_maxnb_rounds)
+        board.set_option_start_balance(packet.starting_balance)
 
         # sending CreateGameSuccess to host
-        piece = new_game.board.assign_piece(packet.player_token)
+        piece = board.assign_piece(packet.player_token)
         self.send_packet(game_uid=id_new_game,
                          packet=CreateGameSuccess(packet.player_token, piece),
                          channel_name=packet.player_token)
@@ -270,10 +272,10 @@ class Engine:
         update = BroadcastNewRoomToLobby(
                     game_token=new_game.uid,
                     name=new_game.name,
-                    nb_players=len(new_game.board.players),
-                    max_nb_players=new_game.board.players_nb,
-                    is_private=new_game.board.option_is_private,
-                    has_password=(new_game.board.option_password != ""))
+                    nb_players=len(board.players),
+                    max_nb_players=board.players_nb,
+                    is_private=board.option_is_private,
+                    has_password=(board.option_password != ""))
         new_game.send_packet_to_group(update, "lobby")
         # adding host to the game group
         async_to_sync(
@@ -287,14 +289,15 @@ class Engine:
         """
         for game in self.games:
             game_c = self.games[game]
+            board = game_c.board
             if game_c.state == GameState.LOBBY:
                 packet = BroadcastNewRoomToLobby(
                     game_token=game,
                     name=game_c.name,
-                    nb_players=len(game_c.board.players),
-                    max_nb_players=game_c.board.players_nb,
-                    is_private=game_c.board.option_is_private,
-                    has_password=(game_c.board.option_password != ""))
+                    nb_players=len(board.players),
+                    max_nb_players=board.players_nb,
+                    is_private=board.option_is_private,
+                    has_password=(board.option_password != ""))
                 game_c.send_packet(player_token, packet)
 
     def disconnect_player(self, player_token: str):
