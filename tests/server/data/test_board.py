@@ -735,4 +735,3 @@ class TestPacket(TestCase):
 
         assert prop_squares[0].id_ == property2.id_
         assert prop_squares[1].id_ == property3.id_
-

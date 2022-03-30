@@ -365,21 +365,13 @@ class Board:
         """
         :return: List of ownable squares
         """
-        result = []
-        for square in self.squares:
-            if isinstance(square, OwnableSquare):
-                result.append(result)
-        return result
+        return [a for a in self.squares if isinstance(a, OwnableSquare)]
 
     def get_property_squares(self) -> List[PropertySquare]:
         """
         :return: List of property squares
         """
-        result = []
-        for square in self.squares:
-            if isinstance(square, PropertySquare):
-                result.append(square)
-        return result
+        return [a for a in self.squares if isinstance(a, PropertySquare)]
 
     def get_player_buildings_count(self, player: Player) -> (int, int):
         """
