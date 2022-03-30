@@ -2,13 +2,16 @@ import json
 import os
 from typing import List, Dict
 
+from asgiref.sync import async_to_sync
+
 from server.game_handler.data import Player
 from server.game_handler.data.cards import ChanceCard, CommunityCard, CardUtils
 from server.game_handler.data.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
-    CreateGame, CreateGameSuccess, BroadcastUpdatedRoom, DeleteRoom, \
-    DeleteRoomSuccess
+    CreateGame, CreateGameSuccess, DeleteRoom, \
+    DeleteRoomSuccess, UpdateReason, BroadcastUpdateLobby, \
+    BroadcastUpdateRoom, GetOutRoom, BroadcastNewRoomToLobby
 
 from django.conf import settings
 from server.game_handler.data.squares import Square, SquareUtils
@@ -138,33 +141,84 @@ class Engine:
         if not isinstance(packet, DeleteRoom):
             return
 
-        id_room = packet.id_room
+        game_token = packet.game_token
 
-        if id_room not in self.games:
-            self.send_packet(game_uid=id_room,
+        if game_token not in self.games:
+            self.send_packet(game_uid=game_token,
                              packet=ExceptionPacket(code=4207),
                              channel_name=packet.player_token)
             return
 
         # if player sending it isn't host of the game
-        if packet.player_token != self.games[id_room].host_player:
-            self.send_packet(game_uid=id_room,
+        if packet.player_token != self.games[game_token].host_player:
+            self.send_packet(game_uid=game_token,
                              packet=ExceptionPacket(code=4206),
                              channel_name=packet.player_token)
             return
 
-        nb_players = len(self.games[id_room].board.players)
+        nb_players = len(self.games[game_token].board.players)
 
-        # sending update
-        self.games[id_room].send_packet_lobby(BroadcastUpdatedRoom(
-            id_room=id_room, old_nb_players=nb_players, new_nb_players=1,
-            state="CLOSED"))
+        # everyone goes back to lobby group and leaves game group
+        for player in self.games[game_token].board.players:
+            current = self.games[game_token]
+            async_to_sync(
+                    current.channel_layer.group_discard)(current.uid,
+                                                         player.channel_name)
+            async_to_sync(
+                current.channel_layer.group_add)("lobby",
+                                                 player.channel_name)
+
+        # sending update to lobby group
+        reason = UpdateReason.ROOM_DELETED.value
+        self.games[game_token].send_packet_to_group(BroadcastUpdateLobby(
+            game_token=game_token,
+            reason=reason), "lobby")
+
+        self.games[game_token].send_packet_to_group(BroadcastUpdateRoom(
+            game_token=game_token,
+            nb_players=nb_players,
+            reason=reason,
+            player=packet.player_token),
+            packet.game_token)
 
         # sending success
-        self.send_packet(game_uid=id_room, packet=DeleteRoomSuccess(),
+        self.send_packet(game_uid=game_token, packet=DeleteRoomSuccess(),
                          channel_name=packet.player_token)
 
-        self.remove_game(id_room)
+        self.remove_game(game_token)
+
+    def leave_game(self, packet):
+        """
+        in case the host wants to leave the game and he is the only one
+        remaining, we need to handle the GetOutRoom packet here before sending
+        it to the concerned game instance
+        :param packet: must be GetOutRoom instance
+        """
+
+        if not isinstance(packet, GetOutRoom):
+            return
+
+        # check if player is part of a room
+        if not self.player_exists(packet.player_token):
+            # ignore
+            return
+
+        game_token = packet.game_token
+
+        if len(self.games[game_token].board.players) == 1:
+            self.delete_room(DeleteRoom(player_token=packet.player_token,
+                             game_token=game_token))
+
+            async_to_sync(self.games[game_token].channel_layer.
+                          group_add)("lobby", packet.player_token)
+
+            async_to_sync(self.games[game_token].channel_layer.
+                          group_discard)(game_token,
+                                         packet.player_token)
+
+            return
+
+        self.games[game_token].packets_queue.put(packet)
 
     def create_game(self, packet):
         """
@@ -191,29 +245,75 @@ class Engine:
         id_new_game = new_game.uid
         self.add_game(new_game)
 
+        board = new_game.board
+
         # adding host to the game
-        self.games[id_new_game].board.add_player(Player(
+        board.add_player(Player(
             channel_name=packet.player_token, bot=False))
-        # giving him host status
-        self.games[id_new_game].host_player = packet.player_token
-        # setting up the numbers of players
-        self.games[id_new_game].board.players_nb = packet.max_nb_players
-        # setting up password
-        self.games[id_new_game].board.option_password = packet.password
-        # setting up privacy
-        self.games[id_new_game].board.option_is_private = packet.is_private
-        # setting up starting balance
-        if packet.starting_balance != 0:
-            self.games[id_new_game].board.starting_balance = \
-                packet.starting_balance
-        else:
-            self.games[id_new_game].board.starting_balance = \
-                getattr(settings, "MONEY_START", 1000)
+
+        new_game.host_player = packet.player_token
+        board.players_nb = packet.max_nb_players
+        board.option_password = packet.password
+        board.option_is_private = packet.is_private
+        new_game.public_name = packet.name
+        board.option_first_round_buy = packet.option_first_round_buy
+        board.option_auction_enabled = packet.option_auction
+        board.set_option_max_time(packet.option_max_time)
+        board.set_option_maxnb_rounds(packet.option_maxnb_rounds)
+        board.set_option_start_balance(packet.starting_balance)
+
         # sending CreateGameSuccess to host
+        piece = board.assign_piece(packet.player_token)
         self.send_packet(game_uid=id_new_game,
-                         packet=CreateGameSuccess(packet.player_token),
+                         packet=CreateGameSuccess(packet.player_token, piece),
                          channel_name=packet.player_token)
-        # sending updated room status
-        self.games[id_new_game].send_packet_lobby(BroadcastUpdatedRoom(
-            id_room=id_new_game, old_nb_players=0, new_nb_players=1,
-            state="LOBBY", player=packet.player_token))
+
+        # this is sent to lobby no need to send it to game group, host is alone
+        update = BroadcastNewRoomToLobby(
+                    game_token=new_game.uid,
+                    name=new_game.name,
+                    nb_players=len(board.players),
+                    max_nb_players=board.players_nb,
+                    is_private=board.option_is_private,
+                    has_password=(board.option_password != ""))
+        new_game.send_packet_to_group(update, "lobby")
+        # adding host to the game group
+        async_to_sync(
+            new_game.channel_layer.group_discard)(new_game.uid,
+                                                  packet.player_token)
+
+    def send_all_lobby_status(self, player_token: str):
+        """
+        send status of all the games that are in LOBBY state
+        :param player_token: player_token to send the status to
+        """
+        for game in self.games:
+            game_c = self.games[game]
+            board = game_c.board
+            if game_c.state == GameState.LOBBY:
+                packet = BroadcastNewRoomToLobby(
+                    game_token=game,
+                    name=game_c.name,
+                    nb_players=len(board.players),
+                    max_nb_players=board.players_nb,
+                    is_private=board.option_is_private,
+                    has_password=(board.option_password != ""))
+                game_c.send_packet(player_token, packet)
+
+    def disconnect_player(self, player_token: str):
+
+        # find out if the player is in a game and which one
+        in_game = False
+        game_token = ""
+        for game in self.games:
+            if self.games[game].board.player_exists(player_token):
+                game_token = game
+                in_game = True
+                break
+
+        if not in_game:
+            # this has been handled in the lobby consumer, should not happen
+            return
+
+        self.leave_game(GetOutRoom(player_token=player_token,
+                                   game_token=game_token))

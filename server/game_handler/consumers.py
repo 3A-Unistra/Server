@@ -9,7 +9,8 @@ from .data.exceptions import PacketException
 from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
     PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
-    CreateGame
+    CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket, GetOutRoom, \
+    InternalLobbyDisconnect
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -190,10 +191,11 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
 
         self.player_token = self.scope['user'].id
 
-        packet = InternalCheckPlayerValidity(
+        # sending the internal packet to the EngineConsumer
+        packet = InternalLobbyConnect(
             player_token=self.player_token)
 
-        # adding player to the group
+        # adding player to the lobby group
         async_to_sync(self.channel_layer.group_add)("lobby", self.channel_name)
 
         # send to game engine worker
@@ -202,7 +204,6 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             {
                 'type': 'process.lobby.packets',
                 'content': packet.serialize(),
-                'game_token': self.game_token,
                 'channel_name': self.channel_name
             }
         )
@@ -217,11 +218,40 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         if isinstance(packet, InternalPacket):
             return
 
+        # send to game engine consumer
+        await self.channel_layer.send(
+            'game_engine',
+            {
+                'type': 'process.lobby.packets',
+                'content': packet.serialize(),
+                'channel_name': self.channel_name
+            }
+        )
+
     async def disconnect(self, code):
         # removing player from the lobby group
-        async_to_sync(self.channel_layer.group_discard)("lobby",
-                                                        self.channel_name)
-        return
+
+        # if the player is in the lobby group, he is not in a waiting room
+        # therefore, we can just take him out of that group
+        lobby_group = self.channel_layer.group_channels('lobby')
+        if self.channel_name in lobby_group:
+            async_to_sync(self.channel_layer.group_discard)("lobby",
+                                                            self.channel_name)
+            return
+
+        # in case the player is in a waiting room, we have to take him out
+        # of it.  in order to do that, we use InternalLobbyDisconnect,
+        # which is handled in the EngineConsumer
+        packet = InternalLobbyDisconnect(self.channel_name)
+
+        await self.channel_layer.send(
+            'game_engine',
+            {
+                'type': 'process.lobby.packets',
+                'content': packet.serialize(),
+                'channel_name': self.channel_name
+            }
+        )
 
     async def send_lobby_packet(self, content):
         packet = content.get('packet', None)
@@ -270,7 +300,7 @@ class GameEngineConsumer(SyncConsumer):
 
     def process_lobby_packet(self, content):
         """
-        packets for creating game are handled here
+        lobby packets are handled here
         """
         try:
             packet = PacketUtils.deserialize_packet(content)
@@ -278,5 +308,42 @@ class GameEngineConsumer(SyncConsumer):
             # send error packet (or ignore)
             return
 
+        # if internal packet:
+        if isinstance(packet, InternalLobbyConnect):
+            # sending infos about all the lobbies
+            self.engine.send_all_lobby_status(player_token=packet.player_token)
+            return
+
+        if isinstance(packet, InternalLobbyDisconnect):
+            self.engine.disconnect_player(packet.player_token)
+            return
+
+        if not isinstance(packet, LobbyPacket):
+            # not supposed to happen
+            return
+
         if isinstance(packet, CreateGame):
             self.engine.create_game(packet)
+            return
+
+        if isinstance(packet, DeleteRoom):
+            self.engine.delete_room(packet)
+            return
+
+        if isinstance(packet, GetOutRoom):
+            self.engine.leave_game(packet)
+            return
+
+        # Check if packet is not None and game token exists
+        if packet is None or 'game_token' not in content:
+            return
+
+        game_token = content['game_token']
+
+        # get channel name
+        channel_name = content[
+            'channel_name'] if 'channel_name' in content else ''
+
+        # Send packet to game thread
+        self.engine.send_packet(game_uid=game_token, packet=packet,
+                                channel_name=channel_name)
