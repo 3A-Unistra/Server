@@ -19,10 +19,10 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
-    GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, GetOutRoom, \
-    GetOutRoomSuccess, BroadcastUpdateRoom, PlayerEnterPrison, PlayerMove, \
+    GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, \
+    BroadcastUpdateRoom, PlayerEnterPrison, PlayerMove, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
-    AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, NewHost
+    AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -250,54 +250,6 @@ class Game(Thread):
                 update = BroadcastUpdateLobby(game_token=self.uid,
                                               reason=reason)
                 # sending to the lobby people
-                self.send_packet_to_group(update, "lobby")
-                return
-
-            elif isinstance(packet, GetOutRoom):
-                # check if player is part of the current room
-
-                # if player is the host of the game
-                # someone else randomly takes over
-                # -->first non-host player connected
-                if packet.player_token == self.host_player:
-                    # host is alone
-                    if len(self.board.players) == 1:
-                        # TODO: delete game
-                        pass
-                    for i in range(len(self.board.players)):
-                        # reassigning host
-                        if self.board.players[i] != self.host_player:
-                            self.host_player = self.board.players[i]
-                            self.send_packet_to_player(self.host_player,
-                                                       NewHost())
-                            break
-
-                # player leaves game group
-                async_to_sync(
-                    self.channel_layer.group_discard)(self.uid,
-                                                      packet.player_token)
-                # add player to the lobby group
-                async_to_sync(
-                    self.channel_layer.group_add)(self.uid,
-                                                  packet.player_token)
-
-                # if checks passed, kick out player
-                self.board.remove_player(
-                    self.board.get_player(packet.player_token))
-
-                self.send_packet(packet.player_token, GetOutRoomSuccess())
-
-                nb_players = len(self.board.players)
-                # broadcast updated room status
-                reason = UpdateReason.PLAYER_LEFT.value
-                # this should be sent to lobby and to game group
-                update = BroadcastUpdateRoom(game_token=self.uid,
-                                             nb_players=nb_players,
-                                             reason=reason,
-                                             player=packet.player_token)
-                self.send_packet_to_group(update, self.uid)
-                update = BroadcastUpdateLobby(game_token=self.uid,
-                                              reason=reason)
                 self.send_packet_to_group(update, "lobby")
                 return
 
