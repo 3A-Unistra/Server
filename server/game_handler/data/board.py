@@ -467,7 +467,7 @@ class Board:
         :return: Property square by id,
                 None if id is not found or square is not ownable
         """
-        if 0 > property_id < self.total_squares:
+        if property_id < 0 or property_id >= self.total_squares:
             return None
 
         found = self.squares[property_id]
