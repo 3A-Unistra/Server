@@ -1,3 +1,4 @@
+import enum
 import json
 from enum import Enum
 from typing import Dict, List
@@ -591,18 +592,41 @@ class ActionExchangePlayerSelect(PlayerPacket):
         self.selected_player_token = obj["selected_token"]
 
 
-class ActionExchangeTradeSelect(PlayerPacket):
-    property_id: int
+class ExchangeTradeSelectType(Enum):
+    PROPERTY = 0
+    MONEY = 1
+    LEAVE_JAIL_COMMUNITY_CARD = 2
+    LEAVE_JAIL_CHANCE_CARD = 3
 
-    def __init__(self, player_token: str = "", property_id: int = 0):
+    @staticmethod
+    def has_value(value):
+        return value in set(item.value for item in ExchangeTradeSelectType)
+
+
+class ActionExchangeTradeSelect(PlayerPacket):
+    exchange_type: int
+    value: int
+    update_affects_recipient: bool
+
+    def __init__(self, player_token: str = "", value: int = 0,
+                 exchange_type: ExchangeTradeSelectType
+                 = ExchangeTradeSelectType(0),
+                 update_affects_recipient: bool = False):
         super().__init__(name=self.__class__.__name__,
                          player_token=player_token)
-        self.property_id = property_id
+        self.value = value
+        self.exchange_type = exchange_type.value
+        self.update_affects_recipient = update_affects_recipient
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.property_id = int(obj["property_id"]) if 'property_id' \
-                                                      in obj else 0
+        self.value = int(obj['value']) if 'value' in obj else 0
+
+        if not ExchangeTradeSelectType.has_value(self.value):
+            self.value = 0
+
+        self.exchange_type = int(
+            obj['exchange_type']) if 'exchange_type' in obj else 0
 
 
 class ActionExchangeSend(PlayerPacket):

@@ -102,6 +102,7 @@ Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby 
 
 .. code-block:: python
     :caption: Enum UpdateReason
+
     {
     class UpdateReason(Enum):
         NEW_CONNECTION = 0
@@ -113,6 +114,7 @@ Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby 
         LAUNCHING_GAME = 6
         NEW_BOT = 7
     }
+
 :
 
 BroadcastUpdateRoom
@@ -127,6 +129,7 @@ Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladi
 
 .. code-block:: python
     :caption: Enum UpdateReason
+
     {
     class UpdateReason(Enum):
         NEW_CONNECTION = 0
@@ -138,6 +141,7 @@ Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladi
         LAUNCHING_GAME = 6
         NEW_BOT = 7
     }
+
 :
 
 BroadcastNewRoomToLobby

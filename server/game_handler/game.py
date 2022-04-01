@@ -31,7 +31,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     ActionSellHouseSucceed, ActionExchange, ActionExchangePlayerSelect, \
     ActionExchangeTradeSelect, ActionExchangeSend, ActionExchangeAccept, \
     ActionExchangeDecline, ActionExchangeCounter, \
-    AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom
+    AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
+    ExchangeTradeSelectType
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -865,6 +866,10 @@ class Game(Thread):
             if self.board.get_current_player() != player:
                 return
 
+            # Not working with bankrupted players
+            if player.bankrupt:
+                return
+
             selected = self.board.get_player(packet.selected_player_token)
 
             if selected is None:
@@ -884,35 +889,62 @@ class Game(Thread):
             # Player is selecting a property
             if exchange.state is ExchangeState.STARTED or \
                     exchange.state is ExchangeState.WAITING_SELECT:
-                pass
-                # selecter = exchange.player
+
+                # Check if player is the current player
+                if self.board.get_current_player() != player:
+                    return
+
             # Selected_player is selecting a property
             elif exchange.state is ExchangeState.WAITING_COUNTER_SELECT:
-                pass
+
+                # Check if player is the selected player
+                if exchange.selected_player != player:
+                    return
+
             else:
                 return
 
-            # Check if player is the current player
-            if self.board.get_current_player() != player:
+            # If no player was selected, cant select
+            if packet.update_affects_recipient and \
+                    exchange.selected_player is None:
                 return
 
-            # Verify property_id
-            selected_square = self.board.get_property(packet.property_id)
+            # Check type of exchange
+            if packet.exchange_type is ExchangeTradeSelectType.PROPERTY:
 
-            # Cannot exchange mortgaged squares
-            if selected_square is None or selected_square.mortgaged:
-                return
+                # Verify property_id
+                selected_square = self.board.get_property(packet.value)
 
-            if isinstance(selected_square, PropertySquare):
-                if selected_square.nb_house > 0:
+                # Cannot exchange mortgaged squares
+                if selected_square is None or selected_square.mortgaged:
                     return
 
-            exchange.selected_square = selected_square
+                if isinstance(selected_square, PropertySquare):
+                    if selected_square.nb_house > 0:
+                        return
 
-            self.broadcast_packet(ActionExchangeTradeSelect(
-                player_token=player.get_id(),
-                property_id=selected_square.id_
-            ))
+                if packet.update_affects_recipient:
+                    pass
+                else:
+                    pass
+
+                exchange.selected_square = selected_square
+
+                self.broadcast_packet(ActionExchangeTradeSelect(
+                    player_token=player.get_id(),
+                    value=selected_square.id_,
+                    exchange_type=ExchangeTradeSelectType.PROPERTY
+                ))
+
+            elif packet.exchange_type is ExchangeTradeSelectType.MONEY:
+                pass
+            elif packet.exchange_type is ExchangeTradeSelectType. \
+                    LEAVE_JAIL_CHANCE_CARD:
+                pass
+            elif packet.exchange_type is ExchangeTradeSelectType. \
+                    LEAVE_JAIL_COMMUNITY_CARD:
+                pass
+
             return
 
         if isinstance(packet, ActionExchangeSend):

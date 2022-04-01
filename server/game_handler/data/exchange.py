@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
-from server.game_handler.data import Player
+from server.game_handler.data import Player, Card
 from server.game_handler.data.squares import OwnableSquare
 
 
@@ -29,18 +29,47 @@ class ExchangeState(Enum):
 class Exchange:
     player: Player
     selected_player: Optional[Player]
-    selected_square: Optional[OwnableSquare]
+
+    player_squares: List[OwnableSquare]
+    player_cards: List[Card]
+    player_money: int
+
+    selected_player_squares: List[OwnableSquare]
+    selected_player_cards: List[Card]
+    selected_player_money: int
 
     state: ExchangeState
     timeout: datetime
 
     def __init__(self, player: Player,
-                 selected_player: Optional[Player] = None,
-                 selected_square: Optional[OwnableSquare] = None):
+                 selected_player: Optional[Player] = None):
         self.player = player
         self.selected_player = selected_player
-        self.selected_square = selected_square
+        self.player_squares = []
+        self.player_cards = []
+        self.player_money = 0
+        self.selected_player_squares = []
+        self.selected_player_cards = []
+        self.selected_player_money = 0
         self.state = ExchangeState.STARTED
 
     def timeout_expired(self) -> bool:
         return self.timeout < datetime.now()
+
+    def player_has_changes(self) -> bool:
+        return self.player_money != 0 \
+               or len(self.player_squares) != 0 \
+               or len(self.player_cards) != 0
+
+    def selected_player_has_changes(self) -> bool:
+        return self.selected_player_money != 0 \
+               or len(self.selected_player_squares) != 0 \
+               or len(self.selected_player_cards) != 0
+
+    def clear_selected_player(self):
+        self.selected_player_money = 0
+        self.selected_player_cards = []
+        self.selected_player_squares = []
+
+    def can_accept(self) -> bool:
+        return self.player_has_changes() or self.selected_player_has_changes()
