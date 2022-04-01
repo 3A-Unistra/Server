@@ -27,7 +27,7 @@ Paquet envoyé *par le client* lorsque le host du lobby lance la partie.
 **contenu du paquet :**
  * id du joueur lançant la partie (*player_token*)
 
-GetInRoom
+EnterRoom
 ^^^^^^^^^
 Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
 
@@ -37,7 +37,7 @@ Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
  * mot de passe (*password*)
 
 
-GetInRoomSuccess
+EnterRoomSuccess
 ^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour signifier le succès de son entrée dans une partie
 
@@ -45,8 +45,8 @@ Paquet envoyé au client pour signifier le succès de son entrée dans une parti
  * id du pion que le joueur aura (*piece*)
 
 
-GetOutRoom
-^^^^^^^^^^
+LeaveRoom
+^^^^^^^^^
 Paquet envoyé *par le client* lorsque un joueur veut sortir d'un lobby de partie.
 
 **contenu du paquet :**
@@ -54,8 +54,8 @@ Paquet envoyé *par le client* lorsque un joueur veut sortir d'un lobby de parti
  * id de la partie (*game_token*)
 
 
-GetOutRoomSuccess
-^^^^^^^^^^^^^^^^^
+LeaveRoomSuccess
+^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour confirmer le succès de la sortie du lobby de partie
 
 *ce paquet ne contient pas d'informations*
