@@ -11,8 +11,8 @@ from server.game_handler.data.exceptions import \
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
     CreateGame, CreateGameSuccess, DeleteRoom, \
     DeleteRoomSuccess, UpdateReason, BroadcastUpdateLobby, \
-    BroadcastUpdateRoom, GetOutRoom, BroadcastNewRoomToLobby, \
-    GetOutRoomSuccess, NewHost
+    BroadcastUpdateRoom, LeaveRoom, BroadcastNewRoomToLobby, \
+    LeaveRoomSuccess, NewHost
 
 from django.conf import settings
 from server.game_handler.data.squares import Square, SquareUtils
@@ -195,12 +195,12 @@ class Engine:
     def leave_game(self, packet):
         """
         in case the host wants to leave the game and he is the only one
-        remaining, we need to handle the GetOutRoom packet here before sending
+        remaining, we need to handle the LeaveRoom packet here before sending
         it to the concerned game instance
-        :param packet: must be GetOutRoom instance
+        :param packet: must be LeaveRoom instance
         """
 
-        if not isinstance(packet, GetOutRoom):
+        if not isinstance(packet, LeaveRoom):
             return
 
         # check if player is part of a room
@@ -246,7 +246,7 @@ class Engine:
         game.board.remove_player(
             game.board.get_player(packet.player_token))
 
-        game.send_packet(packet.player_token, GetOutRoomSuccess())
+        game.send_packet(packet.player_token, LeaveRoomSuccess())
 
         nb_players = len(game.board.players)
         # broadcast updated room status
@@ -360,5 +360,5 @@ class Engine:
             # this has been handled in the lobby consumer, should not happen
             return
 
-        self.leave_game(GetOutRoom(player_token=player_token,
-                                   game_token=game_token))
+        self.leave_game(LeaveRoom(player_token=player_token,
+                                  game_token=game_token))

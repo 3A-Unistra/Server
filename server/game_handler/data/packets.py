@@ -79,14 +79,14 @@ class PlayerValid(Packet):
         super().__init__(self.__class__.__name__)
 
 
-class GetInRoom(LobbyPacket):
+class EnterRoom(LobbyPacket):
     player_token: str
     game_token: str
     password: str
 
     def __init__(self, player_token: str = "", game_token: str = "",
                  password: str = ""):
-        super(GetInRoom, self).__init__(self.__class__.__name__)
+        super(EnterRoom, self).__init__(self.__class__.__name__)
         self.player_token = player_token
         self.game_token = game_token
         self.password = password
@@ -119,23 +119,23 @@ class ExceptionPacket(Packet):
         self.code = int(obj["code"])
 
 
-class GetInRoomSuccess(LobbyPacket):
+class EnterRoomSuccess(LobbyPacket):
     piece: int
 
     def __init__(self, piece: int = 0):
-        super().__init__("GetInRoomSuccess")
+        super().__init__("EnterRoomSuccess")
         self.piece = piece
 
     def deserialize(self, obj: object):
         self.piece = obj['piece']
 
 
-class GetOutRoom(LobbyPacket):
+class LeaveRoom(LobbyPacket):
     player_token: str
     game_token: str
 
     def __init__(self, player_token: str = "", game_token: str = ""):
-        super().__init__("GetOutRoom")
+        super().__init__("LeaveRoom")
         self.player_token = player_token
         self.game_token = game_token
 
@@ -144,9 +144,9 @@ class GetOutRoom(LobbyPacket):
         self.game_token = obj['game_token']
 
 
-class GetOutRoomSuccess(LobbyPacket):
+class LeaveRoomSuccess(LobbyPacket):
     def __init__(self):
-        super().__init__("GetOutRoomSuccess")
+        super().__init__("LeaveRoomSuccess")
 
 
 class UpdateReason(Enum):
@@ -1025,10 +1025,10 @@ class PacketUtils:
         "GameStart": GameStart,
         "PlayerValid": PlayerValid,
         # Lobby packets
-        "GetInRoom": GetInRoom,
-        "GetInRoomSuccess": GetInRoomSuccess,
-        "GetOutRoom": GetOutRoom,
-        "GetOutRoomSuccess": GetOutRoomSuccess,
+        "EnterRoom": EnterRoom,
+        "EnterRoomSuccess": EnterRoomSuccess,
+        "LeaveRoom": LeaveRoom,
+        "LeaveRoomSuccess": LeaveRoomSuccess,
         "CreateGame": CreateGame,
         "CreateGameSuccess": CreateGameSuccess,
         "LaunchGame": LaunchGame,

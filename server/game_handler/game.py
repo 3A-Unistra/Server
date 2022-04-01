@@ -19,7 +19,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
-    GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, \
+    EnterRoom, LaunchGame, AppletPrepare, EnterRoomSuccess, \
     BroadcastUpdateRoom, PlayerEnterPrison, PlayerMove, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom
@@ -176,7 +176,7 @@ class Game(Thread):
                 return
 
         if self.state is GameState.LOBBY:
-            if isinstance(packet, GetInRoom):
+            if isinstance(packet, EnterRoom):
 
                 try:  # get user from database
                     user = User.objects.get(id=packet.player_token)
@@ -213,7 +213,7 @@ class Game(Thread):
                 # send success of getting in room
                 piece = self.board.assign_piece(packet.player_token)
                 self.send_packet(channel_name=packet.player_token,
-                                 packet=GetInRoomSuccess(piece))
+                                 packet=EnterRoomSuccess(piece))
 
                 # sending status of room
                 player_uid = []

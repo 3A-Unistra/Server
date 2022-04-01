@@ -9,7 +9,7 @@ from .data.exceptions import PacketException
 from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
     PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
-    CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket, GetOutRoom, \
+    CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket, LeaveRoom, \
     InternalLobbyDisconnect
 from .engine import Engine
 
@@ -330,7 +330,7 @@ class GameEngineConsumer(SyncConsumer):
             self.engine.delete_room(packet)
             return
 
-        if isinstance(packet, GetOutRoom):
+        if isinstance(packet, LeaveRoom):
             self.engine.leave_game(packet)
             return
 
