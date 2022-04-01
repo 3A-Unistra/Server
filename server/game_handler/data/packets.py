@@ -117,7 +117,7 @@ class LaunchGame(Packet):
     player_token: str
 
     def __init__(self, player_token: str = ""):
-        super(LaunchGame, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
         self.player_token = player_token
 
     def deserialize(self, obj: object):
@@ -189,7 +189,7 @@ class StatusRoom(LobbyPacket):
     option_auction: bool
     option_double_on_start: bool
     option_max_time: int
-    option_maxnb_rounds: int
+    option_max_rounds: int
     option_first_round_buy: bool
     starting_balance: int
 
@@ -197,7 +197,7 @@ class StatusRoom(LobbyPacket):
                  nb_players: int = 0, max_nb_players: int = 0,
                  players: List[str] = None, option_auction: bool = False,
                  option_double_on_start: bool = False,
-                 option_max_time: int = 0, option_maxnb_rounds: int = 0,
+                 option_max_time: int = 0, option_max_rounds: int = 0,
                  option_first_round_buy: bool = False,
                  starting_balance: int = 0):
         super().__init__("StatusRoom")
@@ -209,7 +209,7 @@ class StatusRoom(LobbyPacket):
         self.option_auction = option_auction
         self.option_double_on_start = option_double_on_start
         self.option_max_time = option_max_time
-        self.option_maxnb_rounds = option_maxnb_rounds
+        self.option_max_rounds = option_max_rounds
         self.option_first_round_buy = option_first_round_buy
         self.starting_balance = starting_balance
 
@@ -222,7 +222,7 @@ class StatusRoom(LobbyPacket):
         self.option_auction = obj['option_auction']
         self.option_double_on_start = obj['option_double_on_start']
         self.option_max_time = obj['option_max_time']
-        self.option_maxnb_rounds = obj['option_maxnb_rounds']
+        self.option_max_rounds = obj['option_max_rounds']
         self.option_first_round_buy = obj['option_first_round_buy']
         self.starting_balance = obj['starting_balance']
 
@@ -632,21 +632,6 @@ class ActionExchangeCancel(Packet):
         self.reason = obj["reason"]
 
 
-class PlayerUpdateProperty(PlayerPropertyPacket):
-    houses: int
-
-    def __init__(self, player_token: str = "", property_id: int = 0,
-                 houses: int = 0):
-        super().__init__(name=self.__class__.__name__,
-                         player_token=player_token,
-                         property_id=property_id)
-        self.houses = houses
-
-    def deserialize(self, obj: object):
-        super().deserialize(obj)
-        self.houses = int(obj["houses"])
-
-
 class ActionAuctionProperty(Packet):
     id_player: str
     property: str
@@ -796,7 +781,7 @@ class CreateGame(LobbyPacket):
     option_auction: bool
     option_double_on_start: bool
     option_max_time: int
-    option_maxnb_rounds: int
+    option_max_rounds: int
     option_first_round_buy: bool
 
     def __init__(self, player_token: str = "", password: str = "",
@@ -805,7 +790,7 @@ class CreateGame(LobbyPacket):
                  option_auction: bool = False,
                  option_double_on_start: bool = False,
                  option_max_time: int = 0,
-                 option_maxnb_rounds: int = 0,
+                 option_max_rounds: int = 0,
                  option_first_round_buy: bool = False):
 
         super().__init__("CreateGame")
@@ -818,7 +803,7 @@ class CreateGame(LobbyPacket):
         self.option_auction = option_auction
         self.option_double_on_start = option_double_on_start
         self.option_max_time = option_max_time
-        self.option_maxnb_rounds = option_maxnb_rounds
+        self.option_max_rounds = option_max_rounds
         self.option_first_round_buy = option_first_round_buy
 
     def deserialize(self, obj: object):
@@ -830,7 +815,7 @@ class CreateGame(LobbyPacket):
         self.option_auction = obj['option_auction']
         self.option_double_on_start = obj['option_double_on_start']
         self.option_max_time = obj['option_max_time']
-        self.option_maxnb_rounds = obj['option_maxnb_rounds']
+        self.option_max_rounds = obj['option_max_rounds']
         self.option_first_round_buy = obj['option_first_round_buy']
 
 
@@ -941,7 +926,6 @@ class PacketUtils:
         "ActionExchangeDecline": ActionExchangeDecline,
         "ActionExchangeCounter": ActionExchangeCounter,
         "ActionExchangeCancel": ActionExchangeCancel,
-        "PlayerUpdateProperty": PlayerUpdateProperty,
         "ActionAuctionProperty": ActionAuctionProperty,
         "AuctionRound": AuctionRound,
         "AuctionBid": AuctionBid,

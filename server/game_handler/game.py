@@ -237,8 +237,8 @@ class Game(Thread):
                                     board.option_auction_enabled,
                                     option_double_on_start=self.
                                     board.option_go_case_double_money,
-                                    option_maxnb_rounds=self.
-                                    board.option_maxnb_rounds,
+                                    option_max_rounds=self.
+                                    board.option_max_rounds,
                                     option_first_round_buy=self.
                                     board.option_first_round_buy,
                                     option_max_time=self.
