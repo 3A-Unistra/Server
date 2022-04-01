@@ -24,13 +24,13 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GetInRoom, LaunchGame, AppletPrepare, GetInRoomSuccess, \
     BroadcastUpdateRoom, PlayerEnterPrison, PlayerMove, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
-    AddBot, ActionEnd, ActionTimeout, ActionBuyProperty, \
+    ActionEnd, ActionTimeout, ActionBuyProperty, \
     ActionMortgageProperty, ActionUnmortgageProperty, ActionBuyHouse, \
     ActionSellHouse, PlayerPropertyPacket, ActionBuyPropertySucceed, \
     ActionMortgageSucceed, ActionUnmortgageSucceed, ActionBuyHouseSucceed, \
     ActionSellHouseSucceed, ActionExchange, ActionExchangePlayerSelect, \
     ActionExchangeTradeSelect, ActionExchangeSend, ActionExchangeAccept, \
-    ActionExchangeDecline, ActionExchangeCounter, PlayerUpdateProperty
+    ActionExchangeDecline, ActionExchangeCounter, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom
 
 from server.game_handler.models import User
@@ -176,7 +176,7 @@ class Game(Thread):
         # check player validity
         if isinstance(packet, InternalCheckPlayerValidity):
             # Only accept connection, if player exists and game is started
-            valid = self.board.player_exists(packet.player_token) and self.\
+            valid = self.board.player_exists(packet.player_token) and self. \
                 state.value > GameState.LOBBY.value
             self.send_packet(
                 channel_name=queue_packet.channel_name,

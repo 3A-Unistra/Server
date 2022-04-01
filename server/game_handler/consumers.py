@@ -252,7 +252,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         lobby_group = await self.channel_layer.group_channels('lobby')
         if self.channel_name in lobby_group:
             await self.channel_layer.group_discard("lobby",
-                                                    self.channel_name)
+                                                   self.channel_name)
             return
 
         # in case the player is in a waiting room, we have to take him out
