@@ -15,7 +15,7 @@ import pause
 from server.game_handler.data import Board, Player, Card
 from server.game_handler.data.cards import ChanceCard, CardActionType, \
     CommunityCard
-from server.game_handler.data.exchange import Exchange
+from server.game_handler.data.exchange import Exchange, ExchangeState
 from server.game_handler.data.packets import PlayerPacket, Packet, \
     InternalCheckPlayerValidity, GameStart, ExceptionPacket, AppletReady, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
@@ -831,7 +831,7 @@ class Game(Thread):
 
         if isinstance(packet, ActionExchangePlayerSelect):
             # Select a player for current_exchange
-            if exchange is None or exchange.sent:
+            if exchange is None or exchange.state is not ExchangeState.STARTED:
                 return
 
             # Check if player is the current player
