@@ -6,7 +6,6 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    sys.path.append('%s/server' % os.getcwd())
 
     os.environ.setdefault('DJANGO_SETTINGS_MODULE',
                           'server.settings.development')

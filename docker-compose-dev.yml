@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis
+    env_file:
+      - .env
+    networks:
+      - back
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+
+  asgiserver:
+    image: monopoly-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app/
+    command:
+      - "/bin/sh"
+      - "-c"
+      - "python manage.py migrate && daphne -b 0.0.0.0 -p $$DAPHNE_PORT server.asgi:application"
+    ports:
+      - "${DAPHNE_PORT}:${DAPHNE_PORT}"
+    env_file:
+      - .env
+    networks:
+      - back
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  worker:
+    image: monopoly-server
+    command: bash -c "python manage.py migrate && python manage.py runworker game_engine"
+    env_file:
+      - .env
+    networks:
+      - back
+    depends_on:
+      - asgiserver
+      - redis
+    restart: unless-stopped
+
+networks:
+  back:

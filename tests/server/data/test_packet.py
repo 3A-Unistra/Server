@@ -14,8 +14,8 @@ class TestPacket(TestCase):
 
     def setUp(self):
         self.json_str = '{"code": 4000, "name": "Exception"}'
-        self.args_json_str = '{"id_house": "test", "id_player": "test",' \
-                             ' "name": "ActionBuyHouse"}'
+        self.args_json_str = '{"name": "ActionBuyHouse", "player_token": ' \
+                             '"test", "property_id": 1}'
         self.game_dice_json_str = '{"dice_result": [{"dice1": 2, "dice2": ' \
                                   '3, "player_token": ' \
                                   '"283e1f5e-3411-44c5-9bc5-037358c47100", ' \
@@ -100,15 +100,15 @@ class TestPacket(TestCase):
         assert packet.name == 'Exception'
 
     def test_serialize_with_variables(self):
-        packet = ActionBuyHouse(id_player="test", id_house="test")
+        packet = ActionBuyHouse(player_token="test", property_id=1)
         assert packet.serialize() == self.args_json_str
 
     def test_deserialize_with_variables(self):
         packet = PacketUtils.deserialize_packet(json.loads(self.args_json_str))
         assert isinstance(packet, ActionBuyHouse)
         assert packet.name == 'ActionBuyHouse'
-        assert packet.id_house == 'test'
-        assert packet.id_player == 'test'
+        assert packet.player_token == 'test'
+        assert packet.property_id == 1
 
     def test_serialize_game_start_dice_results(self):
         packet = GameStartDiceResults()

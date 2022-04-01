@@ -139,6 +139,13 @@ class Player:
         self.jail_turns = 0
         self.in_jail = False
 
+    def has_enough_money(self, price: int) -> bool:
+        """
+        :param price: Money to pay
+        :return: Player has enough money
+        """
+        return self.money >= price
+
     def is_bankrupt(self) -> bool:
         """
         A player is bankrupt if he has debts

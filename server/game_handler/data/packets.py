@@ -46,6 +46,22 @@ class InternalPacket(Packet):
     pass
 
 
+class PlayerPropertyPacket(PlayerPacket):
+    """
+    Packet for player action on properties
+    """
+    property_id: int
+
+    def __init__(self, name: str, player_token: str, property_id: int):
+        super().__init__(name, player_token)
+        self.property_id = property_id
+
+    def deserialize(self, obj: object):
+        super().deserialize(obj)
+        self.property_id = int(obj['property_id']) \
+            if 'property_id' in obj else 0
+
+
 class InternalCheckPlayerValidity(InternalPacket):
     player_token: str
     valid: bool
@@ -57,7 +73,7 @@ class InternalCheckPlayerValidity(InternalPacket):
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
-        self.valid = bool(obj['valid'])
+        self.valid = obj['valid']
 
 
 class InternalPlayerDisconnect(InternalPacket):
@@ -446,7 +462,7 @@ class RoundDiceResults(PlayerPacket):
     def deserialize(self, obj: object):
         super().deserialize(obj)
         # TODO check enum validity
-        self.result = RoundDiceChoiceResult(int(obj['result']))
+        self.result = int(obj['result'])
         self.dice1 = int(obj['dice1'])
         self.dice2 = int(obj['dice2'])
 
@@ -538,72 +554,61 @@ class PlayerExitPrison(PlayerPacket):
                          player_token=player_token)
 
 
+class ActionEnd(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+
+
+class ActionTimeout(Packet):
+    def __init__(self):
+        super().__init__(name=self.__class__.__name__)
+
+
 class ActionExchange(PlayerPacket):
     def __init__(self, player_token: str = ""):
         super().__init__(name=self.__class__.__name__,
                          player_token=player_token)
 
 
-class ActionExchangePlayerSelect(Packet):
-    id_init_request: str
-    id_of_requested: str
-    content_trade: str
-
-    def __init__(
-            self, id_init_request: str = "", id_of_requested: str = "",
-            content_trade: str = ""
-    ):
-        super(ActionExchangePlayerSelect, self).__init__(
-            self.__class__.__name__)
-        self.id_init_request = id_init_request
-        self.id_of_requested = id_of_requested
-        self.content_trade = content_trade
-
-    def deserialize(self, obj: object):
-        self.id_init_request = obj["id_init_request"]
-        self.id_of_requested = obj["id_of_requested"]
-        self.content_trade = obj["content_trade"]
+class ActionExchangeAccept(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
-class ActionExchangeTradeSelect(Packet):
-    id_init_request: str
-    id_of_requested: str
-    content_trade: str
+class ActionExchangePlayerSelect(PlayerPacket):
+    selected_player_token: str
 
-    def __init__(
-            self, id_init_request: str = "", id_of_requested: str = "",
-            content_trade: str = ""
-    ):
-        super(ActionExchangeTradeSelect, self).__init__(
-            self.__class__.__name__)
-        self.id_init_request = id_init_request
-        self.id_of_requested = id_of_requested
-        self.content_trade = content_trade
+    def __init__(self, player_token: str = "",
+                 selected_player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.selected_player_token = selected_player_token
 
     def deserialize(self, obj: object):
-        self.id_init_request = obj["id_init_request"]
-        self.id_of_requested = obj["id_of_requested"]
-        self.content_trade = obj["content_trade"]
+        super().deserialize(obj)
+        self.selected_player_token = obj["selected_token"]
 
 
-class ActionExchangeSend(Packet):
-    id_init_request: str
-    id_of_requested: str
-    content_trade: str
+class ActionExchangeTradeSelect(PlayerPacket):
+    property_id: int
 
-    def __init__(
-            self, id_init_request: str = "", id_of_requested: str = "",
-            content_trade: str = ""
-    ):
-        super(ActionExchangeSend, self).__init__(self.__class__.__name__)
-        self.id_init_request = id_init_request
-        self.id_of_requested = id_of_requested
-        self.content_trade = content_trade
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.property_id = property_id
 
     def deserialize(self, obj: object):
-        self.id_init_request = obj["id_init_request"]
-        self.id_of_requested = obj["id_of_requested"]
-        self.content_trade = obj["content_trade"]
+        super().deserialize(obj)
+        self.property_id = int(obj["property_id"]) if 'property_id' \
+                                                      in obj else 0
+
+
+class ActionExchangeSend(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
 class ActionExchangeDecline(Packet):
@@ -627,22 +632,19 @@ class ActionExchangeCancel(Packet):
         self.reason = obj["reason"]
 
 
-class PlayerUpdateProperty(Packet):
-    id_player: str
-    is_added: bool
-    property: str
+class PlayerUpdateProperty(PlayerPropertyPacket):
+    houses: int
 
-    def __init__(self, id_player: str = "", is_added: bool = "",
-                 property: str = ""):
-        super(PlayerUpdateProperty, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.is_added = is_added
-        self.property = property
+    def __init__(self, player_token: str = "", property_id: int = 0,
+                 houses: int = 0):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
+        self.houses = houses
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.is_added = obj["is_added"]
-        self.property = obj["property"]
+        super().deserialize(obj)
+        self.houses = int(obj["houses"])
 
 
 class ActionAuctionProperty(Packet):
@@ -709,148 +711,77 @@ class AuctionConcede(Packet):
 
 class AuctionEnd(Packet):
     def __init__(self):
-        super(AuctionEnd, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
 
 
-class AuctionBuyProperty(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(AuctionBuyProperty, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionBuyProperty(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class AuctionBuyPropertySucceed(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(AuctionBuyPropertySucceed, self).__init__(
-            self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionBuyPropertySucceed(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionMortgageProperty(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(ActionMortgageProperty, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionMortgageProperty(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionMortgageSucceed(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(ActionMortgageSucceed, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionMortgageSucceed(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionUnmortgageProperty(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(ActionUnmortgageProperty, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionUnmortgageProperty(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionUnmortgageSucceed(Packet):
-    id_player: str
-    property: str
-
-    def __init__(self, id_player: str = "", property: str = ""):
-        super(ActionUnmortgageSucceed, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
+class ActionUnmortgageSucceed(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionBuyHouse(Packet):
-    id_player: str
-    id_house: str
-
-    def __init__(self, id_player: str = "", id_house: str = ""):
-        super(ActionBuyHouse, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.id_house = id_house
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.id_house = obj["id_house"]
+class ActionBuyHouse(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionBuyHouseSucceed(Packet):
-    id_player: str
-    id_house: str
-
-    def __init__(self, id_player: str = "", id_house: str = ""):
-        super(ActionBuyHouseSucceed, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.id_house = id_house
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.id_house = obj["id_house"]
+class ActionBuyHouseSucceed(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionSellHouse(Packet):
-    id_player: str
-    id_house: str
-
-    def __init__(self, id_player: str = "", id_house: str = ""):
-        super(ActionSellHouse, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.id_house = id_house
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.id_house = obj["id_house"]
+class ActionSellHouse(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
-class ActionSellHouseSucceed(Packet):
-    id_player: str
-    id_house: str
-
-    def __init__(self, id_player: str = "", id_house: str = ""):
-        super(ActionSellHouseSucceed, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.id_house = id_house
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.id_house = obj["id_house"]
+class ActionSellHouseSucceed(PlayerPropertyPacket):
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token,
+                         property_id=property_id)
 
 
 # Lobby packets
@@ -999,10 +930,14 @@ class PacketUtils:
         "PlayerPayDebt": PlayerPayDebt,
         "PlayerEnterPrison": PlayerEnterPrison,
         "PlayerExitPrison": PlayerExitPrison,
+        # Tour actions
+        "ActionEnd": ActionEnd,
+        "ActionTimeout": ActionTimeout,
         "ActionExchange": ActionExchange,
         "ActionExchangePlayerSelect": ActionExchangePlayerSelect,
         "ActionExchangeTradeSelect": ActionExchangeTradeSelect,
         "ActionExchangeSend": ActionExchangeSend,
+        "ActionExchangeAccept": ActionExchangeAccept,
         "ActionExchangeDecline": ActionExchangeDecline,
         "ActionExchangeCounter": ActionExchangeCounter,
         "ActionExchangeCancel": ActionExchangeCancel,
@@ -1012,8 +947,8 @@ class PacketUtils:
         "AuctionBid": AuctionBid,
         "AuctionConcede": AuctionConcede,
         "AuctionEnd": AuctionEnd,
-        "AuctionBuyProperty": AuctionBuyProperty,
-        "AuctionBuyPropertySucceed": AuctionBuyPropertySucceed,
+        "ActionBuyProperty": ActionBuyProperty,
+        "ActionBuyPropertySucceed": ActionBuyPropertySucceed,
         "ActionMortgageProperty": ActionMortgageProperty,
         "ActionMortgageSucceed": ActionMortgageSucceed,
         "ActionUnmortgageProperty": ActionUnmortgageProperty,
@@ -1055,7 +990,7 @@ class PacketUtils:
         if not PacketUtils.is_packet(obj):
             raise PacketException("Could not deserialize packet")
 
-        packet_name = obj["name"]
+        packet_name = obj.get("name")
 
         if packet_name not in PacketUtils.packets:
             raise PacketException("Invalid packet")

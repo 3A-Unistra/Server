@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import time
@@ -14,6 +15,7 @@ import pause
 from server.game_handler.data import Board, Player, Card
 from server.game_handler.data.cards import ChanceCard, CardActionType, \
     CommunityCard
+from server.game_handler.data.exchange import Exchange, ExchangeState
 from server.game_handler.data.packets import PlayerPacket, Packet, \
     InternalCheckPlayerValidity, GameStart, ExceptionPacket, AppletReady, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
@@ -22,13 +24,20 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     EnterRoom, LaunchGame, AppletPrepare, EnterRoomSuccess, \
     BroadcastUpdateRoom, PlayerEnterPrison, PlayerMove, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
+    ActionEnd, ActionTimeout, ActionBuyProperty, \
+    ActionMortgageProperty, ActionUnmortgageProperty, ActionBuyHouse, \
+    ActionSellHouse, PlayerPropertyPacket, ActionBuyPropertySucceed, \
+    ActionMortgageSucceed, ActionUnmortgageSucceed, ActionBuyHouseSucceed, \
+    ActionSellHouseSucceed, ActionExchange, ActionExchangePlayerSelect, \
+    ActionExchangeTradeSelect, ActionExchangeSend, ActionExchangeAccept, \
+    ActionExchangeDecline, ActionExchangeCounter, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom
 
 from server.game_handler.models import User
 from django.conf import settings
 from server.game_handler.data.squares import GoSquare, TaxSquare, \
     FreeParkingSquare, OwnableSquare, ChanceSquare, CommunitySquare, \
-    GoToJailSquare
+    GoToJailSquare, PropertySquare
 
 
 class GameState(Enum):
@@ -150,7 +159,7 @@ class Game(Thread):
     def process_packet(self, queue_packet: QueuePacket):
         packet: Packet = queue_packet.packet
 
-        if self.state > GameState.LOBBY:
+        if self.state.value > GameState.LOBBY.value:
             # Heartbeat only in "game"
             if isinstance(packet, PingPacket):
                 player = self.board.get_player(packet.player_token)
@@ -167,8 +176,8 @@ class Game(Thread):
         # check player validity
         if isinstance(packet, InternalCheckPlayerValidity):
             # Only accept connection, if player exists and game is started
-            valid = self.board.player_exists(
-                packet.player_token) and self.state > GameState.LOBBY
+            valid = self.board.player_exists(packet.player_token) and self. \
+                state.value > GameState.LOBBY.value
             self.send_packet(
                 channel_name=queue_packet.channel_name,
                 packet=InternalCheckPlayerValidity(valid=valid))
@@ -325,74 +334,97 @@ class Game(Thread):
 
         if self.state is GameState.WAITING_PLAYERS:
             # WebGL app is ready to play
-            if isinstance(packet, AppletReady):
-                # Player could not be null -> we are checking before, if this
-                # player exists.
-                player = self.board.get_player(packet.player_token)
-
-                # Set player to connected (bot disabled)
-                player.connect()
-
-                # init ping heartbeat
-                player.ping = True
-                player.ping_timeout = datetime.now() + timedelta(
-                    seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
+            if not isinstance(packet, AppletReady):
                 return
+            # Player could not be null -> we are checking before, if this
+            # player exists.
+            player = self.board.get_player(packet.player_token)
+
+            # Set player to connected (bot disabled)
+            player.connect()
+
+            # init ping heartbeat
+            player.ping = True
+            player.ping_timeout = datetime.now() + timedelta(
+                seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
+            return
 
         if self.state is GameState.START_DICE:
 
-            if isinstance(packet, GameStartDiceThrow):
-                player = self.board.get_player(packet.player_token)
-
-                # Block spam (only accept one GameStartDiceThrow)
-                # To avoid broadcast spam
-                if player.start_dice_throw_received:
-                    return
-
-                player.start_dice_throw_received = True
-
-                self.broadcast_packet(GameStartDiceThrow(
-                    player_token=player.get_id()
-                ))
-
+            if not isinstance(packet, GameStartDiceThrow):
                 return
+
+            player = self.board.get_player(packet.player_token)
+
+            # Block spam (only accept one GameStartDiceThrow)
+            # To avoid broadcast spam
+            if player.start_dice_throw_received:
+                return
+
+            player.start_dice_throw_received = True
+
+            self.broadcast_packet(GameStartDiceThrow(
+                player_token=player.get_id()
+            ))
+
+            return
 
         if self.state is GameState.ROUND_DICE_CHOICE_WAIT:
-            if isinstance(packet, RoundDiceChoice):
+
+            if not isinstance(packet, RoundDiceChoice):
+                return
+
+            player = self.board.get_player(packet.player_token)
+
+            # Ignore packets sent by players other than current_player
+            if self.board.get_current_player() != player:
+                return
+
+            # Check if enum exists, if not ignore.
+            if not RoundDiceChoiceResult.has_value(packet.choice):
+                return
+
+            choice = RoundDiceChoiceResult(packet.choice)
+
+            # Ignore this packet, cant roll dices if player in jail
+            # and player.jail_turns >= (3)
+            if choice is RoundDiceChoiceResult.ROLL_DICES and \
+                    player.in_jail and player.jail_turns \
+                    >= self.CONFIG.get('MAX_JAIL_TURNS'):
+                return
+
+            # Ignore this packet if player has chosen jail_card_chance,
+            # but doesnt have one.
+            if player.in_jail and choice is RoundDiceChoiceResult \
+                    .JAIL_CARD_CHANCE and not player.jail_cards['chance']:
+                return
+
+            # Ignore this packet if player has chosen jail_card_community,
+            # but doesnt have one.
+            if player.in_jail and choice is RoundDiceChoiceResult. \
+                    JAIL_CARD_COMMUNITY and not player \
+                    .jail_cards['community']:
+                return
+
+            self.proceed_dice_choice(player=player, choice=choice)
+            return
+
+        if self.state is GameState.ACTION_TIMEOUT_WAIT:
+            if isinstance(packet, ActionEnd):
                 player = self.board.get_player(packet.player_token)
 
-                # Ignore packets sent by players other than current_player
-                if self.board.get_current_player() != player:
+                # Check if player is current player, else ignore
+                if player != self.board.get_current_player():
                     return
 
-                # Check if enum exists, if not ignore.
-                if not RoundDiceChoiceResult.has_value(packet.choice):
-                    return
+                self.proceed_action_tour_end()
 
-                choice = RoundDiceChoiceResult(packet.choice)
+            # Process tour actions packets
+            self.proceed_tour_actions(packet)
 
-                # Ignore this packet, cant roll dices if player in jail
-                # and player.jail_turns >= (3)
-                if choice is RoundDiceChoiceResult.ROLL_DICES and \
-                        player.in_jail and player.jail_turns \
-                        >= self.CONFIG.get('MAX_JAIL_TURNS'):
-                    return
-
-                # Ignore this packet if player has chosen jail_card_chance,
-                # but doesnt have one.
-                if player.in_jail and choice is RoundDiceChoiceResult \
-                        .JAIL_CARD_CHANCE and not player.jail_cards['chance']:
-                    return
-
-                # Ignore this packet if player has chosen jail_card_community,
-                # but doesnt have one.
-                if player.in_jail and choice is RoundDiceChoiceResult. \
-                        JAIL_CARD_COMMUNITY and not player \
-                        .jail_cards['community']:
-                    return
-
-                self.proceed_dice_choice(player=player, choice=choice)
-                return
+            # Process exchange packets
+            self.proceed_exchange(packet)
+            return
 
     def process_logic(self):
         # TODO: Check #34 in comments
@@ -420,21 +452,21 @@ class Game(Thread):
                 # x Seconds timeout before game start
                 self.start_begin_dice()
 
-            if self.state is GameState.START_DICE:
+            elif self.state is GameState.START_DICE:
                 self.check_start_dice()
 
-            if self.state is GameState.START_DICE_REROLL:
+            elif self.state is GameState.START_DICE_REROLL:
                 self.start_begin_dice()
 
-            if self.state is GameState.FIRST_ROUND_START_WAIT:
+            elif self.state is GameState.FIRST_ROUND_START_WAIT:
                 self.start_round(first=True)
 
-            if self.state is GameState.ROUND_START_WAIT:
+            elif self.state is GameState.ROUND_START_WAIT:
                 self.start_round()
 
             # If player has not sent his choice to the server,
             # process to timeout choice
-            if self.state is GameState.ROUND_DICE_CHOICE_WAIT:
+            elif self.state is GameState.ROUND_DICE_CHOICE_WAIT:
                 player = self.board.get_current_player()
                 choice = RoundDiceChoiceResult.ROLL_DICES
 
@@ -444,6 +476,10 @@ class Game(Thread):
                     choice = RoundDiceChoiceResult.JAIL_PAY
 
                 self.proceed_dice_choice(player=player, choice=choice)
+
+            elif self.state is GameState.ACTION_TIMEOUT_WAIT:
+                # Tour is ended
+                self.proceed_action_tour_end()
 
     def proceed_stop(self):
         # Delete game
@@ -541,7 +577,13 @@ class Game(Thread):
         state.ROUND_DICE_CHOICE_WAIT -> timeout_expired()
                                                     -> proceed_dice_choice()
         """
-        if not first:
+        if first:
+            # set remaining round players,
+            # 3 remaining - 1 = 2 players remaining to get to next round
+            self.board.remaining_round_players = len(
+                self.board.get_non_bankrupt_players()) - 1
+        else:
+            # remaining players - 1
             self.board.next_player()
 
         # Get current player
@@ -560,6 +602,383 @@ class Game(Thread):
         # set timeout for dice choice wait
         self.state = GameState.ROUND_DICE_CHOICE_WAIT
         self.set_timeout(seconds=self.CONFIG.get('ROUND_DICE_CHOICE_WAIT'))
+
+    def proceed_action_tour_end(self):
+        """
+        Process to tour end, cancel all actions and check if player is bankrupt
+        """
+        # TODO : process loose
+        self.broadcast_packet(ActionTimeout())
+
+        # Check if player is bankrupt
+        self.check_current_player_bankrupt()
+
+        # Check game status (if game is win or no players connected > return)
+        if self.check_game_status():
+            return
+
+        # Set state to round_start_wait, this will execute round_start()
+        self.state = GameState.ROUND_START_WAIT
+        self.set_timeout(seconds=self.CONFIG.get('ROUND_START_WAIT'))
+
+    def proceed_tour_actions(self, packet: Packet):
+        """
+        Proceed tour actions
+        :param packet: Packet received
+        """
+        if not isinstance(packet, PlayerPropertyPacket):
+            return
+
+        # Get player
+        player = self.board.get_player(packet.player_token)
+
+        # Check if player is current player, else ignore
+        if player != self.board.get_current_player():
+            return
+
+        square = self.board.get_property(packet.property_id)
+
+        if square is None:
+            # Ignore packet.
+            return
+
+        if isinstance(packet, ActionBuyProperty):
+
+            # Check if player is on this property
+            if player.position != packet.property_id:
+                return
+
+            if square.owner is not None or not player.has_enough_money(
+                    square.buy_price):
+                # Ignore packet.
+                return
+
+            # Set new owner
+            square.owner = player
+
+            # broadcast updates
+            self.broadcast_packet(ActionBuyPropertySucceed(
+                player_token=player.get_id(),
+                property_id=square.id_
+            ))
+
+            self.player_balance_update(
+                player=player,
+                new_balance=player.money - square.buy_price,
+                reason="action_buy_house"
+            )
+            return
+
+        if isinstance(packet, ActionMortgageProperty):
+            if square.owner != player or square.mortgaged:
+                # Ignore packet.
+                return
+
+            # For property squares, you can only mortgage when no houses
+            # or hotels are in the group
+            if isinstance(square, PropertySquare):
+                if self.board.get_house_count_by_owned_group(
+                        square.color, player=player) > 0:
+                    return
+
+            # Mortgage property
+            square.mortgaged = True
+
+            # broadcast updates
+            self.broadcast_packet(ActionMortgageSucceed(
+                player_token=player.get_id(),
+                property_id=square.id_
+            ))
+
+            self.player_balance_receive(
+                player=player,
+                amount=square.buy_price // 2,
+                reason="action_mortgage"
+            )
+            return
+
+        if isinstance(packet, ActionUnmortgageProperty):
+            if square.owner != player or not square.mortgaged:
+                # Ignore packet.
+                return
+
+            price = math.floor(0.6 * square.rent_base)
+
+            if not player.has_enough_money(price):
+                return
+
+            # Mortgage property
+            square.mortgaged = False
+
+            # broadcast updates
+            self.broadcast_packet(ActionUnmortgageSucceed(
+                player_token=player.get_id(),
+                property_id=square.id_
+            ))
+
+            self.player_balance_update(
+                player=player,
+                new_balance=player.money - price,
+                reason="action_unmortgage"
+            )
+            return
+
+        if isinstance(packet, ActionBuyHouse):
+            if not isinstance(square, PropertySquare) or \
+                    square.owner != player or square.mortgaged:
+                # Ignore packet.
+                return
+
+            # Cannot have more than 5 houses (hotel)
+            if square.nb_house >= 5:
+                return
+
+            # True = hotel, False = house
+            buy_hotel = square.nb_house == 4
+
+            # check if bank has enough hotels
+            if buy_hotel and not self.board.bank.has_hotels():
+                return
+
+            # check if bank has enough houses
+            if not buy_hotel and not self.board.bank.has_houses():
+                return
+
+            # check if player has enough money
+            if not player.has_enough_money(square.house_price):
+                return
+
+            group_squares = self.board.get_group_property_squares(
+                color=square.color,
+                player=player
+            )
+
+            # Check if player has all properties in group
+            if len(group_squares) != \
+                    self.board.total_properties_color_squares[
+                        square.color]:
+                return
+
+            # Check if all properties in group are not mortgaged
+            for g_square in group_squares:
+                if g_square.mortgaged:
+                    return
+
+            square.nb_house += 1
+
+            # Check if all houses are distributed equally (-1/+1)
+            if not PropertySquare.is_distributed_equally(group_squares):
+                square.nb_house -= 1
+                return
+
+            # All conditions passed ! Can proceed to buy house/hotel
+            if buy_hotel:
+                self.board.bank.buy_hotel()
+            else:
+                self.board.bank.buy_house()
+
+            # broadcast updates
+            self.broadcast_packet(ActionBuyHouseSucceed(
+                player_token=player.get_id(),
+                property_id=square.id_
+            ))
+
+            self.player_balance_update(
+                player=player,
+                new_balance=player.money - square.house_price,
+                reason="action_buy_house"
+            )
+
+        if isinstance(packet, ActionSellHouse):
+            if not isinstance(square, PropertySquare) or \
+                    square.owner != player:
+                # Ignore packet.
+                return
+
+            # Cannot sell a house if square has no houses
+            if square.nb_house > 0:
+                return
+
+            # True = hotel, False = house
+            sell_hotel = square.nb_house == 5
+
+            group_squares = self.board.get_group_property_squares(
+                color=square.color,
+                player=player
+            )
+
+            square.nb_house -= 1
+
+            # Check if all houses are distributed equally (-1/+1)
+            if not PropertySquare.is_distributed_equally(group_squares):
+                square.nb_house += 1
+                return
+
+            # All conditions passed ! Can proceed to buy house/hotel
+            if sell_hotel:
+                self.board.bank.sell_hotel()
+            else:
+                self.board.bank.sell_house()
+
+            # broadcast updates
+            self.broadcast_packet(ActionSellHouseSucceed(
+                player_token=player.get_id(),
+                property_id=square.id_
+            ))
+
+            self.player_balance_receive(
+                player=player,
+                amount=square.house_price,
+                reason="action_sell_house"
+            )
+
+    def proceed_exchange(self, packet: PlayerPacket):
+        exchange: Optional[Exchange] = self.board.current_exchange
+        player = self.board.get_player(packet.player_token)
+
+        if isinstance(packet, ActionExchange):
+            # Start an exchange with someone
+            if exchange is not None:
+                return
+
+            # Check if player is the current player
+            if self.board.get_current_player() != player:
+                return
+
+            self.board.current_exchange = Exchange(player)
+
+            self.broadcast_packet(ActionExchange(
+                player_token=player.get_id()
+            ))
+            return
+
+        # All the following packages require an exchange
+        if exchange is None:
+            return
+
+        if isinstance(packet, ActionExchangePlayerSelect):
+            # Select a player for current_exchange
+            if exchange.state is not ExchangeState.STARTED:
+                return
+
+            # Check if player is the current player
+            if self.board.get_current_player() != player:
+                return
+
+            selected = self.board.get_player(packet.selected_player_token)
+
+            if selected is None:
+                return
+
+            exchange.selected_player = selected
+
+            self.broadcast_packet(ActionExchangePlayerSelect(
+                player_token=player.get_id(),
+                selected_player_token=selected.get_id()
+            ))
+            return
+
+        if isinstance(packet, ActionExchangeTradeSelect):
+            # Select a property for current_exchange
+
+            # Player is selecting a property
+            if exchange.state is ExchangeState.STARTED or \
+                    exchange.state is ExchangeState.WAITING_SELECT:
+                pass
+                # selecter = exchange.player
+            # Selected_player is selecting a property
+            elif exchange.state is ExchangeState.WAITING_COUNTER_SELECT:
+                pass
+            else:
+                return
+
+            # Check if player is the current player
+            if self.board.get_current_player() != player:
+                return
+
+            # Verify property_id
+            selected_square = self.board.get_property(packet.property_id)
+
+            # Cannot exchange mortgaged squares
+            if selected_square is None or selected_square.mortgaged:
+                return
+
+            if isinstance(selected_square, PropertySquare):
+                if selected_square.nb_house > 0:
+                    return
+
+            exchange.selected_square = selected_square
+
+            self.broadcast_packet(ActionExchangeTradeSelect(
+                player_token=player.get_id(),
+                property_id=selected_square.id_
+            ))
+            return
+
+        if isinstance(packet, ActionExchangeSend):
+            # Start exchange
+            if exchange is None or exchange.sent:
+                return
+
+            # Check if player is the current player
+            if self.board.get_current_player() != player:
+                return
+
+            if exchange.selected_player is None or \
+                    exchange.selected_square is None:
+                return
+
+            exchange.sent = True
+
+            self.broadcast_packet(ActionExchangeSend(
+                player_token=player.get_id(),
+            ))
+
+        if isinstance(packet, ActionExchangeAccept):
+            pass
+
+        if isinstance(packet, ActionExchangeDecline):
+            pass
+
+        if isinstance(packet, ActionExchangeCounter):
+            pass
+
+    def check_current_player_bankrupt(self):
+        """
+        Check if the current player is bankrupt, if this is the case, we remove
+        it from the game.
+        """
+
+        current_player = self.board.get_current_player()
+
+        if current_player.is_bankrupt():
+            # TODO: defeat.
+            pass
+
+    def check_game_status(self) -> bool:
+        """
+        Check's if game is win, check's if at least 1 player is still connected
+        Checks if total_rounds < max_rounds
+        :return Game is win or no players connected
+        """
+        if self.board.get_online_real_players_count() == 0:
+            # TODO : END GAME ?
+            return True
+
+        # Win
+        if len(self.board.get_non_bankrupt_players()) == 0:
+            # TODO: proceed to win
+            return True
+
+        # Max rounds option is activated
+        if self.board.option_max_rounds > 0:
+            # Check if current_round is greater than option
+            if self.board.compute_current_round() >= \
+                    self.board.option_max_rounds:
+                # TODO: proceed to check win.
+                return True
+
+        return False
 
     def proceed_heartbeat(self):
         """
@@ -736,14 +1155,18 @@ class Game(Thread):
             # set board money to 0
             self.board.board_money = 0
         elif isinstance(case, OwnableSquare):
-            if case.has_owner():
-                # Pay rent :o
-                self.player_balance_pay(player=player,
-                                        receiver=case.owner,
-                                        amount=case.get_rent(),
-                                        reason="rent_pay",
-                                        receiver_reason="rent_receive")
+            # Pay rent :o
+            if not case.has_owner() or case.mortgaged:
+                return
 
+            # Calculate rent
+            rent = self.board.get_rent(case, player.current_dices)
+
+            self.player_balance_pay(player=player,
+                                    receiver=case.owner,
+                                    amount=rent,
+                                    reason="rent_pay",
+                                    receiver_reason="rent_receive")
         elif isinstance(case, ChanceSquare) and not backward:
             card = self.board.draw_random_chance_card()
 
@@ -784,7 +1207,7 @@ class Game(Thread):
 
     def process_card_actions(self, player: Player, card: Card):
         """
-        All actions handled here # TODO:
+        All actions handled here
 
         :param player: Player who drawn card
         :param card: Card to handle action

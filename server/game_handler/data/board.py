@@ -3,9 +3,11 @@ from typing import List, Optional
 
 import names
 
-from . import Player
+from . import Player, Bank
 from .cards import ChanceCard, CommunityCard, CardActionType, Card
 from django.conf import settings
+
+from .exchange import Exchange
 from .squares import Square, JailSquare, StationSquare, CompanySquare, \
     OwnableSquare, PropertySquare
 
@@ -16,6 +18,7 @@ class Board:
     squares: List[Square]
     community_deck: List[CommunityCard]
     chance_deck: List[ChanceCard]
+    bank: Bank
     board_money: int
     players: List[Player]
     players_nb: int
@@ -23,15 +26,17 @@ class Board:
     bot_names: []
     current_player_index: int
     prison_square_index: int
-    round: int
+    current_round: int
+    remaining_round_players: int
     starting_balance: int
+    current_exchange: Optional[Exchange]
 
     # Options
     option_go_case_double_money: bool
     option_auction_enabled: bool
     option_password: str
     option_is_private: bool
-    option_maxnb_rounds: int
+    option_max_rounds: int  # > 0 => activated
     option_max_time: int  # max time per rounds
     option_first_round_buy: bool
 
@@ -45,6 +50,11 @@ class Board:
         'leave_jail': -1
     }
 
+    # Totals
+    total_squares: int
+    total_company_squares: int
+    total_properties_color_squares: {}  # {'color': 'properties_same_color'}
+
     def __init__(self, squares=None):
         self.squares = [] if squares is None else squares
         self.community_deck = []
@@ -56,16 +66,34 @@ class Board:
         self.current_player_index = 0
         self.prison_square_index = -1
         self.bot_names: []
-        self.round = 0
+        self.current_round = 0
+        self.remaining_round_players = 0
         self.option_go_case_double_money = False
         self.option_auction_enabled = False
         self.option_password = ""
         self.option_is_private = False
-        self.option_maxnb_rounds = 0
         self.option_max_time = 0
+        self.option_max_rounds = 0
+        self.total_squares = 0
+        self.total_company_squares = 0
+        self.total_properties_color_squares = {}
+        self.current_exchange = None
+        self.bank = Bank(0, 0)  # TODO: AFTER AKI'S MERGE
+        self.search_square_indexes()
+        self.search_card_indexes()
         self.option_first_round_buy = False
         self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
         self.starting_balance = self.CONFIG.get("STARTING_BALANCE_DEFAULT")
+        self.search_square_indexes()
+        self.search_card_indexes()
+
+    def load_data(self, squares: List[Square],
+                  community_deck: List[CommunityCard],
+                  chance_deck: List[ChanceCard]):
+        self.squares = squares
+        self.community_deck = community_deck
+        self.chance_deck = chance_deck
+
         self.search_square_indexes()
         self.search_card_indexes()
 
@@ -151,11 +179,25 @@ class Board:
         """
         Search special square indexes
         """
+        self.total_company_squares = 0
+        self.total_squares = len(self.squares)
+        self.total_properties_color_squares = {}
+
         for i in range(len(self.squares)):
             square = self.squares[i]
             if isinstance(square, JailSquare):
                 self.prison_square_index = i
-                break
+                continue
+
+            if isinstance(square, CompanySquare):
+                self.total_company_squares += 1
+                continue
+
+            if isinstance(square, PropertySquare):
+                if square.color in self.total_properties_color_squares:
+                    self.total_properties_color_squares[square.color] += 1
+                else:
+                    self.total_properties_color_squares[square.color] = 1
 
     def search_card_indexes(self):
         """
@@ -180,6 +222,9 @@ class Board:
         """
         i = 0
         curr_idx = self.current_player_index
+
+        # update remaining round players
+        self.remaining_round_players -= 1
 
         while i < self.players_nb:
             curr_idx = (curr_idx + 1) % self.players_nb
@@ -248,11 +293,7 @@ class Board:
         """
         :return: Offline players (bots that are not connected)
         """
-        offline = []
-        for player in self.players:
-            if player.online is False:
-                offline.append(player)
-        return offline
+        return [player for player in self.players if not player.online]
 
     def bot_name_used(self, name: str) -> bool:
         for player in self.players:
@@ -284,21 +325,20 @@ class Board:
         """
         :return: Online players, bots included
         """
-        players = []
-        for player in self.players:
-            if player.online is True:
-                players.append(player)
-        return players
+        return [player for player in self.players if player.online]
 
     def get_online_real_players(self) -> List[Player]:
         """
         :return: Online players, bots excluded
         """
-        players = []
-        for player in self.players:
-            if player.online is True and player.bot is False:
-                players.append(player)
-        return players
+        return [player for player in self.players if
+                (player.online and not player.bot)]
+
+    def get_non_bankrupt_players(self) -> List[Player]:
+        """
+        :return: Non bankrupted players (bots included)
+        """
+        return [player for player in self.players if not player.bankrupt]
 
     def get_highest_dice(self) -> Optional[Player]:
         """
@@ -421,21 +461,13 @@ class Board:
         """
         :return: List of ownable squares
         """
-        result = []
-        for square in self.squares:
-            if isinstance(square, OwnableSquare):
-                result.append(result)
-        return result
+        return [a for a in self.squares if isinstance(a, OwnableSquare)]
 
     def get_property_squares(self) -> List[PropertySquare]:
         """
         :return: List of property squares
         """
-        result = []
-        for square in self.squares:
-            if isinstance(square, PropertySquare):
-                result.append(square)
-        return result
+        return [a for a in self.squares if isinstance(a, PropertySquare)]
 
     def get_player_buildings_count(self, player: Player) -> (int, int):
         """
@@ -456,3 +488,143 @@ class Board:
                 houses += square.nb_house
 
         return houses, hotels
+
+    def compute_current_round(self) -> int:
+        """
+        Computes current round, (current_tour += 1) if all players have played.
+        :return: Computed current round
+        """
+        if self.remaining_round_players == 0:
+            self.remaining_round_players = len(self.get_non_bankrupt_players())
+            self.current_round += 1
+        return self.current_round
+
+    def get_owned_squares(self, player: Player) -> List[OwnableSquare]:
+        """
+        List of owned squares by player
+        :param player: Owner
+        :return: List of owned squares
+        """
+        return [square for square in self.squares if
+                isinstance(square, OwnableSquare)
+                and square.owner == player]
+
+    def get_rent(self, case: OwnableSquare, dices: (int, int) = (0, 0)) -> int:
+        """
+        get rent of case.
+        - StationSquare: count how many stations the player have
+        - CompanySquare: roll dices? or last dices?
+        - PropertySquare: if houses==0, check if all properties with same color
+                        if houses > 0, calculate rent
+        :param case: Case where a player should pay a rent
+        :param dices: Company squares need last dices of player
+        :return: Computed rent
+        """
+        owned_squares = self.get_owned_squares(player=case.owner)
+
+        if isinstance(case, StationSquare):
+            stations_count = len(
+                [a for a in owned_squares if
+                 isinstance(a, StationSquare) and not a.mortgaged])
+            # 0 stations => 0
+            # 1 station: x1 ; 2 stations: x2 ; 3 stations: x4 ; 4 stations: x8
+            return 0 if stations_count == 0 else 2 ** (
+                    stations_count - 1) * case.get_rent()
+        elif isinstance(case, CompanySquare):
+            company_count = len(
+                [a for a in owned_squares if
+                 isinstance(a, CompanySquare) and not a.mortgaged])
+            # if player has all companies, dices are multiplied by 10
+            # else dices are multiplied by 4
+            multiplier = 10 if company_count == self.total_company_squares \
+                else 4
+            return multiplier * sum(dices)
+        elif isinstance(case, PropertySquare) and case.nb_house == 0:
+            # Count all properties owned by the player and which have the same
+            # color
+            if self.has_property_group(color=case.color,
+                                       owned_squares=owned_squares):
+                # If player has all properties of group, multiply rent by 2
+                return case.get_rent() * 2
+
+        return case.get_rent()
+
+    def get_property(self, property_id: int) -> Optional[OwnableSquare]:
+        """
+        Get a property square instance by id
+        :param property_id: ID of property sqaure
+        :return: Property square by id,
+                None if id is not found or square is not ownable
+        """
+        if property_id < 0 or property_id >= self.total_squares:
+            return None
+
+        found = self.squares[property_id]
+
+        return found if isinstance(found, OwnableSquare) else None
+
+    def has_property_group(self, color: str,
+                           player: Optional[Player] = None,
+                           owned_squares: List[OwnableSquare] = None) -> bool:
+        """
+        If player has the whole group or not
+        :param color: Group color
+        :param player: Owner, optional, only if owned_squares is None
+        :param owned_squares: Players owned squares
+               (if none, self.get_owned_squares(player) is called)
+        :return: If player has whole property group or not
+        """
+
+        if owned_squares is None:
+            if player is None:
+                return False
+            owned_squares = self.get_owned_squares(player)
+
+        property_count = len([a for a in owned_squares
+                              if isinstance(a, PropertySquare)
+                              and a.color == color])
+
+        return property_count == self.total_properties_color_squares[color]
+
+    def get_house_count_by_owned_group(self, color: str,
+                                       player: Optional[Player] = None,
+                                       owned_squares: List[
+                                           OwnableSquare] = None) -> int:
+        """
+        Get houses by owned properties in a group
+        :param color: Group color
+        :param player: Owner, optional, only if owned_squares is None
+        :param owned_squares: Players owned squares
+               (if none, self.get_owned_squares(player) is called)
+        :return: Total houses from the properties of a group
+                (-1 if owned_squares and player are None)
+        """
+        if owned_squares is None:
+            if player is None:
+                return -1
+            owned_squares = self.get_owned_squares(player)
+
+        return sum([a.nb_house for a in owned_squares if
+                    isinstance(a, PropertySquare) and a.color == color])
+
+    def get_group_property_squares(self, color: str,
+                                   player: Optional[Player] = None,
+                                   owned_squares: List[OwnableSquare]
+                                   = None) -> List[PropertySquare]:
+        """
+        Get properties of a group owned by a player
+        :param color: Group color
+        :param player: Owner, optional, only if owned_squares is None
+        :param owned_squares: Players owned squares
+               (if none, self.get_owned_squares(player) is called)
+        :raises InsufficientGroupException when player not own all properties
+                of the group
+        :return: Properties of a group ([] if owned_squares & player are None)
+        """
+        if owned_squares is None:
+            if player is None:
+                return []
+            owned_squares = self.get_owned_squares(player)
+
+        return [a for a in owned_squares if
+                isinstance(a, PropertySquare) and a.color == color]

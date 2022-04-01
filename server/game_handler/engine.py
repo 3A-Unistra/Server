@@ -77,14 +77,11 @@ class Engine:
             return
 
         # set loaded cards
-        game.board.squares = self.squares.copy()
-        game.board.chance_deck = self.chance_deck.copy()
-        game.board.community_deck = self.community_deck.copy()
-
-        # search card indexes
-        game.board.search_card_indexes()
-        # search square indexes
-        game.board.search_square_indexes()
+        game.board.load_data(
+            squares=self.squares.copy(),
+            chance_deck=self.chance_deck.copy(),
+            community_deck=self.community_deck.copy()
+        )
 
         # Reference to games dict (delete game)
         game.games = self.games
