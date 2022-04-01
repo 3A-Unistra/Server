@@ -33,7 +33,7 @@ Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
 
 **contenu du paquet :**
  * id du joueur (*player_token*)
- * id de la salle (*id_room*)
+ * id de la salle (*game_token*)
  * mot de passe (*password*)
 
 
@@ -41,7 +41,8 @@ GetInRoomSuccess
 ^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour signifier le succès de son entrée dans une partie
 
-*ce paquet ne contient pas d'informations*
+**contenu du paquet :**
+ * id du pion que le joueur aura (*piece*)
 
 
 GetOutRoom
@@ -50,6 +51,7 @@ Paquet envoyé *par le client* lorsque un joueur veut sortir d'un lobby de parti
 
 **contenu du paquet :**
  * id du joueur (*player_token*)
+ * id de la partie (*game_token*)
 
 
 GetOutRoomSuccess
@@ -59,6 +61,15 @@ Paquet envoyé au client pour confirmer le succès de la sortie du lobby de part
 *ce paquet ne contient pas d'informations*
 
 
+InternalLobbyDisconnect
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Paquet interne pour gérer la déconnexion  d'un joueur dans le lobby. Ce paquet retire le joueur de la
+salle d'attente dans laquelle il est.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+
 
 CreateGame
 ^^^^^^^^^^
@@ -67,9 +78,15 @@ Paquet envoyé *par le client* lorsqu'il veut créer une partie
 **contenu du paquet :**
  * id du player créant la partie (*player_token*)
  * nombre de joueurs (*max_nb_players*)
+ * mot de passe (peut être un champ vide) (*password*)
+ * nom de la partie (*name*)
  * partie privé ou public (*is_private*)
  * montant de base pour chaque joueur (*starting_balance*)
- * mot de passe (peut être un champ vide) (*password*)
+ * activer/désactiver enchère (*option_auctions*)
+ * activer désactiver doublage d’argent sur la case GO (*option_double_on_start*)
+ * temps max pour les actions d'un tour (*option_max_time*)
+ * nombre de tour maximum (*option_maxnb_rounds*)
+ * acheter dès le premier tour (*option_first_round_buy*)
 
 
 CreateGameSuccess
@@ -79,6 +96,7 @@ Paquet envoyé par le serveur pour confirmer la création d'une partie
 
 **contenu du packet :**
  * id du player (*player_token*)
+ * id du pion que le joueur aura (*piece*)
 
 AppletPrepare
 ^^^^^^^^^^^^^
@@ -90,18 +108,57 @@ L'applet unity webgl devra se connecter au WebSocket de la partie et envoyer le 
 **contenu du paquet :**
  * id du joueur (*player_token*)
 
-BroadcastUpdatedRoom
+BroadCastUpdateLobby
 ^^^^^^^^^^^^^^^^^^^^
-
-Paquet envoyé lorsque qu'un lobby change de statut (soit le nombre de joueurs, soit la partie est lancé, etc).
-Ce paquet est envoyé à tout les joueurs qui sont dans le lobby (pas in-game).
+Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby en particulier change. Il est aussi utilisé
+ pour donner les infos de tous les lobbys lors de la connexion initial d'un joueur.
 
 **contenu du paquet :**
- * id du lobby (*id_room*)
- * l'ancien nombre de joueurs (*old_nb_players*)
- * le nouveau nombre de joueurs (*new_nb_players*)
- * le statut de la partie (*state*)
- * le joueur ajouté ou supprimé (peut-être un champ vide) (*player_added_or_del*)
+ * id du lobby (*game_token*)
+ * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
+
+BroadCastUpdateRoom
+^^^^^^^^^^^^^^^^^^^
+Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladite salle change.
+
+**contenu du paquet :**
+ * id du lobby (*game_token*)
+ * le nombre de joueur (*nb_players*)
+ * le joueur ajouté ou supprimé (peut-être un champ vide) (*player*)
+ * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
+
+BroadcastNewRoomToLooby
+^^^^^^^^^^^^^^^^^^^^^^^
+Ce paquet est envoyé aux clients lorsque une nouvelle salle d'attente est créée. Il est aussi utilisé pour envoyer
+ l'état de toute les salles présentes lors d'une nouvelle connexion.
+
+**contenu du paquet :**
+ * id de la salle (*game_token*)
+ * nom de la salle (*name*)
+ * nombre de joueurs (*nb_players*)
+ * nombre de joueurs max (*max_nb_players*)
+ * privé ou non (*is_private*)
+ * mdp ou non (*has_password*)
+
+StatusRoom
+^^^^^^^^^^
+
+Ce paquet est envoyé lorsqu'un joueur rejoint une salle. Ce paquet comporte tout les détails de la partie.
+
+
+**contenu du paquet :**
+ * id du lobby (*game_token*)
+ * nom de la partie (*name*)
+ * le nombre de joueur (*nb_players*)
+ * le nombre de joueurs max (*max_nb_players*)
+ * la liste des joueurs (*players*)
+ * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
+ * option enchère activé ou désactivé (*option_auction*)
+ * option double on start (*option_double_on_start*)
+ * temps maximum par tour (*option_max_time*)
+ * nombre de rounds maximum (*option_maxnb_rounds*)
+ * possibilité d'acheter au premier tour activé/désactivé (*option_first_round_buy*)
+ * argent de base (*starting_balance*)
 
 
 AddBot
@@ -111,7 +168,7 @@ Paquet envoyé *par le client* (le host) lorsqu'il ajoute un bot à la partie
 
 **contenu du paquet :**
  * id du joueur (*player_token*)
- * id du room (*id_room*)
+ * id du room (*game_token*)
  * difficulté du bot (*bot_difficulty*)
 
 
@@ -123,7 +180,7 @@ Ce paquet ne peut être envoyé que par l'hôte de la partie.
 
 **contenu du paquet :**
  * id du joueur (*player_token*)
- * id de la partie (*id_room*)
+ * id de la partie (*game_token*)
 
 
 DeleteRoomSuccess
@@ -133,6 +190,12 @@ Les autres joueurs seront prévenus via un BroadcastUpdatedRoom avec le champ *s
 
 *ce paquet ne contient pas d'informations*
 
+NewHost
+^^^^^^^
+
+Paquet envoyé à un joueur de la salle d'attente lorsque le host de la partie demande à sortir, ou s'il se deconnecte
+
+*ce paquet ne contient pas d'informations*
 
 Paquets demarrage
 -----------------

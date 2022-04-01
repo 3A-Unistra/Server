@@ -11,6 +11,8 @@ from .exchange import Exchange
 from .squares import Square, JailSquare, StationSquare, CompanySquare, \
     OwnableSquare, PropertySquare
 
+from server.game_handler.models import User
+
 
 class Board:
     squares: List[Square]
@@ -35,6 +37,10 @@ class Board:
     option_password: str
     option_is_private: bool
     option_max_rounds: int  # > 0 => activated
+    option_max_time: int  # max time per rounds
+    option_first_round_buy: bool
+
+    CONFIG = {}
 
     # Card indexes
     community_card_indexes = {
@@ -66,13 +72,18 @@ class Board:
         self.option_auction_enabled = False
         self.option_password = ""
         self.option_is_private = False
+        self.option_max_time = 0
         self.option_max_rounds = 0
         self.total_squares = 0
         self.total_company_squares = 0
         self.total_properties_color_squares = {}
         self.current_exchange = None
         self.bank = Bank(0, 0)  # TODO: AFTER AKI'S MERGE
-        self.starting_balance = getattr(settings, "MONEY_START", 1000)
+        self.search_square_indexes()
+        self.search_card_indexes()
+        self.option_first_round_buy = False
+        self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
+        self.starting_balance = self.CONFIG.get("STARTING_BALANCE_DEFAULT")
         self.search_square_indexes()
         self.search_card_indexes()
 
@@ -85,6 +96,84 @@ class Board:
 
         self.search_square_indexes()
         self.search_card_indexes()
+
+    def set_option_max_time(self, given_time):
+        """
+        this function set the max_time option if the max_time is within the
+        [min, max] (else, default value is used
+        :param given_time: a time
+        """
+        if given_time < self.CONFIG.get('TIME_ROUNDS_MIN') or \
+                given_time > self.CONFIG.get('TIME_ROUNDS_MAX'):
+            self.option_max_time = self.CONFIG.get('TIME_ROUNDS_DEFAULT')
+
+        else:
+            self.option_max_time = given_time
+
+    def set_option_maxnb_rounds(self, nb_rounds):
+        """
+        this function set the max_nb_rounds option if the max_time is within
+        the [min, max] (else, default value is used)
+        :param nb_rounds: a number of rounds
+        """
+        if nb_rounds < self.CONFIG.get('NB_ROUNDS_MIN') or \
+                nb_rounds > self.CONFIG.get('NB_ROUNDS_MAX'):
+            self.option_maxnb_rounds = self.CONFIG.get('NB_ROUNDS_DEFAULT')
+
+        else:
+            self.option_maxnb_rounds = nb_rounds
+
+    def set_option_start_balance(self, balance):
+        """
+        this function set the max_nb_rounds option if the max_time is within
+        the [min, max] (else, default value is used)
+        :param balance: balance
+        """
+        if balance < self.CONFIG.get('MONEY_START_MIN') or \
+                balance > self.CONFIG.get('MONEY_START_MAX'):
+            self.starting_balance = self.CONFIG.get('MONEY_START_DEFAULT')
+
+        else:
+            self.starting_balance = balance
+
+    def assign_piece(self, player_token: str):
+        """
+        assigns a piece to a player
+        If the favorite piece from the player is taken, it'll assign a random
+        non-taken piece
+        :param player_token: player id
+        """
+
+        try:  # get user from database
+            user = User.objects.get(id=player_token)
+        except User.DoesNotExist:
+            return
+
+        favorite_piece = user.piece
+        taken = False
+        for player in self.players:
+            if player.piece == favorite_piece:
+                taken = True
+                break
+
+        if not taken:
+            self.get_player(player_token).piece = favorite_piece
+            return favorite_piece
+
+        if taken:
+            taken_new_piece = False
+            # iterating on all the pieces to get a free one
+            for i in range(self.CONFIG.get('MAX_PIECE_NB')):
+                taken_new_piece = False
+                for player in self.players:
+                    if player.piece == i:
+                        taken_new_piece = True
+                        break
+                if not taken_new_piece:
+                    self.get_player(player_token).piece = i
+                    return i
+
+        return -1   # this should not happen
 
     def search_square_indexes(self):
         """

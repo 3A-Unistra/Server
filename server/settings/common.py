@@ -164,8 +164,22 @@ ENGINE_CONFIG = {
 
     'PING_HEARTBEAT_TIMEOUT': 10,
 
-    'MONEY_START': 1000,
+    'MONEY_START_MIN': 500,
+    'MONEY_START_DEFAULT': 1000,
+    'MONEY_START_MAX': 4000,
+
+    'NB_ROUNDS_MIN': 5,
+    'NB_ROUNDS_DEFAULT': 13,
+    'NB_ROUNDS_MAX': 20,
+
+    'TIME_ROUNDS_MIN': 10,
+    'TIME_ROUNDS_DEFAULT': 20,
+    'TIME_ROUNDS_MAX': 30,
+
     'MONEY_GO': 200,
+
+    # replace w number of pieces
+    'MAX_PIECE_NB': 15,
 
     'MAX_DOUBLES_JAIL': 3,
     'MAX_JAIL_TURNS': 3,

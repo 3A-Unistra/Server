@@ -1,6 +1,6 @@
 import json
 from enum import Enum
-from typing import Dict
+from typing import Dict, List
 
 from .exceptions import PacketException
 
@@ -97,19 +97,19 @@ class PlayerValid(Packet):
 
 class GetInRoom(LobbyPacket):
     player_token: str
-    id_room: str
+    game_token: str
     password: str
 
-    def __init__(self, player_token: str = "", id_room: str = "",
+    def __init__(self, player_token: str = "", game_token: str = "",
                  password: str = ""):
         super(GetInRoom, self).__init__(self.__class__.__name__)
         self.player_token = player_token
-        self.id_room = id_room
+        self.game_token = game_token
         self.password = password
 
     def deserialize(self, obj: object):
         self.player_token = obj["player_token"]
-        self.id_room = obj["id_room"]
+        self.game_token = obj["game_token"]
         self.password = obj["password"]
 
 
@@ -136,19 +136,28 @@ class ExceptionPacket(Packet):
 
 
 class GetInRoomSuccess(LobbyPacket):
-    def __init__(self):
+    piece: int
+
+    def __init__(self, piece: int = 0):
         super().__init__("GetInRoomSuccess")
+        self.piece = piece
+
+    def deserialize(self, obj: object):
+        self.piece = obj['piece']
 
 
 class GetOutRoom(LobbyPacket):
     player_token: str
+    game_token: str
 
-    def __init__(self, player_token: str = ""):
+    def __init__(self, player_token: str = "", game_token: str = ""):
         super().__init__("GetOutRoom")
         self.player_token = player_token
+        self.game_token = game_token
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
+        self.game_token = obj['game_token']
 
 
 class GetOutRoomSuccess(LobbyPacket):
@@ -156,28 +165,135 @@ class GetOutRoomSuccess(LobbyPacket):
         super().__init__("GetOutRoomSuccess")
 
 
-class BroadcastUpdatedRoom(LobbyPacket):
-    id_room: str
-    old_nb_players: int
-    new_nb_players: int
-    player_added_or_del: str
-    state: str
+class UpdateReason(Enum):
+    NEW_CONNECTION = 0
+    NEW_PLAYER = 1
+    PLAYER_LEFT = 2
+    ROOM_DELETED = 3
+    ROOM_CREATED = 4
+    HOST_LEFT = 5
+    LAUNCHING_GAME = 6
+    NEW_BOT = 7
 
-    def __init__(self, id_room: str, old_nb_players: int, new_nb_players: int,
-                 state: str, player: str = None):
-        super().__init__("BroadcastUpdatedRoom")
-        self.id_room = id_room
-        self.old_nb_players = old_nb_players
-        self.new_nb_players = new_nb_players
-        self.state = state
-        self.player_added_or_del = player
+    @staticmethod
+    def has_value(value):
+        return value in set(item.value for item in UpdateReason)
+
+
+class StatusRoom(LobbyPacket):
+    game_token: str
+    name: str
+    nb_players: int
+    max_nb_players: int
+    players: List[str]  # list of players
+    option_auction: bool
+    option_double_on_start: bool
+    option_max_time: int
+    option_maxnb_rounds: int
+    option_first_round_buy: bool
+    starting_balance: int
+
+    def __init__(self, game_token: str = "", name: str = "",
+                 nb_players: int = 0, max_nb_players: int = 0,
+                 players: List[str] = None, option_auction: bool = False,
+                 option_double_on_start: bool = False,
+                 option_max_time: int = 0, option_maxnb_rounds: int = 0,
+                 option_first_round_buy: bool = False,
+                 starting_balance: int = 0):
+        super().__init__("StatusRoom")
+        self.game_token = game_token
+        self.name = name
+        self.nb_players = nb_players
+        self.max_nb_players = max_nb_players
+        self.players = players
+        self.option_auction = option_auction
+        self.option_double_on_start = option_double_on_start
+        self.option_max_time = option_max_time
+        self.option_maxnb_rounds = option_maxnb_rounds
+        self.option_first_round_buy = option_first_round_buy
+        self.starting_balance = starting_balance
 
     def deserialize(self, obj: object):
-        self.id_room = obj['id_room']
-        self.old_nb_players = obj['old_nb_players']
-        self.new_nb_players = obj['new_nb_players']
-        self.state = obj['state']
-        self.player_added_or_del = obj['player_added_or_del']
+        self.game_token = obj['game_token']
+        self.name = obj['name']
+        self.nb_players = obj['nb_players']
+        self.max_nb_players = obj['max_nb_players']
+        self.players = obj['players']
+        self.option_auction = obj['option_auction']
+        self.option_double_on_start = obj['option_double_on_start']
+        self.option_max_time = obj['option_max_time']
+        self.option_maxnb_rounds = obj['option_maxnb_rounds']
+        self.option_first_round_buy = obj['option_first_round_buy']
+        self.starting_balance = obj['starting_balance']
+
+
+class BroadcastNewRoomToLobby(LobbyPacket):
+    game_token: str
+    name: str
+    nb_players: int
+    max_nb_players: int
+    is_private: bool
+    has_password: bool
+
+    def __init__(self, game_token: str = "", name: str = "",
+                 nb_players: int = 0, max_nb_players: int = 0,
+                 is_private: bool = False, has_password: bool = False):
+        super().__init__("BroadcastNewRoomToLobby")
+        self.game_token = game_token
+        self.name = name
+        self.nb_players = nb_players
+        self.max_nb_players = max_nb_players
+        self.is_private = is_private
+        self.has_password = has_password
+
+    def deserialize(self, obj: object):
+        self.game_token = obj['game_token']
+        self.name = obj['name']
+        self.nb_players = obj['nb_players']
+        self.max_nb_players = obj['max_nb_players']
+        self.is_private = obj['is_private']
+        self.has_password = obj['has_password']
+
+
+class BroadcastUpdateLobby(LobbyPacket):
+    game_token: str
+    reason: int
+
+    def __init__(self, game_token: str = "",
+                 reason: int = 0):
+        super().__init__("BroadcastUpdatedRoom")
+        self.game_token = game_token
+        self.reason = reason
+
+    def deserialize(self, obj: object):
+        self.game_token = obj['game_token']
+        self.reason = obj['reason']
+
+
+class BroadcastUpdateRoom(LobbyPacket):
+    game_token: str
+    nb_players: int
+    player: str
+    reason: int
+
+    def __init__(self, game_token: str = "", nb_players: int = 0,
+                 reason: int = 0, player: str = None):
+        super().__init__("BroadcastUpdatedRoom")
+        self.game_token = game_token
+        self.nb_players = nb_players
+        self.player = player
+        self.reason = reason
+
+    def deserialize(self, obj: object):
+        self.game_token = obj['game_token']
+        self.nb_players = obj['nb_players']
+        self.player = obj['player']
+        self.reason = obj['reason']
+
+
+class NewHost(LobbyPacket):
+    def __init__(self):
+        super().__init__("NewHost")
 
 
 class PingPacket(PlayerPacket):
@@ -673,74 +789,123 @@ class ActionSellHouseSucceed(PlayerPropertyPacket):
 class CreateGame(LobbyPacket):
     player_token: str
     password: str
+    name: str
     max_nb_players: int
     starting_balance: int
     is_private: bool
+    option_auction: bool
+    option_double_on_start: bool
+    option_max_time: int
+    option_maxnb_rounds: int
+    option_first_round_buy: bool
 
     def __init__(self, player_token: str = "", password: str = "",
-                 max_nb_players: int = 0, is_private: bool = False,
-                 starting_balance: int = 0):
+                 name: str = "", max_nb_players: int = 0,
+                 is_private: bool = False, starting_balance: int = 0,
+                 option_auction: bool = False,
+                 option_double_on_start: bool = False,
+                 option_max_time: int = 0,
+                 option_maxnb_rounds: int = 0,
+                 option_first_round_buy: bool = False):
+
         super().__init__("CreateGame")
         self.player_token = player_token
         self.password = password
         self.max_nb_players = max_nb_players
         self.is_private = is_private
         self.starting_balance = starting_balance
+        self.name = name
+        self.option_auction = option_auction
+        self.option_double_on_start = option_double_on_start
+        self.option_max_time = option_max_time
+        self.option_maxnb_rounds = option_maxnb_rounds
+        self.option_first_round_buy = option_first_round_buy
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
         self.password = obj['password']
         self.max_nb_players = obj['max']
         self.is_private = obj['is_private']
+        self.name = obj['name']
+        self.option_auction = obj['option_auction']
+        self.option_double_on_start = obj['option_double_on_start']
+        self.option_max_time = obj['option_max_time']
+        self.option_maxnb_rounds = obj['option_maxnb_rounds']
+        self.option_first_round_buy = obj['option_first_round_buy']
 
 
 class CreateGameSuccess(LobbyPacket):
     player_token: str
+    piece: int
 
-    def __init__(self, player_token: str):
+    def __init__(self, player_token: str = "", piece: int = 0):
         super().__init__("CreateGameSuccess")
         self.player_token = player_token
+        self.piece = piece
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
+        self.piece = obj['piece']
 
 
 class AddBot(LobbyPacket):
     player_token: str
-    id_room: str
+    game_token: str
     bot_difficulty: int
 
-    def __init__(self, player_token: str, id_room: str = "",
+    def __init__(self, player_token: str = "", game_token: str = "",
                  bot_difficulty: int = 0):
         super().__init__("AddBot")
         self.player_token = player_token
-        self.id_room = id_room
+        self.game_token = game_token
         self.bot_difficulty = bot_difficulty
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
         self.bot_difficulty = obj['bot_difficulty']
-        self.id_room = obj['id_room']
+        self.game_token = obj['game_token']
 
 
 class DeleteRoom(LobbyPacket):
     player_token: str
-    id_room: str
+    game_token: str
 
-    def __init__(self, player_token: str, id_room: str):
+    def __init__(self, player_token: str = "", game_token: str = ""):
         super().__init__("DeleteRoom")
         self.player_token = player_token
-        self.id_room = id_room
+        self.game_token = game_token
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
-        self.id_room = obj['id_room']
+        self.game_token = obj['game_token']
 
 
 class DeleteRoomSuccess(LobbyPacket):
 
     def __init__(self):
         super().__init__("DeleteRoomSuccess")
+
+
+class InternalLobbyConnect(InternalPacket):
+    player_token: str
+
+    def __init__(self, player_token: str = ""):
+        super().__init__("DeleteRoomSuccess")
+        self.player_token = player_token
+
+    def deserialize(self, obj: object):
+        self.player_token = obj['player_token']
+
+
+class InternalLobbyDisconnect(InternalPacket):
+    player_token: str
+
+    def __init__(self, player_token: str = ""):
+        super().__init__("DeleteRoomSuccess")
+        self.player_token = player_token
+
+    def deserialize(self, obj: object):
+        self.player_token = obj['player_token']
 
 
 class PacketUtils:
@@ -802,13 +967,18 @@ class PacketUtils:
         "CreateGame": CreateGame,
         "CreateGameSuccess": CreateGameSuccess,
         "LaunchGame": LaunchGame,
-        "BroadcastUpdatedRoom": BroadcastUpdatedRoom,
         "DeleteRoom": DeleteRoom,
         "DeleteRoomSuccess": DeleteRoomSuccess,
         "AddBot": AddBot,
+        "BroadcastUpdateRoom": BroadcastUpdateRoom,
+        "BroadcastUpdateLobby": BroadcastUpdateLobby,
+        "StatusRoom": StatusRoom,
+        "NewHost": NewHost,
         # Internal packets
         "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
-        "InternalPlayerDisconnect": InternalPlayerDisconnect
+        "InternalPlayerDisconnect": InternalPlayerDisconnect,
+        "InternalLobbyConnect": InternalLobbyConnect,
+        "InternalLobbyDisconnect": InternalLobbyDisconnect
     }
 
     @staticmethod
