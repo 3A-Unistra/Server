@@ -301,7 +301,7 @@ class Engine:
         board.option_first_round_buy = packet.option_first_round_buy
         board.option_auction_enabled = packet.option_auction
         board.set_option_max_time(packet.option_max_time)
-        board.set_option_maxnb_rounds(packet.option_maxnb_rounds)
+        board.set_option_max_rounds(packet.option_max_rounds)
         board.set_option_start_balance(packet.starting_balance)
 
         # sending CreateGameSucceed to host
