@@ -1488,6 +1488,7 @@ class Game(Thread):
         """
         sends packet to lobby group.
         lobby group : all players that are connected to a game in lobby mode
+        :param group_name: Name of the channels group
         :param packet: packet to be sent
         """
         async_to_sync(self.channel_layer.send)(
