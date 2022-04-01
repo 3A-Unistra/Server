@@ -21,7 +21,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     GameStartDice, GameStartDiceThrow, GameStartDiceResults, RoundStart, \
     PingPacket, PlayerDisconnect, InternalPlayerDisconnect, RoundDiceChoice, \
     RoundDiceChoiceResult, RoundDiceResults, PlayerExitPrison, \
-    EnterRoom, LaunchGame, AppletPrepare, EnterRoomSuccess, \
+    EnterRoom, LaunchGame, AppletPrepare, EnterRoomSucceed, \
     BroadcastUpdateRoom, PlayerEnterPrison, PlayerMove, \
     PlayerUpdateBalance, RoundRandomCard, PlayerPayDebt, \
     ActionEnd, ActionTimeout, ActionBuyProperty, \
@@ -222,7 +222,7 @@ class Game(Thread):
                 # send success of getting in room
                 piece = self.board.assign_piece(packet.player_token)
                 self.send_packet(channel_name=packet.player_token,
-                                 packet=EnterRoomSuccess(piece))
+                                 packet=EnterRoomSucceed(piece))
 
                 # sending status of room
                 player_uid = []
