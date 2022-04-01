@@ -204,7 +204,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             # Reject the connection
             return await self.close(code=4000)
 
-        self.player_token = self.scope['user'].id
+        self.player_token = str(self.scope['user'].id)
 
         # sending the internal packet to the EngineConsumer
         packet = InternalLobbyConnect(
@@ -332,7 +332,7 @@ class GameEngineConsumer(SyncConsumer):
                     'packet': packet.serialize()
                 })
 
-    def process_lobby_packet(self, content):
+    def process_lobby_packets(self, content):
         """
         lobby packets are handled here
         """
