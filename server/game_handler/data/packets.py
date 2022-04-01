@@ -789,7 +789,7 @@ class ActionSellHouseSucceed(PlayerPropertyPacket):
 class CreateGame(LobbyPacket):
     player_token: str
     password: str
-    name: str
+    game_name: str
     max_nb_players: int
     starting_balance: int
     is_private: bool
@@ -814,7 +814,7 @@ class CreateGame(LobbyPacket):
         self.max_nb_players = max_nb_players
         self.is_private = is_private
         self.starting_balance = starting_balance
-        self.name = name
+        self.game_name = name
         self.option_auction = option_auction
         self.option_double_on_start = option_double_on_start
         self.option_max_time = option_max_time
@@ -826,7 +826,7 @@ class CreateGame(LobbyPacket):
         self.password = obj['password']
         self.max_nb_players = obj['max']
         self.is_private = obj['is_private']
-        self.name = obj['name']
+        self.game_name = obj['game_name']
         self.option_auction = obj['option_auction']
         self.option_double_on_start = obj['option_double_on_start']
         self.option_max_time = obj['option_max_time']
