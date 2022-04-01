@@ -119,11 +119,11 @@ class ExceptionPacket(Packet):
         self.code = int(obj["code"])
 
 
-class EnterRoomSuccess(LobbyPacket):
+class EnterRoomSucceed(LobbyPacket):
     piece: int
 
     def __init__(self, piece: int = 0):
-        super().__init__("EnterRoomSuccess")
+        super().__init__("EnterRoomSucceed")
         self.piece = piece
 
     def deserialize(self, obj: object):
@@ -144,9 +144,9 @@ class LeaveRoom(LobbyPacket):
         self.game_token = obj['game_token']
 
 
-class LeaveRoomSuccess(LobbyPacket):
+class LeaveRoomSucceed(LobbyPacket):
     def __init__(self):
-        super().__init__("LeaveRoomSuccess")
+        super().__init__("LeaveRoomSucceed")
 
 
 class UpdateReason(Enum):
@@ -903,12 +903,12 @@ class CreateGame(LobbyPacket):
         self.option_first_round_buy = obj['option_first_round_buy']
 
 
-class CreateGameSuccess(LobbyPacket):
+class CreateGameSucceed(LobbyPacket):
     player_token: str
     piece: int
 
     def __init__(self, player_token: str = "", piece: int = 0):
-        super().__init__("CreateGameSuccess")
+        super().__init__("CreateGameSucceed")
         self.player_token = player_token
         self.piece = piece
 
@@ -949,17 +949,17 @@ class DeleteRoom(LobbyPacket):
         self.game_token = obj['game_token']
 
 
-class DeleteRoomSuccess(LobbyPacket):
+class DeleteRoomSucceed(LobbyPacket):
 
     def __init__(self):
-        super().__init__("DeleteRoomSuccess")
+        super().__init__("DeleteRoomSucceed")
 
 
 class InternalLobbyConnect(InternalPacket):
     player_token: str
 
     def __init__(self, player_token: str = ""):
-        super().__init__("DeleteRoomSuccess")
+        super().__init__("DeleteRoomSucceed")
         self.player_token = player_token
 
     def deserialize(self, obj: object):
@@ -970,7 +970,7 @@ class InternalLobbyDisconnect(InternalPacket):
     player_token: str
 
     def __init__(self, player_token: str = ""):
-        super().__init__("DeleteRoomSuccess")
+        super().__init__("DeleteRoomSucceed")
         self.player_token = player_token
 
     def deserialize(self, obj: object):
@@ -1026,14 +1026,14 @@ class PacketUtils:
         "PlayerValid": PlayerValid,
         # Lobby packets
         "EnterRoom": EnterRoom,
-        "EnterRoomSuccess": EnterRoomSuccess,
+        "EnterRoomSucceed": EnterRoomSucceed,
         "LeaveRoom": LeaveRoom,
-        "LeaveRoomSuccess": LeaveRoomSuccess,
+        "LeaveRoomSucceed": LeaveRoomSucceed,
         "CreateGame": CreateGame,
-        "CreateGameSuccess": CreateGameSuccess,
+        "CreateGameSucceed": CreateGameSucceed,
         "LaunchGame": LaunchGame,
         "DeleteRoom": DeleteRoom,
-        "DeleteRoomSuccess": DeleteRoomSuccess,
+        "DeleteRoomSucceed": DeleteRoomSucceed,
         "AddBot": AddBot,
         "BroadcastUpdateRoom": BroadcastUpdateRoom,
         "BroadcastUpdateLobby": BroadcastUpdateLobby,

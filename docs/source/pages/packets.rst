@@ -37,7 +37,7 @@ Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
  * mot de passe (*password*)
 
 
-EnterRoomSuccess
+EnterRoomSucceed
 ^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour signifier le succès de son entrée dans une partie
 
@@ -54,7 +54,7 @@ Paquet envoyé *par le client* lorsque un joueur veut sortir d'un lobby de parti
  * id de la partie (*game_token*)
 
 
-LeaveRoomSuccess
+LeaveRoomSucceed
 ^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour confirmer le succès de la sortie du lobby de partie
 
@@ -89,7 +89,7 @@ Paquet envoyé *par le client* lorsqu'il veut créer une partie
  * acheter dès le premier tour (*option_first_round_buy*)
 
 
-CreateGameSuccess
+CreateGameSucceed
 ^^^^^^^^^^^^^^^^^
 
 Paquet envoyé par le serveur pour confirmer la création d'une partie
@@ -183,7 +183,7 @@ Ce paquet ne peut être envoyé que par l'hôte de la partie.
  * id de la partie (*game_token*)
 
 
-DeleteRoomSuccess
+DeleteRoomSucceed
 ^^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour lui signaler le succès de la suppression d'une partie.
 Les autres joueurs seront prévenus via un BroadcastUpdatedRoom avec le champ *state* à CLOSED.
