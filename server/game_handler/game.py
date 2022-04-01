@@ -310,9 +310,6 @@ class Game(Thread):
                         # 4100 => invalid player
                         packet=ExceptionPacket(code=4100))
 
-        if self.state.value > GameState.FIRST_ROUND_START_WAIT.value:
-            self.proceed_exchange(packet)
-
         if self.state is GameState.WAITING_PLAYERS:
             # WebGL app is ready to play
             if not isinstance(packet, AppletReady):
@@ -400,7 +397,11 @@ class Game(Thread):
 
                 self.proceed_action_tour_end()
 
+            # Process tour actions packets
             self.proceed_tour_actions(packet)
+
+            # Process exchange packets
+            self.proceed_exchange(packet)
             return
 
     def process_logic(self):
@@ -829,9 +830,13 @@ class Game(Thread):
             ))
             return
 
+        # All the following packages require an exchange
+        if exchange is None:
+            return
+
         if isinstance(packet, ActionExchangePlayerSelect):
             # Select a player for current_exchange
-            if exchange is None or exchange.state is not ExchangeState.STARTED:
+            if exchange.state is not ExchangeState.STARTED:
                 return
 
             # Check if player is the current player
@@ -853,7 +858,16 @@ class Game(Thread):
 
         if isinstance(packet, ActionExchangeTradeSelect):
             # Select a property for current_exchange
-            if exchange is None or exchange.sent:
+
+            # Player is selecting a property
+            if exchange.state is ExchangeState.STARTED or \
+                    exchange.state is ExchangeState.WAITING_SELECT:
+                pass
+                # selecter = exchange.player
+            # Selected_player is selecting a property
+            elif exchange.state is ExchangeState.WAITING_COUNTER_SELECT:
+                pass
+            else:
                 return
 
             # Check if player is the current player
