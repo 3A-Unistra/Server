@@ -218,16 +218,23 @@ class StatusRoom(LobbyPacket):
 
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
-        self.name = obj['name'] i
-        self.nb_players = obj['nb_players']
-        self.max_nb_players = obj['max_nb_players']
-        self.players = obj['players']
-        self.option_auction = obj['option_auction']
-        self.option_double_on_start = obj['option_double_on_start']
-        self.option_max_time = obj['option_max_time']
-        self.option_maxnb_rounds = obj['option_maxnb_rounds']
-        self.option_first_round_buy = obj['option_first_round_buy']
-        self.starting_balance = obj['starting_balance']
+        self.name = obj['name'] if 'name' in obj else ""
+        self.nb_players = int(obj['nb_players']) if 'nb_players' in obj else 0
+        self.max_nb_players = int(obj['max_nb_players']) if 'max_nb_players' \
+                                                            in obj else 0
+        self.players = obj['players'] if 'players' in obj else []
+        self.option_auction = bool(obj['option_auction']) if 'option_auction' \
+                                                             in obj else False
+        self.option_double_on_start = bool(obj['option_double_on_start']) if \
+            'option_double_on_start' in obj else False
+        self.option_max_time = bool(obj['option_max_time']) if \
+            'option_max_time' in obj else False
+        self.option_maxnb_rounds = bool(obj['option_maxnb_rounds']) if \
+            'option_maxnb_rounds' in obj else False
+        self.option_first_round_buy = bool(obj['option_first_round_buy']) \
+            if 'option_first_round_buy' in obj else 0
+        self.starting_balance = int(obj['starting_balance']) if \
+            'starting_balance' in obj else 0
 
 
 class BroadcastNewRoomToLobby(LobbyPacket):
@@ -250,12 +257,15 @@ class BroadcastNewRoomToLobby(LobbyPacket):
         self.has_password = has_password
 
     def deserialize(self, obj: object):
-        self.game_token = obj['game_token']
-        self.name = obj['name']
-        self.nb_players = obj['nb_players']
-        self.max_nb_players = obj['max_nb_players']
-        self.is_private = obj['is_private']
-        self.has_password = obj['has_password']
+        self.game_token = obj['game_token'] if 'game_token' in obj else ""
+        self.name = obj['name'] if 'name' in obj else ""
+        self.nb_players = int(obj['nb_players']) if 'nb_players' in obj else 0
+        self.max_nb_players = int(obj['max_nb_players']) if 'max_nb_players' \
+                                                            in obj else 0
+        self.is_private = bool(obj['is_private']) if 'is_private' in obj else \
+            False
+        self.has_password = bool(obj['has_password']) if 'has_password' in \
+                                                         obj else False
 
 
 class BroadcastUpdateLobby(LobbyPacket):
@@ -269,8 +279,8 @@ class BroadcastUpdateLobby(LobbyPacket):
         self.reason = reason
 
     def deserialize(self, obj: object):
-        self.game_token = obj['game_token']
-        self.reason = obj['reason']
+        self.game_token = obj['game_token'] if 'game_token' in obj else 0
+        self.reason = int(obj['reason']) if 'reason' in obj else 0
 
 
 class BroadcastUpdateRoom(LobbyPacket):
@@ -288,10 +298,10 @@ class BroadcastUpdateRoom(LobbyPacket):
         self.reason = reason
 
     def deserialize(self, obj: object):
-        self.game_token = obj['game_token']
-        self.nb_players = obj['nb_players']
-        self.player = obj['player']
-        self.reason = obj['reason']
+        self.game_token = obj['game_token'] if 'game_token' in obj else ""
+        self.nb_players = int(obj['nb_players']) if 'nb_players' in obj else 0
+        self.player = obj['player'] if 'player' in obj else 0
+        self.reason = int(obj['reason']) if 'reason' in obj else 0
 
 
 class NewHost(LobbyPacket):
@@ -312,7 +322,8 @@ class AppletPrepare(LobbyPacket):
         self.player_token = player_token
 
     def deserialize(self, obj: object):
-        self.player_token = obj['player_token']
+        self.player_token = obj['player_token'] if 'player_token' in \
+                                                   obj else ""
 
 
 class AppletReady(PlayerPacket):
