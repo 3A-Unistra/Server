@@ -108,9 +108,10 @@ class EnterRoom(LobbyPacket):
         self.password = password
 
     def deserialize(self, obj: object):
-        self.player_token = obj["player_token"]
-        self.game_token = obj["game_token"]
-        self.password = obj["password"]
+        self.player_token = obj["player_token"] if 'player_token' in \
+                                                   obj else ""
+        self.game_token = obj["game_token"] if 'game_token' in obj else ""
+        self.password = obj["password"] if 'password' in obj else ""
 
 
 class LaunchGame(Packet):
@@ -121,7 +122,8 @@ class LaunchGame(Packet):
         self.player_token = player_token
 
     def deserialize(self, obj: object):
-        self.player_token = obj["player_token"]
+        self.player_token = obj["player_token"] if 'player_token' in \
+                                                   obj else ""
 
 
 class ExceptionPacket(Packet):
@@ -143,7 +145,7 @@ class EnterRoomSuccess(LobbyPacket):
         self.piece = piece
 
     def deserialize(self, obj: object):
-        self.piece = obj['piece']
+        self.piece = obj['piece'] if 'piece' in obj else 0
 
 
 class LeaveRoom(LobbyPacket):
@@ -156,8 +158,9 @@ class LeaveRoom(LobbyPacket):
         self.game_token = game_token
 
     def deserialize(self, obj: object):
-        self.player_token = obj['player_token']
-        self.game_token = obj['game_token']
+        self.player_token = obj['player_token'] if 'player_token' in \
+                                                   obj else ""
+        self.game_token = obj['game_token'] if 'game_token' in obj else ""
 
 
 class LeaveRoomSuccess(LobbyPacket):
@@ -214,8 +217,8 @@ class StatusRoom(LobbyPacket):
         self.starting_balance = starting_balance
 
     def deserialize(self, obj: object):
-        self.game_token = obj['game_token']
-        self.name = obj['name']
+        self.game_token = obj['game_token'] if 'game_token' in obj else ""
+        self.name = obj['name'] i
         self.nb_players = obj['nb_players']
         self.max_nb_players = obj['max_nb_players']
         self.players = obj['players']
