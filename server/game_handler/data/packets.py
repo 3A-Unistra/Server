@@ -8,7 +8,7 @@ from .exceptions import PacketException
 class Packet:
 
     def __init__(self, name: str):
-        self.game_name = name
+        self.name = name
 
     def serialize(self) -> str:
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True)
