@@ -134,7 +134,7 @@ class ExceptionPacket(Packet):
         self.code = code
 
     def deserialize(self, obj: object):
-        self.code = int(obj["code"])
+        self.code = int(obj["code"]) if 'code' in obj else 0
 
 
 class EnterRoomSuccess(LobbyPacket):
@@ -185,7 +185,7 @@ class UpdateReason(Enum):
 
 class StatusRoom(LobbyPacket):
     game_token: str
-    name: str
+    game_name: str
     nb_players: int
     max_nb_players: int
     players: List[str]  # list of players
@@ -196,7 +196,7 @@ class StatusRoom(LobbyPacket):
     option_first_round_buy: bool
     starting_balance: int
 
-    def __init__(self, game_token: str = "", name: str = "",
+    def __init__(self, game_token: str = "", game_name: str = "",
                  nb_players: int = 0, max_nb_players: int = 0,
                  players: List[str] = None, option_auction: bool = False,
                  option_double_on_start: bool = False,
@@ -205,7 +205,7 @@ class StatusRoom(LobbyPacket):
                  starting_balance: int = 0):
         super().__init__("StatusRoom")
         self.game_token = game_token
-        self.name = name
+        self.game_name = game_name
         self.nb_players = nb_players
         self.max_nb_players = max_nb_players
         self.players = players
@@ -218,7 +218,7 @@ class StatusRoom(LobbyPacket):
 
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
-        self.name = obj['name'] if 'name' in obj else ""
+        self.game_name = obj['game_name'] if 'game_name' in obj else ""
         self.nb_players = int(obj['nb_players']) if 'nb_players' in obj else 0
         self.max_nb_players = int(obj['max_nb_players']) if 'max_nb_players' \
                                                             in obj else 0
@@ -239,18 +239,18 @@ class StatusRoom(LobbyPacket):
 
 class BroadcastNewRoomToLobby(LobbyPacket):
     game_token: str
-    name: str
+    game_name: str
     nb_players: int
     max_nb_players: int
     is_private: bool
     has_password: bool
 
-    def __init__(self, game_token: str = "", name: str = "",
+    def __init__(self, game_token: str = "", game_name: str = "",
                  nb_players: int = 0, max_nb_players: int = 0,
                  is_private: bool = False, has_password: bool = False):
         super().__init__("BroadcastNewRoomToLobby")
         self.game_token = game_token
-        self.name = name
+        self.game_name = game_name
         self.nb_players = nb_players
         self.max_nb_players = max_nb_players
         self.is_private = is_private
@@ -258,7 +258,7 @@ class BroadcastNewRoomToLobby(LobbyPacket):
 
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
-        self.name = obj['name'] if 'name' in obj else ""
+        self.game_name = obj['game_name'] if 'game_name' in obj else ""
         self.nb_players = int(obj['nb_players']) if 'nb_players' in obj else 0
         self.max_nb_players = int(obj['max_nb_players']) if 'max_nb_players' \
                                                             in obj else 0

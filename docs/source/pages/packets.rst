@@ -79,7 +79,7 @@ Paquet envoyé *par le client* lorsqu'il veut créer une partie
  * id du player créant la partie (*player_token*)
  * nombre de joueurs (*max_nb_players*)
  * mot de passe (peut être un champ vide) (*password*)
- * nom de la partie (*name*)
+ * nom de la partie (*game_name*)
  * partie privé ou public (*is_private*)
  * montant de base pour chaque joueur (*starting_balance*)
  * activer/désactiver enchère (*option_auctions*)
@@ -134,7 +134,7 @@ Ce paquet est envoyé aux clients lorsque une nouvelle salle d'attente est cré�
 
 **contenu du paquet :**
  * id de la salle (*game_token*)
- * nom de la salle (*name*)
+ * nom de la salle (*game_name*)
  * nombre de joueurs (*nb_players*)
  * nombre de joueurs max (*max_nb_players*)
  * privé ou non (*is_private*)
@@ -148,7 +148,7 @@ Ce paquet est envoyé lorsqu'un joueur rejoint une salle. Ce paquet comporte tou
 
 **contenu du paquet :**
  * id du lobby (*game_token*)
- * nom de la partie (*name*)
+ * nom de la partie (*game_name*)
  * le nombre de joueur (*nb_players*)
  * le nombre de joueurs max (*max_nb_players*)
  * la liste des joueurs (*players*)
