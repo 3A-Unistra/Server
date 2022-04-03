@@ -909,6 +909,9 @@ class Game(Thread):
                     exchange.selected_player is None:
                 return
 
+            owner = exchange.selected_player if \
+                packet.update_affects_recipient else exchange.player
+
             # Check type of exchange
             if packet.exchange_type is ExchangeTradeSelectType.PROPERTY:
 
@@ -923,44 +926,108 @@ class Game(Thread):
                     if selected_square.nb_house > 0:
                         return
 
-                if packet.update_affects_recipient:
-                    pass
-                else:
-                    pass
+                if selected_square.owner != owner:
+                    return
 
-                exchange.selected_square = selected_square
+                exchange.add_or_remove_square(
+                    square=selected_square,
+                    recipient=packet.update_affects_recipient
+                )
 
                 self.broadcast_packet(ActionExchangeTradeSelect(
-                    player_token=player.get_id(),
+                    player_token=owner.get_id(),
                     value=selected_square.id_,
-                    exchange_type=ExchangeTradeSelectType.PROPERTY
+                    exchange_type=ExchangeTradeSelectType.PROPERTY,
+                    update_affects_recipient=packet.update_affects_recipient
                 ))
 
             elif packet.exchange_type is ExchangeTradeSelectType.MONEY:
-                pass
+
+                if not owner.has_enough_money(packet.value):
+                    return
+
+                if packet.update_affects_recipient:
+                    exchange.selected_player_money = packet.value
+                else:
+                    exchange.player_money = packet.value
+
+                self.broadcast_packet(ActionExchangeTradeSelect(
+                    player_token=owner.get_id(),
+                    value=packet.value,
+                    exchange_type=ExchangeTradeSelectType.MONEY,
+                    update_affects_recipient=packet.update_affects_recipient
+                ))
+
             elif packet.exchange_type is ExchangeTradeSelectType. \
                     LEAVE_JAIL_CHANCE_CARD:
-                pass
+
+                if not owner.jail_cards['chance']:
+                    return
+
+                card = self.board.chance_deck[
+                    self.board.chance_card_indexes['leave_jail']]
+
+                exchange.add_or_remove_card(
+                    card=card,
+                    recipient=packet.update_affects_recipient
+                )
+
+                self.broadcast_packet(ActionExchangeTradeSelect(
+                    player_token=owner.get_id(),
+                    value=card.id_,
+                    exchange_type=
+                    ExchangeTradeSelectType.LEAVE_JAIL_CHANCE_CARD,
+                    update_affects_recipient=packet.update_affects_recipient
+                ))
+
             elif packet.exchange_type is ExchangeTradeSelectType. \
                     LEAVE_JAIL_COMMUNITY_CARD:
-                pass
+
+                if not owner.jail_cards['community']:
+                    return
+
+                card = self.board.community_deck[
+                    self.board.community_card_indexes['leave_jail']]
+
+                exchange.add_or_remove_card(
+                    card=card,
+                    recipient=packet.update_affects_recipient
+                )
+
+                self.broadcast_packet(ActionExchangeTradeSelect(
+                    player_token=owner.get_id(),
+                    value=card.id_,
+                    exchange_type=
+                    ExchangeTradeSelectType.LEAVE_JAIL_COMMUNITY_CARD,
+                    update_affects_recipient=packet.update_affects_recipient
+                ))
 
             return
 
         if isinstance(packet, ActionExchangeSend):
-            # Start exchange
-            if exchange is None or exchange.sent:
+
+            if exchange is None or exchange.selected_player is None \
+                    or not exchange.can_send():
                 return
 
-            # Check if player is the current player
-            if self.board.get_current_player() != player:
-                return
+            if exchange is ExchangeState.WAITING_SELECT:
 
-            if exchange.selected_player is None or \
-                    exchange.selected_square is None:
-                return
+                # Check if player is the current player
+                if exchange.player != player:
+                    return
 
-            exchange.sent = True
+                exchange.state = ExchangeState.WAITING_RESPONSE
+
+            elif exchange is ExchangeState.WAITING_COUNTER_SELECT:
+
+                # Check if player is the current player
+                if exchange.selected_player != player:
+                    return
+
+                exchange.state = ExchangeState.WAITING_COUNTER_RESPONSE
+
+            else:
+                return
 
             self.broadcast_packet(ActionExchangeSend(
                 player_token=player.get_id(),

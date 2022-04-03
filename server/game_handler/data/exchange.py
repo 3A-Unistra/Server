@@ -71,5 +71,34 @@ class Exchange:
         self.selected_player_cards = []
         self.selected_player_squares = []
 
-    def can_accept(self) -> bool:
+    def can_send(self) -> bool:
         return self.player_has_changes() or self.selected_player_has_changes()
+
+    def add_or_remove_card(self, card: Card, recipient: bool = False):
+
+        if recipient:
+            if card in self.selected_player_cards:
+                self.selected_player_cards.remove(card)
+            else:
+                self.selected_player_cards.append(card)
+            return
+
+        if card in self.player_cards:
+            self.player_cards.remove(card)
+        else:
+            self.player_cards.append(card)
+
+    def add_or_remove_square(self, square: OwnableSquare,
+                             recipient: bool = False):
+
+        if recipient:
+            if square in self.selected_player_squares:
+                self.selected_player_squares.remove(square)
+            else:
+                self.selected_player_squares.append(square)
+            return
+
+        if square in self.player_squares:
+            self.player_squares.remove(square)
+        else:
+            self.player_squares.append(square)
