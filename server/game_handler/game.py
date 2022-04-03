@@ -1020,7 +1020,7 @@ class Game(Thread):
 
             elif exchange is ExchangeState.WAITING_COUNTER_SELECT:
 
-                # Check if player is the current player
+                # Check if player is the selected_player
                 if exchange.selected_player != player:
                     return
 
@@ -1034,7 +1034,32 @@ class Game(Thread):
             ))
 
         if isinstance(packet, ActionExchangeAccept):
-            pass
+
+            if exchange is None or exchange.selected_player is None:
+                return
+
+            if exchange is ExchangeState.WAITING_RESPONSE:
+
+                # Check if player is the selected player
+                if exchange.selected_player != player:
+                    return
+
+            elif exchange is ExchangeState.WAITING_COUNTER_SELECT:
+
+                # Check if player is the current player
+                if exchange.player != player:
+                    return
+
+            else:
+                return
+
+            exchange.state = ExchangeState.FINISHED
+            # TODO: process exchange
+            self.board.current_exchange = None
+
+            self.broadcast_packet(ActionExchangeSend(
+                player_token=player.get_id(),
+            ))
 
         if isinstance(packet, ActionExchangeDecline):
             pass
