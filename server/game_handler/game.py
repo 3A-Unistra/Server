@@ -972,11 +972,12 @@ class Game(Thread):
                     recipient=packet.update_affects_recipient
                 )
 
+                exc_type = ExchangeTradeSelectType.LEAVE_JAIL_CHANCE_CARD
+
                 self.broadcast_packet(ActionExchangeTradeSelect(
                     player_token=owner.get_id(),
                     value=card.id_,
-                    exchange_type=
-                    ExchangeTradeSelectType.LEAVE_JAIL_CHANCE_CARD,
+                    exchange_type=exc_type,
                     update_affects_recipient=packet.update_affects_recipient
                 ))
 
@@ -994,11 +995,12 @@ class Game(Thread):
                     recipient=packet.update_affects_recipient
                 )
 
+                exc_type = ExchangeTradeSelectType.LEAVE_JAIL_COMMUNITY_CARD
+
                 self.broadcast_packet(ActionExchangeTradeSelect(
                     player_token=owner.get_id(),
                     value=card.id_,
-                    exchange_type=
-                    ExchangeTradeSelectType.LEAVE_JAIL_COMMUNITY_CARD,
+                    exchange_type=exc_type,
                     update_affects_recipient=packet.update_affects_recipient
                 ))
 
