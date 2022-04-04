@@ -22,9 +22,6 @@ class ExchangeState(Enum):
     # Waiting response from player
     WAITING_COUNTER_RESPONSE = 4
 
-    # Finished
-    FINISHED = 5
-
 
 class Exchange:
     player: Player

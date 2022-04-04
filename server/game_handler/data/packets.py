@@ -635,25 +635,42 @@ class ActionExchangeSend(PlayerPacket):
                          player_token=player_token)
 
 
-class ActionExchangeDecline(Packet):
-    def __init__(self):
-        super().__init__(self.__class__.__name__)
+class ActionExchangeDecline(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
-class ActionExchangeCounter(Packet):
-    def __init__(self):
-        super().__init__(self.__class__.__name__)
+class ActionExchangeCounter(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
-class ActionExchangeCancel(Packet):
-    reason: str
+class ActionExchangeCancel(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
-    def __init__(self, reason: str = ""):
-        super().__init__(self.__class__.__name__)
-        self.reason = reason
 
-    def deserialize(self, obj: object):
-        self.reason = obj["reason"]
+class ExchangeTransferType(Enum):
+    PROPERTY = 0
+    CARD = 1
+
+
+class ActionExchangeTransfer(PlayerPacket):
+    player_to: str
+    value: int
+    transfer_type: ExchangeTransferType
+
+    def __init__(self, player_token: str = "", player_to: str = "",
+                 value: int = 0, transfer_type: ExchangeTransferType
+                 = ExchangeTransferType(0)):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.player_to = player_to
+        self.value = value
+        self.transfer_type = transfer_type
 
 
 class ActionAuctionProperty(Packet):

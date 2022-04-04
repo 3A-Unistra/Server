@@ -513,7 +513,19 @@ Ce paquet est envoyé à tout le monde. Il notifie à tout les clients que l'éc
 a qui l'échange était demandé ne sont pas suffisantes, soit par demande du joueur qui a initialisé l'échange.
 
 **contenu du paquet :**
- * raison de l'annulation (*reason*)
+ * Personne qui a annulé l'échange (*player_token*)
+
+Paquet ActionExchangeTransfer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ce paquet est envoyé à tout le monde. Il notifie à tout les clients qu'un transfert de carte ou de propriété a été effectué.
+Le joueur "player_token" donne une propriété au joueur "to".
+
+**contenu du paquet :**
+ * id joueur envoyeur (*player_token*)
+ * id joueur receveur (*player_to*)
+ * Type (PROPERTY = 0, CARD = 1) (*transfer_type*)
+ * valeur, donc id d'une propriété/carte (*value*)
 
 Paquet ActionAuctionProperty
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
