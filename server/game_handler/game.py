@@ -631,6 +631,11 @@ class Game(Thread):
         Proceed tour actions
         :param packet: Packet received
         """
+
+        # Cancel all actions if player is in exchange
+        if self.board.current_exchange is not None:
+            return
+
         if not isinstance(packet, PlayerPropertyPacket):
             return
 
