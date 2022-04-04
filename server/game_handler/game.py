@@ -421,11 +421,15 @@ class Game(Thread):
 
                 self.proceed_action_tour_end()
 
-            # Process tour actions packets
-            self.proceed_tour_actions(packet)
+            if self.board.current_exchange is not None:
+                # Process exchange packets
+                self.proceed_exchange(packet)
+            elif self.board.current_auction is not None:
+                self.proceed_auction(packet)
+            else:
+                # Process tour actions packets
+                self.proceed_tour_actions(packet)
 
-            # Process exchange packets
-            self.proceed_exchange(packet)
             return
 
     def process_logic(self):
@@ -632,10 +636,6 @@ class Game(Thread):
         :param packet: Packet received
         """
 
-        # Cancel all actions if player is in exchange
-        if self.board.current_exchange is not None:
-            return
-
         if not isinstance(packet, PlayerPropertyPacket):
             return
 
@@ -841,6 +841,9 @@ class Game(Thread):
                 amount=square.house_price,
                 reason="action_sell_house"
             )
+
+    def proceed_auction(self, packet: PlayerPacket):
+        pass
 
     def proceed_exchange(self, packet: PlayerPacket):
         exchange: Optional[Exchange] = self.board.current_exchange

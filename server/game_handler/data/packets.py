@@ -673,22 +673,18 @@ class ActionExchangeTransfer(PlayerPacket):
         self.transfer_type = transfer_type
 
 
-class ActionAuctionProperty(Packet):
-    id_player: str
-    property: str
+class ActionAuctionProperty(PlayerPacket):
     min_price: int
 
-    def __init__(self, id_player: str = "",
-                 property: str = "", min_price: int = 0):
-        super(ActionAuctionProperty, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
+    def __init__(self, player_token: str = "", min_price: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+        self.id_player = player_token
         self.min_price = min_price
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
-        self.min_price = obj["min_price"]
+        super().deserialize(obj)
+        self.min_price = int(obj["min_price"])
 
 
 class AuctionRound(Packet):
