@@ -13,6 +13,7 @@ from channels.layers import get_channel_layer
 import pause
 
 from server.game_handler.data import Board, Player, Card
+from server.game_handler.data.auction import Auction
 from server.game_handler.data.cards import ChanceCard, CardActionType, \
     CommunityCard
 from server.game_handler.data.exchange import Exchange, ExchangeState
@@ -33,7 +34,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     ActionExchangeDecline, ActionExchangeCounter, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
-    ActionExchangeCancel
+    ActionExchangeCancel, ActionAuctionProperty, AuctionRound, AuctionBid, \
+    AuctionConcede
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -78,6 +80,9 @@ class GameState(Enum):
 
     # Time between ActionStart and ActionTimeout (actions)
     ACTION_TIMEOUT_WAIT = 9
+
+    # When an auction was started (switches from ACTION_TIMEOUT_WAIT)
+    ACTION_AUCTION = 10
 
 
 @dataclass
@@ -421,12 +426,14 @@ class Game(Thread):
 
                 self.proceed_action_tour_end()
 
-            if self.board.current_exchange is not None:
-                # Process exchange packets
+            if self.board.current_auction is None:
                 self.proceed_exchange(packet)
-            elif self.board.current_auction is not None:
+
+            if self.board.current_exchange is None:
                 self.proceed_auction(packet)
-            else:
+
+            if self.board.current_auction is None and self.board. \
+                    current_exchange is None:
                 # Process tour actions packets
                 self.proceed_tour_actions(packet)
 
@@ -453,7 +460,12 @@ class Game(Thread):
                 else:
                     self.start_game()
 
-        if self.timeout_expired():
+        if self.state is GameState.ACTION_AUCTION:
+            # board.current_auction could not be null
+            if self.board.current_auction.timeout_expired():
+                # Auction end!!!
+                pass
+        elif self.timeout_expired():
             if self.state is GameState.STARTING:
                 # x Seconds timeout before game start
                 self.start_begin_dice()
@@ -501,6 +513,12 @@ class Game(Thread):
 
     def timeout_expired(self) -> bool:
         return self.timeout < datetime.now()
+
+    def get_remaining_timeout_seconds(self) -> float:
+        """
+        :return: Get remaining time in seconds before timeout occurs
+        """
+        return (self.timeout - datetime.now()).total_seconds()
 
     def start_game(self):
         """
@@ -843,7 +861,47 @@ class Game(Thread):
             )
 
     def proceed_auction(self, packet: PlayerPacket):
-        pass
+        player = self.board.get_player(packet.player_token)
+        auction: Optional[Auction] = self.board.current_auction
+
+        if isinstance(packet, ActionAuctionProperty):
+
+            if auction is not None or packet.min_price < 0:
+                return
+
+            if player != self.board.get_current_player():
+                return
+
+            current_square = self.board.squares[player.position]
+
+            if not isinstance(current_square, OwnableSquare):
+                return
+
+            if current_square.owner is not None or current_square.mortgaged:
+                return
+
+            if not player.has_enough_money(packet.min_price):
+                return
+
+            auction = Auction(player, packet.min_price)
+            self.state = GameState.ACTION_AUCTION
+
+            # Get remaining timeout seconds to pause main timeout
+            auction.tour_remaining_seconds \
+                = self.get_remaining_timeout_seconds()
+            auction.set_timeout(seconds=self.CONFIG.get('AUCTION_TOUR_WAIT'))
+
+            # setup new auction
+            self.board.current_auction = auction
+
+            self.broadcast_packet(AuctionRound(
+                player_token=player.get_id(),
+                current_bet=auction.highest_bet
+            ))
+            return
+
+        if isinstance(packet, AuctionBid):
+            pass
 
     def proceed_exchange(self, packet: PlayerPacket):
         exchange: Optional[Exchange] = self.board.current_exchange

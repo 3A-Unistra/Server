@@ -543,9 +543,8 @@ Paquet AuctionRound
 Paquet envoyé à tout les clients pour leur indiquer qu'un tour d'enchères va débuter.
 
 **contenu du paquet :**
- * nature de la propriété mise en enchères (*property*)
- * id du joueur mettant la propriétés en enchères (*id_seller*)
- * prix actuel (*current_price*)
+ * id du joueur qui a l'enchère la plus haute (*player_token*)
+ * valeur de l'enchère la plus haute (*current_bet*)
 
 Paquet AuctionBid
 ^^^^^^^^^^^^^^^^^
@@ -554,17 +553,8 @@ Paquet envoyé *par un client* lorsque ce dernier enchérit durant une enchères
 qu'ils puissent suivre l'enchère en direct.
 
 **contenu du paquet :**
- * id du joueur (*id_bidder*)
- * prix proposé (*new_price*)
-
-Paquet AuctionConcede
-^^^^^^^^^^^^^^^^^^^^^
-
-Paquet envoyé *par un client* lorsque ce dernier ne souhaite pas participer à ce tour d'enchères. Ce paquet est relayé à tout
-le monde pour qu'ils puissent suivre l'enchères en direct.
-
-**contenu du paquet :**
- * id du joueur (*id_bidder*)
+ * id du joueur (*player_token*)
+ * enchère proposée (*bid*)
 
 Paquet AuctionEnd
 ^^^^^^^^^^^^^^^^^

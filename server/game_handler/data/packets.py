@@ -687,22 +687,17 @@ class ActionAuctionProperty(PlayerPacket):
         self.min_price = int(obj["min_price"])
 
 
-class AuctionRound(Packet):
-    property: str
-    id_seller: str
-    current_price: int
+class AuctionRound(PlayerPacket):
+    current_bet: int
 
-    def __init__(self, property: str = "", id_seller: str = "",
-                 curent_price: int = 0):
-        super(AuctionRound, self).__init__(self.__class__.__name__)
-        self.property = property
-        self.id_seller = id_seller
-        self.curent_price = curent_price
+    def __init__(self, player_token: str = "", current_bet: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+        self.current_price = current_bet
 
     def deserialize(self, obj: object):
-        self.property = obj["property"]
-        self.id_seller = obj["id_seller"]
-        self.curent_price = obj["curent_price"]
+        super().deserialize(obj)
+        self.current_bet = int(obj["current_bet"])
 
 
 class AuctionBid(Packet):
