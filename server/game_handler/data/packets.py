@@ -1,3 +1,4 @@
+import enum
 import json
 from enum import Enum
 from typing import Dict, List
@@ -591,18 +592,41 @@ class ActionExchangePlayerSelect(PlayerPacket):
         self.selected_player_token = obj["selected_token"]
 
 
-class ActionExchangeTradeSelect(PlayerPacket):
-    property_id: int
+class ExchangeTradeSelectType(Enum):
+    PROPERTY = 0
+    MONEY = 1
+    LEAVE_JAIL_COMMUNITY_CARD = 2
+    LEAVE_JAIL_CHANCE_CARD = 3
 
-    def __init__(self, player_token: str = "", property_id: int = 0):
+    @staticmethod
+    def has_value(value):
+        return value in set(item.value for item in ExchangeTradeSelectType)
+
+
+class ActionExchangeTradeSelect(PlayerPacket):
+    exchange_type: int
+    value: int
+    update_affects_recipient: bool
+
+    def __init__(self, player_token: str = "", value: int = 0,
+                 exchange_type: ExchangeTradeSelectType
+                 = ExchangeTradeSelectType(0),
+                 update_affects_recipient: bool = False):
         super().__init__(name=self.__class__.__name__,
                          player_token=player_token)
-        self.property_id = property_id
+        self.value = value
+        self.exchange_type = exchange_type.value
+        self.update_affects_recipient = update_affects_recipient
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.property_id = int(obj["property_id"]) if 'property_id' \
-                                                      in obj else 0
+        self.value = int(obj['value']) if 'value' in obj else 0
+
+        if not ExchangeTradeSelectType.has_value(self.value):
+            self.value = 0
+
+        self.exchange_type = int(
+            obj['exchange_type']) if 'exchange_type' in obj else 0
 
 
 class ActionExchangeSend(PlayerPacket):
@@ -611,92 +635,82 @@ class ActionExchangeSend(PlayerPacket):
                          player_token=player_token)
 
 
-class ActionExchangeDecline(Packet):
-    def __init__(self):
-        super().__init__(self.__class__.__name__)
+class ActionExchangeDecline(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
-class ActionExchangeCounter(Packet):
-    def __init__(self):
-        super().__init__(self.__class__.__name__)
+class ActionExchangeCounter(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
-class ActionExchangeCancel(Packet):
-    reason: str
-
-    def __init__(self, reason: str = ""):
-        super().__init__(self.__class__.__name__)
-        self.reason = reason
-
-    def deserialize(self, obj: object):
-        self.reason = obj["reason"]
+class ActionExchangeCancel(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
 
 
-class ActionAuctionProperty(Packet):
-    id_player: str
-    property: str
-    min_price: int
-
-    def __init__(self, id_player: str = "",
-                 property: str = "", min_price: int = 0):
-        super(ActionAuctionProperty, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-        self.min_price = min_price
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
-        self.min_price = obj["min_price"]
+class ExchangeTransferType(Enum):
+    PROPERTY = 0
+    CARD = 1
 
 
-class AuctionRound(Packet):
-    property: str
-    id_seller: str
-    current_price: int
+class ActionExchangeTransfer(PlayerPacket):
+    player_to: str
+    value: int
+    transfer_type: ExchangeTransferType
 
-    def __init__(self, property: str = "", id_seller: str = "",
-                 curent_price: int = 0):
-        super(AuctionRound, self).__init__(self.__class__.__name__)
-        self.property = property
-        self.id_seller = id_seller
-        self.curent_price = curent_price
+    def __init__(self, player_token: str = "", player_to: str = "",
+                 value: int = 0, transfer_type: ExchangeTransferType
+                 = ExchangeTransferType(0)):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.player_to = player_to
+        self.value = value
+        self.transfer_type = transfer_type
+
+
+class ActionAuctionProperty(PlayerPacket):
+    min_bid: int
+
+    def __init__(self, player_token: str = "", min_bid: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+        self.id_player = player_token
+        self.min_bid = min_bid
 
     def deserialize(self, obj: object):
-        self.property = obj["property"]
-        self.id_seller = obj["id_seller"]
-        self.curent_price = obj["curent_price"]
+        super().deserialize(obj)
+        self.min_bid = int(obj["min_bid"])
 
 
-class AuctionBid(Packet):
-    property: str
-    id_bidder: str
-    new_price: int
+class AuctionBid(PlayerPacket):
+    bid: int
 
-    def __init__(self, id_bidder: str = "", new_price: int = 0):
-        super(AuctionBid, self).__init__(self.__class__.__name__)
-        self.id_bidder = id_bidder
-        self.new_price = new_price
+    def __init__(self, player_token: str = "", bid: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+        self.bid = bid
 
     def deserialize(self, obj: object):
-        self.id_bidder = obj["id_bidder"]
-        self.new_price = obj["new_price"]
+        super().deserialize(obj)
+        self.bid = int(obj["bid"])
 
 
-class AuctionConcede(Packet):
-    id_player: str
+class AuctionEnd(PlayerPacket):
+    highest_bid: int
+    # Remaining time in seconds (action timeout)
+    remaining_time: int
 
-    def __init__(self, id_player: str = ""):
-        super(AuctionConcede, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-
-
-class AuctionEnd(Packet):
-    def __init__(self):
-        super().__init__(self.__class__.__name__)
+    def __init__(self, player_token: str = "", highest_bid: int = 0,
+                 remaining_time: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+        self.highest_bid = highest_bid
+        self.remaining_time = remaining_time
 
 
 class ActionBuyProperty(PlayerPropertyPacket):
@@ -927,9 +941,7 @@ class PacketUtils:
         "ActionExchangeCounter": ActionExchangeCounter,
         "ActionExchangeCancel": ActionExchangeCancel,
         "ActionAuctionProperty": ActionAuctionProperty,
-        "AuctionRound": AuctionRound,
         "AuctionBid": AuctionBid,
-        "AuctionConcede": AuctionConcede,
         "AuctionEnd": AuctionEnd,
         "ActionBuyProperty": ActionBuyProperty,
         "ActionBuyPropertySucceed": ActionBuyPropertySucceed,

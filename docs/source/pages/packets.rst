@@ -102,6 +102,7 @@ Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby 
 
 .. code-block:: python
     :caption: Enum UpdateReason
+
     {
     class UpdateReason(Enum):
         NEW_CONNECTION = 0
@@ -113,6 +114,7 @@ Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby 
         LAUNCHING_GAME = 6
         NEW_BOT = 7
     }
+
 :
 
 BroadcastUpdateRoom
@@ -127,6 +129,7 @@ Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladi
 
 .. code-block:: python
     :caption: Enum UpdateReason
+
     {
     class UpdateReason(Enum):
         NEW_CONNECTION = 0
@@ -138,6 +141,7 @@ Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladi
         LAUNCHING_GAME = 6
         NEW_BOT = 7
     }
+
 :
 
 BroadcastNewRoomToLobby
@@ -509,7 +513,19 @@ Ce paquet est envoyé à tout le monde. Il notifie à tout les clients que l'éc
 a qui l'échange était demandé ne sont pas suffisantes, soit par demande du joueur qui a initialisé l'échange.
 
 **contenu du paquet :**
- * raison de l'annulation (*reason*)
+ * Personne qui a annulé l'échange (*player_token*)
+
+Paquet ActionExchangeTransfer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Ce paquet est envoyé à tout le monde. Il notifie à tout les clients qu'un transfert de carte ou de propriété a été effectué.
+Le joueur "player_token" donne une propriété au joueur "to".
+
+**contenu du paquet :**
+ * id joueur envoyeur (*player_token*)
+ * id joueur receveur (*player_to*)
+ * Type (PROPERTY = 0, CARD = 1) (*transfer_type*)
+ * valeur, donc id d'une propriété/carte (*value*)
 
 Paquet ActionAuctionProperty
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -519,17 +535,7 @@ Paquet envoyé *par le client* lorsqu'un joueur souhaite vendre une propriété 
 **contenu du paquet :**
  * id du joueur (*id_player*)
  * nature de la propriétés (*property*)
- * prix de base (*min_price*)
-
-Paquet AuctionRound
-^^^^^^^^^^^^^^^^^^^
-
-Paquet envoyé à tout les clients pour leur indiquer qu'un tour d'enchères va débuter.
-
-**contenu du paquet :**
- * nature de la propriété mise en enchères (*property*)
- * id du joueur mettant la propriétés en enchères (*id_seller*)
- * prix actuel (*current_price*)
+ * enchère de base (*min_bid*)
 
 Paquet AuctionBid
 ^^^^^^^^^^^^^^^^^
@@ -538,25 +544,18 @@ Paquet envoyé *par un client* lorsque ce dernier enchérit durant une enchères
 qu'ils puissent suivre l'enchère en direct.
 
 **contenu du paquet :**
- * id du joueur (*id_bidder*)
- * prix proposé (*new_price*)
-
-Paquet AuctionConcede
-^^^^^^^^^^^^^^^^^^^^^
-
-Paquet envoyé *par un client* lorsque ce dernier ne souhaite pas participer à ce tour d'enchères. Ce paquet est relayé à tout
-le monde pour qu'ils puissent suivre l'enchères en direct.
-
-**contenu du paquet :**
- * id du joueur (*id_bidder*)
+ * id du joueur (*player_token*)
+ * enchère proposée (*bid*)
 
 Paquet AuctionEnd
 ^^^^^^^^^^^^^^^^^
 
 Paquet envoyé à tout le monde si personne n'enchérit pendant un tour d'enchères. Il signifie la fin des enchères.
 
-*Ce paquet ne contient pas d'informations*
-
+**contenu du paquet :**
+ * id du gagnant (*player_token*)
+ * montant que le joueur a enchérit (*bid*)
+ * temps restant pour le round action (*remaining_time*)
 
 Paquet ActionBuyProperty
 ^^^^^^^^^^^^^^^^^^^^^^^^

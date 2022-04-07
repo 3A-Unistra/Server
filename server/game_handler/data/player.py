@@ -55,7 +55,7 @@ class Player:
         'community': False
     }
     in_jail: bool = False
-    bankrupt: bool = False
+    bankrupt: bool = False  # True when player defeated
     bot: bool = True
     current_dices: Tuple[int, int]
 

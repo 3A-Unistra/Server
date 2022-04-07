@@ -13,6 +13,7 @@ from channels.layers import get_channel_layer
 import pause
 
 from server.game_handler.data import Board, Player, Card
+from server.game_handler.data.auction import Auction
 from server.game_handler.data.cards import ChanceCard, CardActionType, \
     CommunityCard
 from server.game_handler.data.exchange import Exchange, ExchangeState
@@ -31,7 +32,9 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     ActionSellHouseSucceed, ActionExchange, ActionExchangePlayerSelect, \
     ActionExchangeTradeSelect, ActionExchangeSend, ActionExchangeAccept, \
     ActionExchangeDecline, ActionExchangeCounter, \
-    AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom
+    AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
+    ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
+    ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -76,6 +79,9 @@ class GameState(Enum):
 
     # Time between ActionStart and ActionTimeout (actions)
     ACTION_TIMEOUT_WAIT = 9
+
+    # When an auction was started (switches from ACTION_TIMEOUT_WAIT)
+    ACTION_AUCTION = 10
 
 
 @dataclass
@@ -377,6 +383,7 @@ class Game(Thread):
             player = self.board.get_player(packet.player_token)
 
             # Ignore packets sent by players other than current_player
+            # (Cannot be a bankrupted player)
             if self.board.get_current_player() != player:
                 return
 
@@ -419,11 +426,17 @@ class Game(Thread):
 
                 self.proceed_action_tour_end()
 
-            # Process tour actions packets
-            self.proceed_tour_actions(packet)
+            if self.board.current_auction is None:
+                self.proceed_exchange(packet)
 
-            # Process exchange packets
-            self.proceed_exchange(packet)
+            if self.board.current_exchange is None:
+                self.proceed_auction(packet)
+
+            if self.board.current_auction is None and self.board. \
+                    current_exchange is None:
+                # Process tour actions packets
+                self.proceed_tour_actions(packet)
+
             return
 
     def process_logic(self):
@@ -447,7 +460,11 @@ class Game(Thread):
                 else:
                     self.start_game()
 
-        if self.timeout_expired():
+        if self.state is GameState.ACTION_AUCTION:
+            # board.current_auction could not be null
+            if self.board.current_auction.timeout_expired():
+                self.proceed_auction_end()
+        elif self.timeout_expired():
             if self.state is GameState.STARTING:
                 # x Seconds timeout before game start
                 self.start_begin_dice()
@@ -495,6 +512,12 @@ class Game(Thread):
 
     def timeout_expired(self) -> bool:
         return self.timeout < datetime.now()
+
+    def get_remaining_timeout_seconds(self) -> float:
+        """
+        :return: Get remaining time in seconds before timeout occurs
+        """
+        return (self.timeout - datetime.now()).total_seconds()
 
     def start_game(self):
         """
@@ -610,6 +633,9 @@ class Game(Thread):
         # TODO : process loose
         self.broadcast_packet(ActionTimeout())
 
+        # set exchange to None
+        self.board.current_exchange = None
+
         # Check if player is bankrupt
         self.check_current_player_bankrupt()
 
@@ -626,6 +652,7 @@ class Game(Thread):
         Proceed tour actions
         :param packet: Packet received
         """
+
         if not isinstance(packet, PlayerPropertyPacket):
             return
 
@@ -634,6 +661,10 @@ class Game(Thread):
 
         # Check if player is current player, else ignore
         if player != self.board.get_current_player():
+            return
+
+        # Its impossible to be bankrupted and be the current_player...
+        if player.bankrupt:
             return
 
         square = self.board.get_property(packet.property_id)
@@ -832,9 +863,110 @@ class Game(Thread):
                 reason="action_sell_house"
             )
 
+    def proceed_auction(self, packet: PlayerPacket):
+        player = self.board.get_player(packet.player_token)
+        auction: Optional[Auction] = self.board.current_auction
+
+        if player.bankrupt:
+            return
+
+        if isinstance(packet, ActionAuctionProperty):
+
+            if auction is not None or packet.min_bid < 0:
+                return
+
+            if player != self.board.get_current_player():
+                return
+
+            current_square = self.board.squares[player.position]
+
+            if not isinstance(current_square, OwnableSquare):
+                return
+
+            if current_square.owner is not None or current_square.mortgaged:
+                return
+
+            if not player.has_enough_money(packet.min_bid):
+                return
+
+            auction_tour_wait = self.CONFIG.get('AUCTION_TOUR_WAIT')
+
+            auction = Auction(player=player,
+                              tour_duration=auction_tour_wait,
+                              highest_bet=packet.min_bid)
+
+            self.state = GameState.ACTION_AUCTION
+
+            # Get remaining timeout seconds to pause main timeout
+            auction.tour_remaining_seconds \
+                = self.get_remaining_timeout_seconds()
+            auction.set_timeout(seconds=auction_tour_wait)
+
+            # setup new auction
+            self.board.current_auction = auction
+
+            self.broadcast_packet(ActionAuctionProperty(
+                player_token=player.get_id(),
+                min_bid=auction.highest_bid
+            ))
+            return
+
+        if auction is None or self.state is not GameState.ACTION_AUCTION:
+            return
+
+        if isinstance(packet, AuctionBid):
+
+            # Bid should be greater than the highest bid to be accepted
+            if not auction.bid(player=player, bid=packet.bid):
+                return
+
+            self.broadcast_packet(AuctionBid(
+                player_token=player.get_id(),
+                bid=packet.bid
+            ))
+
+    def proceed_auction_end(self):
+        """
+        After AUCTION_TIMEOUT has expired
+        """
+
+        auction: Optional[Auction] = self.board.current_auction
+
+        if auction is None:
+            return
+
+        highest_bid = auction.highest_bid
+
+        if highest_bid > 0:
+
+            if not auction.highest_bidder.has_enough_money(highest_bid):
+                highest_bid = -1
+            else:
+                auction.square.owner = auction.highest_bidder
+                self.player_balance_update(
+                    player=auction.highest_bidder,
+                    new_balance=auction.highest_bidder.money - highest_bid,
+                    reason="auction_pay"
+                )
+
+        self.broadcast_packet(AuctionEnd(
+            player_token=auction.highest_bidder.get_id(),
+            highest_bid=highest_bid,
+            remaining_time=auction.tour_action_remaining_seconds
+        ))
+
+        # Recover old timeout
+        self.set_timeout(seconds=auction.tour_action_remaining_seconds)
+        self.state = GameState.ACTION_TIMEOUT_WAIT
+
+        self.board.current_auction = None
+
     def proceed_exchange(self, packet: PlayerPacket):
         exchange: Optional[Exchange] = self.board.current_exchange
         player = self.board.get_player(packet.player_token)
+
+        if player.bankrupt:
+            return
 
         if isinstance(packet, ActionExchange):
             # Start an exchange with someone
@@ -856,6 +988,38 @@ class Game(Thread):
         if exchange is None:
             return
 
+        if isinstance(packet, ActionExchangeCancel):
+            if exchange is ExchangeState.STARTED:
+                if exchange.player != player:
+                    return
+            elif exchange is ExchangeState.WAITING_SELECT:
+                # Both can cancel
+                if exchange.selected_player != player and \
+                        exchange.player != player:
+                    return
+            elif exchange is ExchangeState.WAITING_RESPONSE:
+                # Only player can cancel, selected_player can decline
+                if exchange.player != player:
+                    return
+            elif exchange is ExchangeState.WAITING_COUNTER_SELECT:
+                # Both can cancel
+                if exchange.selected_player != player and \
+                        exchange.player != player:
+                    return
+            elif exchange is ExchangeState.WAITING_COUNTER_RESPONSE:
+                # Only selected_player can cancel, player can decline
+                if exchange.selected_player != player:
+                    return
+            else:
+                return
+
+            self.board.current_exchange = None
+
+            self.broadcast_packet(ActionExchangeCancel(
+                player_token=player.get_id()
+            ))
+            return
+
         if isinstance(packet, ActionExchangePlayerSelect):
             # Select a player for current_exchange
             if exchange.state is not ExchangeState.STARTED:
@@ -863,6 +1027,10 @@ class Game(Thread):
 
             # Check if player is the current player
             if self.board.get_current_player() != player:
+                return
+
+            # Not working with bankrupted players
+            if player.bankrupt:
                 return
 
             selected = self.board.get_player(packet.selected_player_token)
@@ -884,64 +1052,203 @@ class Game(Thread):
             # Player is selecting a property
             if exchange.state is ExchangeState.STARTED or \
                     exchange.state is ExchangeState.WAITING_SELECT:
-                pass
-                # selecter = exchange.player
+
+                # Check if player is the current player
+                if self.board.get_current_player() != player:
+                    return
+
             # Selected_player is selecting a property
             elif exchange.state is ExchangeState.WAITING_COUNTER_SELECT:
-                pass
+
+                # Check if player is the selected player
+                if exchange.selected_player != player:
+                    return
+
             else:
                 return
 
-            # Check if player is the current player
-            if self.board.get_current_player() != player:
+            # If no player was selected, cant select
+            if packet.update_affects_recipient and \
+                    exchange.selected_player is None:
                 return
 
-            # Verify property_id
-            selected_square = self.board.get_property(packet.property_id)
+            owner = exchange.selected_player if \
+                packet.update_affects_recipient else exchange.player
 
-            # Cannot exchange mortgaged squares
-            if selected_square is None or selected_square.mortgaged:
-                return
+            # Check type of exchange
+            if packet.exchange_type is ExchangeTradeSelectType.PROPERTY:
 
-            if isinstance(selected_square, PropertySquare):
-                if selected_square.nb_house > 0:
+                # Verify property_id
+                selected_square = self.board.get_property(packet.value)
+
+                # Cannot exchange mortgaged squares
+                if selected_square is None or selected_square.mortgaged:
                     return
 
-            exchange.selected_square = selected_square
+                if isinstance(selected_square, PropertySquare):
+                    if selected_square.nb_house > 0:
+                        return
 
-            self.broadcast_packet(ActionExchangeTradeSelect(
-                player_token=player.get_id(),
-                property_id=selected_square.id_
-            ))
+                if selected_square.owner != owner:
+                    return
+
+                exchange.add_or_remove_square(
+                    square=selected_square,
+                    recipient=packet.update_affects_recipient
+                )
+
+                self.broadcast_packet(ActionExchangeTradeSelect(
+                    player_token=owner.get_id(),
+                    value=selected_square.id_,
+                    exchange_type=ExchangeTradeSelectType.PROPERTY,
+                    update_affects_recipient=packet.update_affects_recipient
+                ))
+
+            elif packet.exchange_type is ExchangeTradeSelectType.MONEY:
+
+                if not owner.has_enough_money(packet.value):
+                    return
+
+                if packet.update_affects_recipient:
+                    exchange.selected_player_money = packet.value
+                else:
+                    exchange.player_money = packet.value
+
+                self.broadcast_packet(ActionExchangeTradeSelect(
+                    player_token=owner.get_id(),
+                    value=packet.value,
+                    exchange_type=ExchangeTradeSelectType.MONEY,
+                    update_affects_recipient=packet.update_affects_recipient
+                ))
+
+            elif packet.exchange_type is ExchangeTradeSelectType. \
+                    LEAVE_JAIL_CHANCE_CARD:
+
+                if not owner.jail_cards['chance']:
+                    return
+
+                card = self.board.chance_deck[
+                    self.board.chance_card_indexes['leave_jail']]
+
+                exchange.add_or_remove_card(
+                    card=card,
+                    recipient=packet.update_affects_recipient
+                )
+
+                exc_type = ExchangeTradeSelectType.LEAVE_JAIL_CHANCE_CARD
+
+                self.broadcast_packet(ActionExchangeTradeSelect(
+                    player_token=owner.get_id(),
+                    value=card.id_,
+                    exchange_type=exc_type,
+                    update_affects_recipient=packet.update_affects_recipient
+                ))
+
+            elif packet.exchange_type is ExchangeTradeSelectType. \
+                    LEAVE_JAIL_COMMUNITY_CARD:
+
+                if not owner.jail_cards['community']:
+                    return
+
+                card = self.board.community_deck[
+                    self.board.community_card_indexes['leave_jail']]
+
+                exchange.add_or_remove_card(
+                    card=card,
+                    recipient=packet.update_affects_recipient
+                )
+
+                exc_type = ExchangeTradeSelectType.LEAVE_JAIL_COMMUNITY_CARD
+
+                self.broadcast_packet(ActionExchangeTradeSelect(
+                    player_token=owner.get_id(),
+                    value=card.id_,
+                    exchange_type=exc_type,
+                    update_affects_recipient=packet.update_affects_recipient
+                ))
+
             return
 
         if isinstance(packet, ActionExchangeSend):
-            # Start exchange
-            if exchange is None or exchange.sent:
+
+            if exchange is None or exchange.selected_player is None \
+                    or not exchange.can_send():
                 return
 
-            # Check if player is the current player
-            if self.board.get_current_player() != player:
-                return
+            if exchange is ExchangeState.WAITING_SELECT:
 
-            if exchange.selected_player is None or \
-                    exchange.selected_square is None:
-                return
+                # Check if player is the current player
+                if exchange.player != player:
+                    return
 
-            exchange.sent = True
+                exchange.state = ExchangeState.WAITING_RESPONSE
+
+            elif exchange is ExchangeState.WAITING_COUNTER_SELECT:
+
+                # Check if player is the selected_player
+                if exchange.selected_player != player:
+                    return
+
+                exchange.state = ExchangeState.WAITING_COUNTER_RESPONSE
+
+            else:
+                return
 
             self.broadcast_packet(ActionExchangeSend(
                 player_token=player.get_id(),
             ))
 
+            return
+
+        # Next states are actions responses: accept, decline, counter
+
+        if exchange is None or exchange.selected_player is None:
+            return
+
+        if exchange is ExchangeState.WAITING_RESPONSE:
+
+            # Check if player is the selected player
+            if exchange.selected_player != player:
+                return
+
+        elif exchange is ExchangeState.WAITING_COUNTER_RESPONSE:
+
+            # Check if player is the current player
+            if exchange.player != player:
+                return
+
+        else:
+            return
+
         if isinstance(packet, ActionExchangeAccept):
-            pass
+            self.broadcast_packet(ActionExchangeAccept(
+                player_token=player.get_id(),
+            ))
+
+            self.process_exchange_transfers()
+
+            self.board.current_exchange = None
+            return
 
         if isinstance(packet, ActionExchangeDecline):
-            pass
+            self.broadcast_packet(ActionExchangeDecline(
+                player_token=player.get_id(),
+            ))
+
+            self.board.current_exchange = None
+            return
 
         if isinstance(packet, ActionExchangeCounter):
-            pass
+
+            if exchange.state is ExchangeState.WAITING_RESPONSE:
+                exchange.state = ExchangeState.WAITING_COUNTER_SELECT
+            elif exchange is ExchangeState.WAITING_COUNTER_RESPONSE:
+                exchange.state = ExchangeState.WAITING_SELECT
+
+            self.broadcast_packet(ActionExchangeCounter(
+                player_token=player.get_id(),
+            ))
+            return
 
     def check_current_player_bankrupt(self):
         """
@@ -1293,6 +1600,148 @@ class Game(Thread):
                                         receiver_reason="card_receive_all"
                                                         "_receive")
 
+    def process_exchange_transfers(self):
+        """
+        Process exchange transfers:
+        - money
+        - properties
+        - cards
+        TODO: Maybe split in more than 1 function
+        """
+        exchange = self.board.current_exchange
+
+        if exchange is None:
+            return
+
+        # exchange money
+        sender = None
+        receiver = None
+
+        if exchange.player_money > exchange.selected_player_money:
+            money = exchange.player_money - exchange.selected_player_money
+            sender = exchange.player
+            receiver = exchange.selected_player
+        elif exchange.player_money < exchange.selected_player_money:
+            money = exchange.selected_player_money - exchange.player_money
+            sender = exchange.selected_player
+            receiver = exchange.player
+        else:
+            # if money == 0, do nothing
+            money = 0
+
+        if money != 0 and sender.has_enough_money(money):
+            self.player_balance_pay(
+                player=sender,
+                receiver=receiver,
+                amount=money,
+                reason="exchange_money_pay",
+                receiver_reason="exchange_money_receive"
+            )
+
+        # player to player_selected
+        community_card = self.board.community_deck[
+            self.board.community_card_indexes['leave_jail']]
+        chance_card = self.board.chance_deck[
+            self.board.chance_card_indexes['leave_jail']]
+
+        for card in exchange.player_cards:
+            if card != community_card and card != chance_card:
+                continue
+            community = False
+            if isinstance(card, CommunityCard):
+                # Process community card
+                if not exchange.player.jail_cards['community']:
+                    continue
+
+                exchange.player.jail_cards['community'] = False
+                exchange.selected_player.jail_cards['community'] = True
+                community = True
+            elif isinstance(card, ChanceCard):
+                # Process chance card
+
+                if not exchange.player.jail_cards['chance']:
+                    continue
+
+                exchange.player.jail_cards['chance'] = False
+                exchange.selected_player.jail_cards['chance'] = True
+            else:  # Not possible lol
+                continue
+
+            self.broadcast_packet(ActionExchangeTransfer(
+                player_token=exchange.player.get_id(),
+                player_to=exchange.selected_player.get_id(),
+                transfer_type=ExchangeTransferType.CARD,
+                value=community_card.id_ if community else chance_card.id_
+            ))
+
+        for square in exchange.player_squares:
+            if square.mortgaged or square.owner != exchange.player:
+                continue
+
+            # redundant checks for security
+            if isinstance(square, PropertySquare):
+                if square.nb_house > 0:
+                    continue
+
+            square.owner = exchange.selected_player
+
+            self.broadcast_packet(ActionExchangeTransfer(
+                player_token=exchange.player.get_id(),
+                player_to=exchange.selected_player.get_id(),
+                transfer_type=ExchangeTransferType.PROPERTY,
+                value=square.id_
+            ))
+
+        # player_selected to player
+
+        for card in exchange.selected_player_cards:
+            if card != community_card and card != chance_card:
+                continue
+            community = False
+            if isinstance(card, CommunityCard):
+                # Process community card
+                if not exchange.selected_player.jail_cards['community']:
+                    continue
+
+                exchange.selected_player.jail_cards['community'] = False
+                exchange.player.jail_cards['community'] = True
+                community = True
+            elif isinstance(card, ChanceCard):
+                # Process chance card
+
+                if not exchange.selected_player.jail_cards['chance']:
+                    continue
+
+                exchange.selected_player.jail_cards['chance'] = False
+                exchange.player.jail_cards['chance'] = True
+            else:  # Not possible lol
+                continue
+
+            self.broadcast_packet(ActionExchangeTransfer(
+                player_token=exchange.selected_player.get_id(),
+                player_to=exchange.player.get_id(),
+                transfer_type=ExchangeTransferType.CARD,
+                value=community_card.id_ if community else chance_card.id_
+            ))
+
+        for square in exchange.selected_player_squares:
+            if square.mortgaged or square.owner != exchange.selected_player:
+                continue
+
+            # redundant checks for security
+            if isinstance(square, PropertySquare):
+                if square.nb_house > 0:
+                    continue
+
+            square.owner = exchange.player
+
+            self.broadcast_packet(ActionExchangeTransfer(
+                player_token=exchange.selected_player.get_id(),
+                player_to=exchange.player.get_id(),
+                transfer_type=ExchangeTransferType.PROPERTY,
+                value=square.id_
+            ))
+
     def player_balance_pay(self, player: Player, receiver: Optional[Player],
                            amount: int,
                            reason: str,
@@ -1488,6 +1937,7 @@ class Game(Thread):
         """
         sends packet to lobby group.
         lobby group : all players that are connected to a game in lobby mode
+        :param group_name: Name of the channels group
         :param packet: packet to be sent
         """
         async_to_sync(self.channel_layer.send)(

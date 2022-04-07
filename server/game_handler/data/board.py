@@ -4,6 +4,7 @@ from typing import List, Optional
 import names
 
 from . import Player, Bank
+from .auction import Auction
 from .cards import ChanceCard, CommunityCard, CardActionType, Card
 from django.conf import settings
 
@@ -30,6 +31,7 @@ class Board:
     remaining_round_players: int
     starting_balance: int
     current_exchange: Optional[Exchange]
+    current_auction: Optional[Auction]
 
     # Options
     option_go_case_double_money: bool
