@@ -34,8 +34,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     ActionExchangeDecline, ActionExchangeCounter, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
-    ActionExchangeCancel, ActionAuctionProperty, AuctionRound, AuctionBid, \
-    AuctionConcede
+    ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -384,6 +383,7 @@ class Game(Thread):
             player = self.board.get_player(packet.player_token)
 
             # Ignore packets sent by players other than current_player
+            # (Cannot be a bankrupted player)
             if self.board.get_current_player() != player:
                 return
 
@@ -463,8 +463,7 @@ class Game(Thread):
         if self.state is GameState.ACTION_AUCTION:
             # board.current_auction could not be null
             if self.board.current_auction.timeout_expired():
-                # Auction end!!!
-                pass
+                self.proceed_auction_end()
         elif self.timeout_expired():
             if self.state is GameState.STARTING:
                 # x Seconds timeout before game start
@@ -662,6 +661,10 @@ class Game(Thread):
 
         # Check if player is current player, else ignore
         if player != self.board.get_current_player():
+            return
+
+        # Its impossible to be bankrupted and be the current_player...
+        if player.bankrupt:
             return
 
         square = self.board.get_property(packet.property_id)
@@ -864,9 +867,12 @@ class Game(Thread):
         player = self.board.get_player(packet.player_token)
         auction: Optional[Auction] = self.board.current_auction
 
+        if player.bankrupt:
+            return
+
         if isinstance(packet, ActionAuctionProperty):
 
-            if auction is not None or packet.min_price < 0:
+            if auction is not None or packet.min_bid < 0:
                 return
 
             if player != self.board.get_current_player():
@@ -880,32 +886,87 @@ class Game(Thread):
             if current_square.owner is not None or current_square.mortgaged:
                 return
 
-            if not player.has_enough_money(packet.min_price):
+            if not player.has_enough_money(packet.min_bid):
                 return
 
-            auction = Auction(player, packet.min_price)
+            auction_tour_wait = self.CONFIG.get('AUCTION_TOUR_WAIT')
+
+            auction = Auction(player=player,
+                              tour_duration=auction_tour_wait,
+                              highest_bet=packet.min_bid)
+
             self.state = GameState.ACTION_AUCTION
 
             # Get remaining timeout seconds to pause main timeout
             auction.tour_remaining_seconds \
                 = self.get_remaining_timeout_seconds()
-            auction.set_timeout(seconds=self.CONFIG.get('AUCTION_TOUR_WAIT'))
+            auction.set_timeout(seconds=auction_tour_wait)
 
             # setup new auction
             self.board.current_auction = auction
 
-            self.broadcast_packet(AuctionRound(
+            self.broadcast_packet(ActionAuctionProperty(
                 player_token=player.get_id(),
-                current_bet=auction.highest_bet
+                min_bid=auction.highest_bid
             ))
             return
 
+        if auction is None or self.state is not GameState.ACTION_AUCTION:
+            return
+
         if isinstance(packet, AuctionBid):
-            pass
+
+            # Bid should be greater than the highest bid to be accepted
+            if not auction.bid(player=player, bid=packet.bid):
+                return
+
+            self.broadcast_packet(AuctionBid(
+                player_token=player.get_id(),
+                bid=packet.bid
+            ))
+
+    def proceed_auction_end(self):
+        """
+        After AUCTION_TIMEOUT has expired
+        """
+
+        auction: Optional[Auction] = self.board.current_auction
+
+        if auction is None:
+            return
+
+        highest_bid = auction.highest_bid
+
+        if highest_bid > 0:
+
+            if not auction.highest_bidder.has_enough_money(highest_bid):
+                highest_bid = -1
+            else:
+                auction.square.owner = auction.highest_bidder
+                self.player_balance_update(
+                    player=auction.highest_bidder,
+                    new_balance=auction.highest_bidder.money - highest_bid,
+                    reason="auction_pay"
+                )
+
+        self.broadcast_packet(AuctionEnd(
+            player_token=auction.highest_bidder.get_id(),
+            highest_bid=highest_bid,
+            remaining_time=auction.tour_action_remaining_seconds
+        ))
+
+        # Recover old timeout
+        self.set_timeout(seconds=auction.tour_action_remaining_seconds)
+        self.state = GameState.ACTION_TIMEOUT_WAIT
+
+        self.board.current_auction = None
 
     def proceed_exchange(self, packet: PlayerPacket):
         exchange: Optional[Exchange] = self.board.current_exchange
         player = self.board.get_player(packet.player_token)
+
+        if player.bankrupt:
+            return
 
         if isinstance(packet, ActionExchange):
             # Start an exchange with someone

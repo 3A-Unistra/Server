@@ -674,61 +674,43 @@ class ActionExchangeTransfer(PlayerPacket):
 
 
 class ActionAuctionProperty(PlayerPacket):
-    min_price: int
+    min_bid: int
 
-    def __init__(self, player_token: str = "", min_price: int = 0):
+    def __init__(self, player_token: str = "", min_bid: int = 0):
         super().__init__(self.__class__.__name__,
                          player_token=player_token)
         self.id_player = player_token
-        self.min_price = min_price
+        self.min_bid = min_bid
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.min_price = int(obj["min_price"])
+        self.min_bid = int(obj["min_bid"])
 
 
-class AuctionRound(PlayerPacket):
-    current_bet: int
+class AuctionBid(PlayerPacket):
+    bid: int
 
-    def __init__(self, player_token: str = "", current_bet: int = 0):
+    def __init__(self, player_token: str = "", bid: int = 0):
         super().__init__(self.__class__.__name__,
                          player_token=player_token)
-        self.current_price = current_bet
+        self.bid = bid
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.current_bet = int(obj["current_bet"])
+        self.bid = int(obj["bid"])
 
 
-class AuctionBid(Packet):
-    property: str
-    id_bidder: str
-    new_price: int
+class AuctionEnd(PlayerPacket):
+    highest_bid: int
+    # Remaining time in seconds (action timeout)
+    remaining_time: int
 
-    def __init__(self, id_bidder: str = "", new_price: int = 0):
-        super(AuctionBid, self).__init__(self.__class__.__name__)
-        self.id_bidder = id_bidder
-        self.new_price = new_price
-
-    def deserialize(self, obj: object):
-        self.id_bidder = obj["id_bidder"]
-        self.new_price = obj["new_price"]
-
-
-class AuctionConcede(Packet):
-    id_player: str
-
-    def __init__(self, id_player: str = ""):
-        super(AuctionConcede, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-
-
-class AuctionEnd(Packet):
-    def __init__(self):
-        super().__init__(self.__class__.__name__)
+    def __init__(self, player_token: str = "", highest_bid: int = 0,
+                 remaining_time: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+        self.highest_bid = highest_bid
+        self.remaining_time = remaining_time
 
 
 class ActionBuyProperty(PlayerPropertyPacket):
@@ -959,9 +941,7 @@ class PacketUtils:
         "ActionExchangeCounter": ActionExchangeCounter,
         "ActionExchangeCancel": ActionExchangeCancel,
         "ActionAuctionProperty": ActionAuctionProperty,
-        "AuctionRound": AuctionRound,
         "AuctionBid": AuctionBid,
-        "AuctionConcede": AuctionConcede,
         "AuctionEnd": AuctionEnd,
         "ActionBuyProperty": ActionBuyProperty,
         "ActionBuyPropertySucceed": ActionBuyPropertySucceed,

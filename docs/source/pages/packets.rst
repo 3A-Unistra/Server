@@ -535,16 +535,7 @@ Paquet envoyé *par le client* lorsqu'un joueur souhaite vendre une propriété 
 **contenu du paquet :**
  * id du joueur (*id_player*)
  * nature de la propriétés (*property*)
- * prix de base (*min_price*)
-
-Paquet AuctionRound
-^^^^^^^^^^^^^^^^^^^
-
-Paquet envoyé à tout les clients pour leur indiquer qu'un tour d'enchères va débuter.
-
-**contenu du paquet :**
- * id du joueur qui a l'enchère la plus haute (*player_token*)
- * valeur de l'enchère la plus haute (*current_bet*)
+ * enchère de base (*min_bid*)
 
 Paquet AuctionBid
 ^^^^^^^^^^^^^^^^^
@@ -561,8 +552,10 @@ Paquet AuctionEnd
 
 Paquet envoyé à tout le monde si personne n'enchérit pendant un tour d'enchères. Il signifie la fin des enchères.
 
-*Ce paquet ne contient pas d'informations*
-
+**contenu du paquet :**
+ * id du gagnant (*player_token*)
+ * montant que le joueur a enchérit (*bid*)
+ * temps restant pour le round action (*remaining_time*)
 
 Paquet ActionBuyProperty
 ^^^^^^^^^^^^^^^^^^^^^^^^
