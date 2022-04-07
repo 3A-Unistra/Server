@@ -42,8 +42,6 @@ pages:
     - branches
   except:
     - main
-  tags:
-    - gitlab-org
 
 pages:
   stage: deploy
@@ -57,6 +55,4 @@ pages:
       - public
   only:
     - main
-  tags:
-    - gitlab-org
 
