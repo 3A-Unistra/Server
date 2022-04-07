@@ -17,6 +17,16 @@ class User(models.Model):
         db_table = 'users'
 
 
+class UserPasswordResetToken(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, related_name='password_reset_tokens_user',
+                             on_delete=models.CASCADE)
+    date = models.DateTimeField(auto_now_add=True, blank=True)
+
+    class Meta:
+        db_table = 'user_password_reset_tokens'
+
+
 class UserFriend(models.Model):
     user = models.ForeignKey(User, related_name='friends_user',
                              on_delete=models.CASCADE)
