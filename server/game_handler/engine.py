@@ -3,6 +3,7 @@ import os
 from typing import List, Dict
 
 from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from server.game_handler.data import Player
 from server.game_handler.data.cards import ChanceCard, CommunityCard, CardUtils
@@ -17,6 +18,7 @@ from server.game_handler.data.packets import Packet, ExceptionPacket, \
 from django.conf import settings
 from server.game_handler.data.squares import Square, SquareUtils
 from server.game_handler.game import Game, GameState, QueuePacket
+from server.game_handler.models import User
 
 
 class Engine:
@@ -62,8 +64,8 @@ class Engine:
         """
         Checks if a player exists in any of the game instances
         """
-        for game in self.games.values():
-            if game.board.player_exists(player_token):
+        for game in self.games:
+            if self.games[game].board.player_exists(player_token):
                 return True
         return False
 
@@ -210,7 +212,7 @@ class Engine:
 
         if len(game.board.players) == 1:
             self.delete_room(DeleteRoom(player_token=packet.player_token,
-                             game_token=game_token))
+                                        game_token=game_token))
 
             async_to_sync(game.channel_layer.
                           group_add)("lobby", packet.player_token)
@@ -268,18 +270,21 @@ class Engine:
          sent by a host
         :param packet: MUST BE CREATEGAME INSTANCE otherwise useless
         """
+        print("[engine.create_game()] got in function")
         if not isinstance(packet, CreateGame):
             return
 
         # if player is already in another game
         if self.player_exists(packet.player_token):
+            print("[engine.create_game()] player in another game")
             return  # or maybe send error
 
         new_game = Game()
         if len(self.games) > getattr(settings, "MAX_NUMBER_OF_GAMES", 10):
+            print("[engine.create_game()] too many games")
             self.send_packet(game_uid=new_game.uid,
                              packet=ExceptionPacket(code=4206),
-                             channel_name=packet.player_token)
+                             channel_name=get_channel_layer())
             self.remove_game(new_game.uid)
             return
 
@@ -287,11 +292,16 @@ class Engine:
         id_new_game = new_game.uid
         self.add_game(new_game)
 
+        print("[engine.create_game()] created game instance")
+        print("[engine.create_game() game uid: " + new_game.uid)
+
         board = new_game.board
 
         # adding host to the game
-        board.add_player(Player(
-            channel_name=packet.player_token, bot=False))
+        player = Player(user=User(id=packet.player_token),
+                        channel_name=packet.player_token,
+                        bot=False)
+        board.add_player(player)
 
         new_game.host_player = packet.player_token
         board.players_nb = packet.max_nb_players
@@ -305,24 +315,36 @@ class Engine:
         board.set_option_start_balance(packet.starting_balance)
 
         # sending CreateGameSuccess to host
+        print()
         piece = board.assign_piece(packet.player_token)
-        self.send_packet(game_uid=id_new_game,
-                         packet=CreateGameSuccess(packet.player_token, piece),
-                         channel_name=packet.player_token)
-
+        new_game.send_packet_to_group(
+                         packet=CreateGameSuccess(player_token=packet.
+                                                  player_token,
+                                                  piece=piece),
+                         group_name="a")
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastNewRoomToLobby(
-                    game_token=new_game.uid,
-                    name=new_game.name,
-                    nb_players=len(board.players),
-                    max_nb_players=board.players_nb,
-                    is_private=board.option_is_private,
-                    has_password=(board.option_password != ""))
-        new_game.send_packet_to_group(update, "lobby")
+            game_token=new_game.uid,
+            game_name=new_game.name,
+            nb_players=len(board.players),
+            max_nb_players=board.players_nb,
+            is_private=board.option_is_private,
+            has_password=(board.option_password != ""))
+
         # adding host to the game group
-        async_to_sync(
-            new_game.channel_layer.group_discard)(new_game.uid,
-                                                  packet.player_token)
+        print(packet.player_token)
+        async_to_sync(new_game.channel_layer.group_discard)("lobby",
+                                                            packet.
+                                                            player_token)
+
+        print("[engine.create_game()] remove player from lobby group")
+
+        async_to_sync(new_game.channel_layer.group_add)(new_game.uid,
+                                                        packet.player_token)
+        print("[engine.create_game()] added player to game group")
+
+        new_game.send_packet_to_group(update, "lobby")
+        print("[engine.create_game()] sent BroadcastNewRoomToLobby")
 
     def send_all_lobby_status(self, player_token: str):
         """
@@ -335,7 +357,7 @@ class Engine:
             if game_c.state == GameState.LOBBY:
                 packet = BroadcastNewRoomToLobby(
                     game_token=game,
-                    name=game_c.name,
+                    game_name=game_c.name,
                     nb_players=len(board.players),
                     max_nb_players=board.players_nb,
                     is_private=board.option_is_private,

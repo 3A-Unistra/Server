@@ -1490,11 +1490,13 @@ class Game(Thread):
         lobby group : all players that are connected to a game in lobby mode
         :param packet: packet to be sent
         """
-        async_to_sync(self.channel_layer.send)(
+        print("send_packet_to_group(%s)" % group_name)
+        async_to_sync(self.channel_layer.group_send)(
             group_name, {
                 'type': 'send.lobby.packet',
                 'packet': packet.serialize()
             })
+        print("sent packet to group : (%s)" % group_name)
 
     def send_packet_to_player(self, player: Player, packet: Packet):
         if player.bot is True:

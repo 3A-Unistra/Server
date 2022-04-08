@@ -1,6 +1,5 @@
 import json
 import logging
-
 from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
@@ -205,6 +204,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             return await self.close(code=4000)
 
         self.player_token = str(self.scope['user'].id)
+        print(self.channel_name)
 
         # sending the internal packet to the EngineConsumer
         packet = InternalLobbyConnect(
@@ -223,20 +223,23 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             }
         )
 
-        # Dont forget to accept connection
+        # Don't forget to accept connection
         await self.accept()
 
     async def receive_json(self, content, **kwargs):
+        print("[consumer.LobbyConsumer.receive_json()] got in function")
         try:
             packet = PacketUtils.deserialize_packet(content)
         except PacketException:
             # send error packet (or ignore)
+            print("[consumer.LobbyConsumer.receive_json] PacketException")
             return
 
         if isinstance(packet, InternalPacket):
             return
 
         # send to game engine consumer
+        print("[consumer.LobbyConsumer.receive_json] sending to game engine")
         await self.channel_layer.send(
             'game_engine',
             {
@@ -245,6 +248,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
                 'channel_name': self.channel_name
             }
         )
+        print("[consumer.LobbyConsumer.receive_json] sent to game engine")
 
     async def disconnect(self, code):
         # if the player is in the lobby group, he is not in a waiting room
@@ -326,20 +330,29 @@ class GameEngineConsumer(SyncConsumer):
             # if game not exists send error packet
             packet = ExceptionPacket(code=4102)
 
-            async_to_sync(self.channel_layer.send)(
+            async_to_sync(self.channel_layer.send(
                 channel_name, {
                     'type': 'player.callback',
                     'packet': packet.serialize()
-                })
+                }))
 
     def process_lobby_packets(self, content):
         """
         lobby packets are handled here
         """
+        if 'content' not in content:
+            return
+
+        log.info("process_packets_info")
+
+        packet_content = json.loads(content['content'])
+
         try:
-            packet = PacketUtils.deserialize_packet(content)
+            packet = PacketUtils.deserialize_packet(packet_content)
         except PacketException:
             # send error packet (or ignore)
+            print("[consumer.EngineConsumer.process_lobby_packets] "
+                  "PacketException")
             return
 
         # if internal packet:
@@ -357,6 +370,8 @@ class GameEngineConsumer(SyncConsumer):
             return
 
         if isinstance(packet, CreateGame):
+            print("[consumer.EngineConsumer.process_lobby_packets] "
+                  "sending to engine.create_game")
             self.engine.create_game(packet)
             return
 

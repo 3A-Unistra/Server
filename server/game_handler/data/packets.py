@@ -17,11 +17,26 @@ class Packet:
         pass
 
 
+def convert_to_int(value) -> int:
+    """
+    static function used in deserialization
+    :param value: value to deserialize
+    """
+    try:
+        return int(value)
+    except ValueError:
+        return 0
+
+
 class LobbyPacket(Packet):
     """
     Lobby packet => inherits Packet
     """
-    pass
+    name: str
+
+    def __init__(self, name: str):
+        self.name = name
+        super().__init__(name)
 
 
 class PlayerPacket(Packet):
@@ -219,9 +234,8 @@ class StatusRoom(LobbyPacket):
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
         self.game_name = obj['game_name'] if 'game_name' in obj else ""
-        self.nb_players = int(obj['nb_players']) if 'nb_players' in obj else 0
-        self.max_nb_players = int(obj['max_nb_players']) if 'max_nb_players' \
-                                                            in obj else 0
+        self.nb_players = convert_to_int(obj['nb_players'])
+        self.max_nb_players = convert_to_int(obj['max_nb_players'])
         self.players = obj['players'] if 'players' in obj else []
         self.option_auction = bool(obj['option_auction']) if 'option_auction' \
                                                              in obj else False
@@ -233,8 +247,7 @@ class StatusRoom(LobbyPacket):
             'option_maxnb_rounds' in obj else False
         self.option_first_round_buy = bool(obj['option_first_round_buy']) \
             if 'option_first_round_buy' in obj else 0
-        self.starting_balance = int(obj['starting_balance']) if \
-            'starting_balance' in obj else 0
+        self.starting_balance = convert_to_int(obj['starting_balance'])
 
 
 class BroadcastNewRoomToLobby(LobbyPacket):
@@ -259,9 +272,8 @@ class BroadcastNewRoomToLobby(LobbyPacket):
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
         self.game_name = obj['game_name'] if 'game_name' in obj else ""
-        self.nb_players = int(obj['nb_players']) if 'nb_players' in obj else 0
-        self.max_nb_players = int(obj['max_nb_players']) if 'max_nb_players' \
-                                                            in obj else 0
+        self.nb_players = convert_to_int(obj['nb_players'])
+        self.max_nb_players = convert_to_int(obj['max_nb_players'])
         self.is_private = bool(obj['is_private']) if 'is_private' in obj else \
             False
         self.has_password = bool(obj['has_password']) if 'has_password' in \
@@ -280,7 +292,7 @@ class BroadcastUpdateLobby(LobbyPacket):
 
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else 0
-        self.reason = int(obj['reason']) if 'reason' in obj else 0
+        self.reason = convert_to_int(obj['reason'])
 
 
 class BroadcastUpdateRoom(LobbyPacket):
@@ -299,9 +311,9 @@ class BroadcastUpdateRoom(LobbyPacket):
 
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
-        self.nb_players = int(obj['nb_players']) if 'nb_players' in obj else 0
+        self.nb_players = convert_to_int(obj['nb_players'])
         self.player = obj['player'] if 'player' in obj else 0
-        self.reason = int(obj['reason']) if 'reason' in obj else 0
+        self.reason = convert_to_int(obj['reason'])
 
 
 class NewHost(LobbyPacket):
@@ -814,7 +826,7 @@ class CreateGame(LobbyPacket):
     option_first_round_buy: bool
 
     def __init__(self, player_token: str = "", password: str = "",
-                 name: str = "", max_nb_players: int = 0,
+                 game_name: str = "", max_nb_players: int = 0,
                  is_private: bool = False, starting_balance: int = 0,
                  option_auction: bool = False,
                  option_double_on_start: bool = False,
@@ -828,7 +840,7 @@ class CreateGame(LobbyPacket):
         self.max_nb_players = max_nb_players
         self.is_private = is_private
         self.starting_balance = starting_balance
-        self.game_name = name
+        self.game_name = game_name
         self.option_auction = option_auction
         self.option_double_on_start = option_double_on_start
         self.option_max_time = option_max_time
@@ -836,16 +848,24 @@ class CreateGame(LobbyPacket):
         self.option_first_round_buy = option_first_round_buy
 
     def deserialize(self, obj: object):
-        self.player_token = obj['player_token']
-        self.password = obj['password']
-        self.max_nb_players = obj['max']
-        self.is_private = obj['is_private']
-        self.game_name = obj['game_name']
-        self.option_auction = obj['option_auction']
-        self.option_double_on_start = obj['option_double_on_start']
-        self.option_max_time = obj['option_max_time']
-        self.option_maxnb_rounds = obj['option_maxnb_rounds']
-        self.option_first_round_buy = obj['option_first_round_buy']
+        self.player_token = obj['player_token'] if 'player_token' in\
+                                                   obj else ""
+        self.password = obj['password'] if 'password' in obj else ""
+        self.max_nb_players = convert_to_int(obj['max_nb_players'])
+        self.is_private = bool(obj['is_private']) if 'is_private' in \
+                                                     obj else False
+        self.game_name = obj['game_name'] if 'game_name' in obj else ""
+        self.option_auction = bool(obj['option_auction']) if 'option_auction' \
+                                                             in obj else False
+        self.option_double_on_start = bool(obj['option_double_on_start']) \
+            if 'option_double_on_start' in obj else 0
+        self.option_max_time = bool(obj['option_max_time']) if \
+            'option_max_time' in obj else False
+        self.option_maxnb_rounds = convert_to_int(obj['option_maxnb_rounds'])
+        self.option_first_round_buy = bool(obj['option_first_round_buy']) if \
+            'option_first_round_buy' in obj else False
+        print("[packets.CreateGame.deserialize] deserialized "
+              "CreateGame packet")
 
 
 class CreateGameSuccess(LobbyPacket):
@@ -858,8 +878,8 @@ class CreateGameSuccess(LobbyPacket):
         self.piece = piece
 
     def deserialize(self, obj: object):
-        self.player_token = obj['player_token']
-        self.piece = obj['piece']
+        self.player_token = obj['player_token'] if 'player_token' in obj else 0
+        self.piece = int(obj['piece']) if 'piece' in obj else 0
 
 
 class AddBot(LobbyPacket):
