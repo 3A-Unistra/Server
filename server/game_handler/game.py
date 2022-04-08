@@ -182,13 +182,24 @@ class Game(Thread):
         # check player validity
         if isinstance(packet, InternalCheckPlayerValidity):
             # Only accept connection, if player exists and game is started
-            valid = self.board.player_exists(packet.player_token) and self. \
-                state.value > GameState.LOBBY.value
+
+            valid = True
+
+            if not self.board.player_exists(packet.player_token):
+                valid = False
+            elif self.state.value <= GameState.LOBBY.value:
+                valid = False
+            # Player already online
+            elif self.board.get_player(packet.player_token).online:
+                valid = False
+
             self.send_packet(
                 channel_name=queue_packet.channel_name,
                 packet=InternalCheckPlayerValidity(valid=valid))
             if not valid:
                 return
+
+            # Else handle connection.
 
         if self.state is GameState.LOBBY:
             if isinstance(packet, EnterRoom):
