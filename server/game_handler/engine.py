@@ -264,7 +264,7 @@ class Engine:
         self.send_all_lobby_status(packet.player_token)
         return
 
-    def create_game(self, packet):
+    def create_game(self, packet: Packet, channel_name: str):
         """
         creating a new game based on the CreateGame packet specification
          sent by a host
@@ -284,7 +284,7 @@ class Engine:
             print("[engine.create_game()] too many games")
             self.send_packet(game_uid=new_game.uid,
                              packet=ExceptionPacket(code=4206),
-                             channel_name=get_channel_layer())
+                             channel_name=channel_name)
             self.remove_game(new_game.uid)
             return
 
@@ -299,7 +299,7 @@ class Engine:
 
         # adding host to the game
         player = Player(user=User(id=packet.player_token),
-                        channel_name=packet.player_token,
+                        channel_name=channel_name,
                         bot=False)
         board.add_player(player)
 
@@ -317,11 +317,10 @@ class Engine:
         # sending CreateGameSuccess to host
         print()
         piece = board.assign_piece(packet.player_token)
-        new_game.send_packet_to_group(
+        new_game.send_packet(channel_name=channel_name,
                          packet=CreateGameSuccess(player_token=packet.
                                                   player_token,
-                                                  piece=piece),
-                         group_name="a")
+                                                  piece=piece))
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastNewRoomToLobby(
             game_token=new_game.uid,

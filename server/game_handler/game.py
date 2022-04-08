@@ -229,7 +229,7 @@ class Game(Thread):
                 for player in self.board.players:
                     player_uid.append(player.get_id())
                 status = StatusRoom(game_token=self.uid,
-                                    name=self.public_name,
+                                    game_name=self.public_name,
                                     nb_players=nb_players,
                                     max_nb_players=self.board.players_nb,
                                     players=player_uid,

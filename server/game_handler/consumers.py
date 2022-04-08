@@ -343,6 +343,11 @@ class GameEngineConsumer(SyncConsumer):
         if 'content' not in content:
             return
 
+        if 'channel_name' not in content:
+            return
+
+        channel_name = content['channel_name']
+
         log.info("process_packets_info")
 
         packet_content = json.loads(content['content'])
@@ -372,7 +377,7 @@ class GameEngineConsumer(SyncConsumer):
         if isinstance(packet, CreateGame):
             print("[consumer.EngineConsumer.process_lobby_packets] "
                   "sending to engine.create_game")
-            self.engine.create_game(packet)
+            self.engine.create_game(packet, channel_name)
             return
 
         if isinstance(packet, DeleteRoom):
