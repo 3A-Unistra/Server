@@ -507,7 +507,7 @@ class Game(Thread):
                 self.proceed_dice_choice(player=player, choice=choice)
             elif self.state is GameState.ACTION_START_WAIT:
                 self.state = GameState.ACTION_TIMEOUT_WAIT
-                self.set_timeout(seconds=self.CONFIG.get('ACTION_TIMEOUT_WAIT'))
+                self.set_timeout(self.CONFIG.get('ACTION_TIMEOUT_WAIT'))
                 self.broadcast_packet(ActionStart())
             elif self.state is GameState.ACTION_TIMEOUT_WAIT:
                 # Tour is ended
