@@ -432,15 +432,21 @@ Paquet d'actions durant le tour
 Paquets concernant les actions durant le tour. Le tour commmence en instaurant un timeout. Si le joueur ne sélectionne pas d'actions
  avant la fin du timeout, il est compté comme déconnecté.
 
+Paquet ActionStart
+^^^^^^^^^^^^^^^^^^
+Paquet envoyé par le serveur lorsque l'action tour démarre
+
+*Ce paquet ne contient pas d'informations*
+
 Paquet ActionEnd
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 Paquet envoyé par client lorsque le joueur a effectué toutes ses actions.
 
 **contenu du paquet**
  * id du joueur (*player_token*)
 
 Paquet ActionTimeout
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 Paquet envoyé par serveur lorsque le joueur a envoyé ActionEnd ou le timeout des actions est passé.
 
 *ce paquet ne contient pas d'informations*
