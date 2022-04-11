@@ -555,6 +555,11 @@ class PlayerExitPrison(PlayerPacket):
                          player_token=player_token)
 
 
+class ActionStart(Packet):
+    def __init__(self):
+        super().__init__(name=self.__class__.__name__)
+
+
 class ActionEnd(PlayerPacket):
     def __init__(self, player_token: str = ""):
         super().__init__(name=self.__class__.__name__,
@@ -930,6 +935,7 @@ class PacketUtils:
         "PlayerEnterPrison": PlayerEnterPrison,
         "PlayerExitPrison": PlayerExitPrison,
         # Tour actions
+        "ActionStart": ActionStart,
         "ActionEnd": ActionEnd,
         "ActionTimeout": ActionTimeout,
         "ActionExchange": ActionExchange,
