@@ -16,7 +16,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Game',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.BigAutoField(auto_created=True,
+                                           primary_key=True,
+                                           serialize=False,
+                                           verbose_name='ID')),
                 ('name', models.CharField(max_length=64)),
                 ('duration', models.IntegerField()),
                 ('date', models.DateTimeField(auto_now_add=True)),
@@ -28,7 +31,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='User',
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('id', models.UUIDField(default=uuid.uuid4,
+                                        editable=False,
+                                        primary_key=True,
+                                        serialize=False)),
                 ('login', models.CharField(max_length=64, unique=True)),
                 ('name', models.CharField(max_length=64)),
                 ('password', models.CharField(max_length=256)),
@@ -43,9 +49,16 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='UserPasswordResetToken',
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('id', models.UUIDField(default=uuid.uuid4,
+                                        editable=False,
+                                        primary_key=True,
+                                        serialize=False)),
                 ('date', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='password_reset_tokens_user', to='game_handler.user')),
+                ('user', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='password_reset_tokens_user',
+                    to='game_handler.user'
+                )),
             ],
             options={
                 'db_table': 'user_password_reset_tokens',
@@ -54,7 +67,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='GameUser',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.BigAutoField(auto_created=True,
+                                           primary_key=True,
+                                           serialize=False,
+                                           verbose_name='ID')),
                 ('rank', models.IntegerField()),
                 ('money', models.IntegerField()),
                 ('hotels', models.IntegerField()),
@@ -62,8 +78,15 @@ class Migration(migrations.Migration):
                 ('host', models.BooleanField()),
                 ('duration', models.IntegerField()),
                 ('bot', models.BooleanField()),
-                ('game', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='users_game', to='game_handler.game')),
-                ('user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='users_stats', to='game_handler.user')),
+                ('game', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='users_game', to='game_handler.game'
+                )),
+                ('user', models.ForeignKey(
+                    null=True,
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='users_stats', to='game_handler.user'
+                )),
             ],
             options={
                 'db_table': 'game_users',
@@ -72,9 +95,18 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='UserFriend',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('friend', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='friends_friend', to='game_handler.user')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='friends_user', to='game_handler.user')),
+                ('id', models.BigAutoField(auto_created=True,
+                                           primary_key=True,
+                                           serialize=False,
+                                           verbose_name='ID')),
+                ('friend', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='friends_friend', to='game_handler.user'
+                )),
+                ('user', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='friends_user', to='game_handler.user'
+                )),
             ],
             options={
                 'db_table': 'user_friends',
