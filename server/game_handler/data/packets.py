@@ -18,6 +18,7 @@ class Packet:
         pass
 
 
+
 class LobbyPacket(Packet):
     """
     Lobby packet => inherits Packet
@@ -39,6 +40,19 @@ class PlayerPacket(Packet):
         if 'player_token' in obj:
             self.player_token = obj["player_token"]
 
+
+class ChatPacket(PlayerPacket):
+
+    message: str
+
+    def __init__(self, player_token, message):
+        super().__init__("ChatPacket", player_token)
+        self.message = message
+
+
+    def deserialize(self, obj: object):
+        super().deserialize(obj)
+        self.message = obj["message"]
 
 class InternalPacket(Packet):
     """

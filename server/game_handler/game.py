@@ -166,6 +166,9 @@ class Game(Thread):
     def process_packet(self, queue_packet: QueuePacket):
         packet: Packet = queue_packet.packet
 
+        if isinstance(packet,ChatPacket):
+            self.broadcast_packet(packet)
+
         if self.state.value > GameState.LOBBY.value:
             # Heartbeat only in "game"
             if isinstance(packet, PingPacket):
