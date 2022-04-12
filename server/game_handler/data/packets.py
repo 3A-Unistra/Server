@@ -1,3 +1,4 @@
+import enum
 import json
 from enum import Enum
 from typing import Dict, List
@@ -133,7 +134,7 @@ class LaunchGame(Packet):
     player_token: str
 
     def __init__(self, player_token: str = ""):
-        super(LaunchGame, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
         self.player_token = player_token
 
     def deserialize(self, obj: object):
@@ -152,11 +153,11 @@ class ExceptionPacket(Packet):
         self.code = int(obj["code"]) if 'code' in obj else 0
 
 
-class EnterRoomSuccess(LobbyPacket):
+class EnterRoomSucceed(LobbyPacket):
     piece: int
 
     def __init__(self, piece: int = 0):
-        super().__init__("EnterRoomSuccess")
+        super().__init__("EnterRoomSucceed")
         self.piece = piece
 
     def deserialize(self, obj: object):
@@ -178,9 +179,9 @@ class LeaveRoom(LobbyPacket):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
 
 
-class LeaveRoomSuccess(LobbyPacket):
+class LeaveRoomSucceed(LobbyPacket):
     def __init__(self):
-        super().__init__("LeaveRoomSuccess")
+        super().__init__("LeaveRoomSucceed")
 
 
 class UpdateReason(Enum):
@@ -207,7 +208,7 @@ class StatusRoom(LobbyPacket):
     option_auction: bool
     option_double_on_start: bool
     option_max_time: int
-    option_maxnb_rounds: int
+    option_max_rounds: int
     option_first_round_buy: bool
     starting_balance: int
 
@@ -215,7 +216,7 @@ class StatusRoom(LobbyPacket):
                  nb_players: int = 0, max_nb_players: int = 0,
                  players: List[str] = None, option_auction: bool = False,
                  option_double_on_start: bool = False,
-                 option_max_time: int = 0, option_maxnb_rounds: int = 0,
+                 option_max_time: int = 0, option_max_rounds: int = 0,
                  option_first_round_buy: bool = False,
                  starting_balance: int = 0):
         super().__init__("StatusRoom")
@@ -227,11 +228,12 @@ class StatusRoom(LobbyPacket):
         self.option_auction = option_auction
         self.option_double_on_start = option_double_on_start
         self.option_max_time = option_max_time
-        self.option_maxnb_rounds = option_maxnb_rounds
+        self.option_max_rounds = option_max_rounds
         self.option_first_round_buy = option_first_round_buy
         self.starting_balance = starting_balance
 
     def deserialize(self, obj: object):
+<<<<<<< HEAD
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
         self.game_name = obj['game_name'] if 'game_name' in obj else ""
         self.nb_players = convert_to_int(obj['nb_players'])
@@ -248,6 +250,19 @@ class StatusRoom(LobbyPacket):
         self.option_first_round_buy = bool(obj['option_first_round_buy']) \
             if 'option_first_round_buy' in obj else 0
         self.starting_balance = convert_to_int(obj['starting_balance'])
+=======
+        self.game_token = obj['game_token']
+        self.name = obj['name']
+        self.nb_players = obj['nb_players']
+        self.max_nb_players = obj['max_nb_players']
+        self.players = obj['players']
+        self.option_auction = obj['option_auction']
+        self.option_double_on_start = obj['option_double_on_start']
+        self.option_max_time = obj['option_max_time']
+        self.option_max_rounds = obj['option_max_rounds']
+        self.option_first_round_buy = obj['option_first_round_buy']
+        self.starting_balance = obj['starting_balance']
+>>>>>>> main
 
 
 class BroadcastNewRoomToLobby(LobbyPacket):
@@ -580,6 +595,11 @@ class PlayerExitPrison(PlayerPacket):
                          player_token=player_token)
 
 
+class ActionStart(Packet):
+    def __init__(self):
+        super().__init__(name=self.__class__.__name__)
+
+
 class ActionEnd(PlayerPacket):
     def __init__(self, player_token: str = ""):
         super().__init__(name=self.__class__.__name__,
@@ -617,18 +637,41 @@ class ActionExchangePlayerSelect(PlayerPacket):
         self.selected_player_token = obj["selected_token"]
 
 
-class ActionExchangeTradeSelect(PlayerPacket):
-    property_id: int
+class ExchangeTradeSelectType(Enum):
+    PROPERTY = 0
+    MONEY = 1
+    LEAVE_JAIL_COMMUNITY_CARD = 2
+    LEAVE_JAIL_CHANCE_CARD = 3
 
-    def __init__(self, player_token: str = "", property_id: int = 0):
+    @staticmethod
+    def has_value(value):
+        return value in set(item.value for item in ExchangeTradeSelectType)
+
+
+class ActionExchangeTradeSelect(PlayerPacket):
+    exchange_type: int
+    value: int
+    update_affects_recipient: bool
+
+    def __init__(self, player_token: str = "", value: int = 0,
+                 exchange_type: ExchangeTradeSelectType
+                 = ExchangeTradeSelectType(0),
+                 update_affects_recipient: bool = False):
         super().__init__(name=self.__class__.__name__,
                          player_token=player_token)
-        self.property_id = property_id
+        self.value = value
+        self.exchange_type = exchange_type.value
+        self.update_affects_recipient = update_affects_recipient
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.property_id = int(obj["property_id"]) if 'property_id' \
-                                                      in obj else 0
+        self.value = int(obj['value']) if 'value' in obj else 0
+
+        if not ExchangeTradeSelectType.has_value(self.value):
+            self.value = 0
+
+        self.exchange_type = int(
+            obj['exchange_type']) if 'exchange_type' in obj else 0
 
 
 class ActionExchangeSend(PlayerPacket):
@@ -637,107 +680,82 @@ class ActionExchangeSend(PlayerPacket):
                          player_token=player_token)
 
 
-class ActionExchangeDecline(Packet):
-    def __init__(self):
-        super().__init__(self.__class__.__name__)
-
-
-class ActionExchangeCounter(Packet):
-    def __init__(self):
-        super().__init__(self.__class__.__name__)
-
-
-class ActionExchangeCancel(Packet):
-    reason: str
-
-    def __init__(self, reason: str = ""):
-        super().__init__(self.__class__.__name__)
-        self.reason = reason
-
-    def deserialize(self, obj: object):
-        self.reason = obj["reason"]
-
-
-class PlayerUpdateProperty(PlayerPropertyPacket):
-    houses: int
-
-    def __init__(self, player_token: str = "", property_id: int = 0,
-                 houses: int = 0):
+class ActionExchangeDecline(PlayerPacket):
+    def __init__(self, player_token: str = ""):
         super().__init__(name=self.__class__.__name__,
-                         player_token=player_token,
-                         property_id=property_id)
-        self.houses = houses
+                         player_token=player_token)
+
+
+class ActionExchangeCounter(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+
+
+class ActionExchangeCancel(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+
+
+class ExchangeTransferType(Enum):
+    PROPERTY = 0
+    CARD = 1
+
+
+class ActionExchangeTransfer(PlayerPacket):
+    player_to: str
+    value: int
+    transfer_type: ExchangeTransferType
+
+    def __init__(self, player_token: str = "", player_to: str = "",
+                 value: int = 0, transfer_type: ExchangeTransferType
+                 = ExchangeTransferType(0)):
+        super().__init__(name=self.__class__.__name__,
+                         player_token=player_token)
+        self.player_to = player_to
+        self.value = value
+        self.transfer_type = transfer_type
+
+
+class ActionAuctionProperty(PlayerPacket):
+    min_bid: int
+
+    def __init__(self, player_token: str = "", min_bid: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+        self.id_player = player_token
+        self.min_bid = min_bid
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.houses = int(obj["houses"])
+        self.min_bid = int(obj["min_bid"])
 
 
-class ActionAuctionProperty(Packet):
-    id_player: str
-    property: str
-    min_price: int
+class AuctionBid(PlayerPacket):
+    bid: int
 
-    def __init__(self, id_player: str = "",
-                 property: str = "", min_price: int = 0):
-        super(ActionAuctionProperty, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-        self.property = property
-        self.min_price = min_price
+    def __init__(self, player_token: str = "", bid: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+        self.bid = bid
 
     def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-        self.property = obj["property"]
-        self.min_price = obj["min_price"]
+        super().deserialize(obj)
+        self.bid = int(obj["bid"])
 
 
-class AuctionRound(Packet):
-    property: str
-    id_seller: str
-    current_price: int
+class AuctionEnd(PlayerPacket):
+    highest_bid: int
+    # Remaining time in seconds (action timeout)
+    remaining_time: int
 
-    def __init__(self, property: str = "", id_seller: str = "",
-                 curent_price: int = 0):
-        super(AuctionRound, self).__init__(self.__class__.__name__)
-        self.property = property
-        self.id_seller = id_seller
-        self.curent_price = curent_price
-
-    def deserialize(self, obj: object):
-        self.property = obj["property"]
-        self.id_seller = obj["id_seller"]
-        self.curent_price = obj["curent_price"]
-
-
-class AuctionBid(Packet):
-    property: str
-    id_bidder: str
-    new_price: int
-
-    def __init__(self, id_bidder: str = "", new_price: int = 0):
-        super(AuctionBid, self).__init__(self.__class__.__name__)
-        self.id_bidder = id_bidder
-        self.new_price = new_price
-
-    def deserialize(self, obj: object):
-        self.id_bidder = obj["id_bidder"]
-        self.new_price = obj["new_price"]
-
-
-class AuctionConcede(Packet):
-    id_player: str
-
-    def __init__(self, id_player: str = ""):
-        super(AuctionConcede, self).__init__(self.__class__.__name__)
-        self.id_player = id_player
-
-    def deserialize(self, obj: object):
-        self.id_player = obj["id_player"]
-
-
-class AuctionEnd(Packet):
-    def __init__(self):
-        super().__init__(self.__class__.__name__)
+    def __init__(self, player_token: str = "", highest_bid: int = 0,
+                 remaining_time: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+        self.highest_bid = highest_bid
+        self.remaining_time = remaining_time
 
 
 class ActionBuyProperty(PlayerPropertyPacket):
@@ -822,7 +840,7 @@ class CreateGame(LobbyPacket):
     option_auction: bool
     option_double_on_start: bool
     option_max_time: int
-    option_maxnb_rounds: int
+    option_max_rounds: int
     option_first_round_buy: bool
 
     def __init__(self, player_token: str = "", password: str = "",
@@ -831,7 +849,7 @@ class CreateGame(LobbyPacket):
                  option_auction: bool = False,
                  option_double_on_start: bool = False,
                  option_max_time: int = 0,
-                 option_maxnb_rounds: int = 0,
+                 option_max_rounds: int = 0,
                  option_first_round_buy: bool = False):
 
         super().__init__("CreateGame")
@@ -844,7 +862,7 @@ class CreateGame(LobbyPacket):
         self.option_auction = option_auction
         self.option_double_on_start = option_double_on_start
         self.option_max_time = option_max_time
-        self.option_maxnb_rounds = option_maxnb_rounds
+        self.option_max_rounds = option_max_rounds
         self.option_first_round_buy = option_first_round_buy
 
     def deserialize(self, obj: object):
@@ -868,12 +886,12 @@ class CreateGame(LobbyPacket):
               "CreateGame packet")
 
 
-class CreateGameSuccess(LobbyPacket):
+class CreateGameSucceed(LobbyPacket):
     player_token: str
     piece: int
 
     def __init__(self, player_token: str = "", piece: int = 0):
-        super().__init__("CreateGameSuccess")
+        super().__init__("CreateGameSucceed")
         self.player_token = player_token
         self.piece = piece
 
@@ -914,17 +932,17 @@ class DeleteRoom(LobbyPacket):
         self.game_token = obj['game_token']
 
 
-class DeleteRoomSuccess(LobbyPacket):
+class DeleteRoomSucceed(LobbyPacket):
 
     def __init__(self):
-        super().__init__("DeleteRoomSuccess")
+        super().__init__("DeleteRoomSucceed")
 
 
 class InternalLobbyConnect(InternalPacket):
     player_token: str
 
     def __init__(self, player_token: str = ""):
-        super().__init__("DeleteRoomSuccess")
+        super().__init__("DeleteRoomSucceed")
         self.player_token = player_token
 
     def deserialize(self, obj: object):
@@ -935,7 +953,7 @@ class InternalLobbyDisconnect(InternalPacket):
     player_token: str
 
     def __init__(self, player_token: str = ""):
-        super().__init__("DeleteRoomSuccess")
+        super().__init__("DeleteRoomSucceed")
         self.player_token = player_token
 
     def deserialize(self, obj: object):
@@ -965,6 +983,7 @@ class PacketUtils:
         "PlayerEnterPrison": PlayerEnterPrison,
         "PlayerExitPrison": PlayerExitPrison,
         # Tour actions
+        "ActionStart": ActionStart,
         "ActionEnd": ActionEnd,
         "ActionTimeout": ActionTimeout,
         "ActionExchange": ActionExchange,
@@ -975,11 +994,8 @@ class PacketUtils:
         "ActionExchangeDecline": ActionExchangeDecline,
         "ActionExchangeCounter": ActionExchangeCounter,
         "ActionExchangeCancel": ActionExchangeCancel,
-        "PlayerUpdateProperty": PlayerUpdateProperty,
         "ActionAuctionProperty": ActionAuctionProperty,
-        "AuctionRound": AuctionRound,
         "AuctionBid": AuctionBid,
-        "AuctionConcede": AuctionConcede,
         "AuctionEnd": AuctionEnd,
         "ActionBuyProperty": ActionBuyProperty,
         "ActionBuyPropertySucceed": ActionBuyPropertySucceed,
@@ -995,14 +1011,14 @@ class PacketUtils:
         "PlayerValid": PlayerValid,
         # Lobby packets
         "EnterRoom": EnterRoom,
-        "EnterRoomSuccess": EnterRoomSuccess,
+        "EnterRoomSucceed": EnterRoomSucceed,
         "LeaveRoom": LeaveRoom,
-        "LeaveRoomSuccess": LeaveRoomSuccess,
+        "LeaveRoomSucceed": LeaveRoomSucceed,
         "CreateGame": CreateGame,
-        "CreateGameSuccess": CreateGameSuccess,
+        "CreateGameSucceed": CreateGameSucceed,
         "LaunchGame": LaunchGame,
         "DeleteRoom": DeleteRoom,
-        "DeleteRoomSuccess": DeleteRoomSuccess,
+        "DeleteRoomSucceed": DeleteRoomSucceed,
         "AddBot": AddBot,
         "BroadcastUpdateRoom": BroadcastUpdateRoom,
         "BroadcastUpdateLobby": BroadcastUpdateLobby,

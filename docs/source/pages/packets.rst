@@ -13,13 +13,6 @@ Le contenu des paquets est au format JSON.
 Paquets lobby
 -------------
 
-InternalInitConnection
-^^^^^^^^^^^^^^^^^^^^^^
-Paquet envoyé lorsque un joueur se connecte.
-
-**contenu du paquet :**
- * id du joueur (*player_token*)
-
 LaunchGame
 ^^^^^^^^^^
 Paquet envoyé *par le client* lorsque le host du lobby lance la partie.
@@ -37,7 +30,7 @@ Paquet envoyé *par le client* lorsqu'il veut rentrer dans une partie.
  * mot de passe (*password*)
 
 
-EnterRoomSuccess
+EnterRoomSucceed
 ^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour signifier le succès de son entrée dans une partie
 
@@ -54,21 +47,11 @@ Paquet envoyé *par le client* lorsque un joueur veut sortir d'un lobby de parti
  * id de la partie (*game_token*)
 
 
-LeaveRoomSuccess
+LeaveRoomSucceed
 ^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour confirmer le succès de la sortie du lobby de partie
 
 *ce paquet ne contient pas d'informations*
-
-
-InternalLobbyDisconnect
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Paquet interne pour gérer la déconnexion  d'un joueur dans le lobby. Ce paquet retire le joueur de la
-salle d'attente dans laquelle il est.
-
-**contenu du paquet :**
- * id du joueur (*player_token*)
 
 
 CreateGame
@@ -85,11 +68,11 @@ Paquet envoyé *par le client* lorsqu'il veut créer une partie
  * activer/désactiver enchère (*option_auctions*)
  * activer désactiver doublage d’argent sur la case GO (*option_double_on_start*)
  * temps max pour les actions d'un tour (*option_max_time*)
- * nombre de tour maximum (*option_maxnb_rounds*)
+ * nombre de tour maximum (*option_max_rounds*)
  * acheter dès le premier tour (*option_first_round_buy*)
 
 
-CreateGameSuccess
+CreateGameSucceed
 ^^^^^^^^^^^^^^^^^
 
 Paquet envoyé par le serveur pour confirmer la création d'une partie
@@ -108,7 +91,7 @@ L'applet unity webgl devra se connecter au WebSocket de la partie et envoyer le 
 **contenu du paquet :**
  * id du joueur (*player_token*)
 
-BroadCastUpdateLobby
+BroadcastUpdateLobby
 ^^^^^^^^^^^^^^^^^^^^
 Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby en particulier change. Il est aussi utilisé
  pour donner les infos de tous les lobbys lors de la connexion initial d'un joueur.
@@ -117,7 +100,24 @@ Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby 
  * id du lobby (*game_token*)
  * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
 
-BroadCastUpdateRoom
+.. code-block:: python
+    :caption: Enum UpdateReason
+
+    {
+    class UpdateReason(Enum):
+        NEW_CONNECTION = 0
+        NEW_PLAYER = 1
+        PLAYER_LEFT = 2
+        ROOM_DELETED = 3
+        ROOM_CREATED = 4
+        HOST_LEFT = 5
+        LAUNCHING_GAME = 6
+        NEW_BOT = 7
+    }
+
+:
+
+BroadcastUpdateRoom
 ^^^^^^^^^^^^^^^^^^^
 Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladite salle change.
 
@@ -127,7 +127,24 @@ Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladi
  * le joueur ajouté ou supprimé (peut-être un champ vide) (*player*)
  * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
 
-BroadcastNewRoomToLooby
+.. code-block:: python
+    :caption: Enum UpdateReason
+
+    {
+    class UpdateReason(Enum):
+        NEW_CONNECTION = 0
+        NEW_PLAYER = 1
+        PLAYER_LEFT = 2
+        ROOM_DELETED = 3
+        ROOM_CREATED = 4
+        HOST_LEFT = 5
+        LAUNCHING_GAME = 6
+        NEW_BOT = 7
+    }
+
+:
+
+BroadcastNewRoomToLobby
 ^^^^^^^^^^^^^^^^^^^^^^^
 Ce paquet est envoyé aux clients lorsque une nouvelle salle d'attente est créée. Il est aussi utilisé pour envoyer
  l'état de toute les salles présentes lors d'une nouvelle connexion.
@@ -183,7 +200,7 @@ Ce paquet ne peut être envoyé que par l'hôte de la partie.
  * id de la partie (*game_token*)
 
 
-DeleteRoomSuccess
+DeleteRoomSucceed
 ^^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour lui signaler le succès de la suppression d'une partie.
 Les autres joueurs seront prévenus via un BroadcastUpdatedRoom avec le champ *state* à CLOSED.
@@ -339,7 +356,7 @@ Exception
 Paquet envoyé lorsque une erreur a lieu. Les codes d'erreurs seront spécifiés dans l'index d'erreurs.
 
 **contenu du paquet :**
- * code d'erreurs (*error_code*)
+ * code d'erreur (*code*)
 
 Paquet début tour
 -----------------
@@ -393,7 +410,7 @@ Lorsqu'un joueur rembourse sa dette.
  * id du joueur qui rembourse sa dette (*player_token*)
  * id ou vide (banque) du receveur (*player_to*)
  * montant de la dette remboursé (*amount*)
- * raison (*reason*)
+ * raison (str) (*reason*)
 
 PlayerEnterPrison
 ^^^^^^^^^^^^^^^^^
@@ -415,15 +432,21 @@ Paquet d'actions durant le tour
 Paquets concernant les actions durant le tour. Le tour commmence en instaurant un timeout. Si le joueur ne sélectionne pas d'actions
  avant la fin du timeout, il est compté comme déconnecté.
 
+Paquet ActionStart
+^^^^^^^^^^^^^^^^^^
+Paquet envoyé par le serveur lorsque l'action tour démarre
+
+*Ce paquet ne contient pas d'informations*
+
 Paquet ActionEnd
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 Paquet envoyé par client lorsque le joueur a effectué toutes ses actions.
 
 **contenu du paquet**
- * id du joueur (*id_player*)
+ * id du joueur (*player_token*)
 
 Paquet ActionTimeout
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 Paquet envoyé par serveur lorsque le joueur a envoyé ActionEnd ou le timeout des actions est passé.
 
 *ce paquet ne contient pas d'informations*
@@ -485,7 +508,6 @@ Le paquet est relayé à tout le monde. Pour la renégotiation de l'échange, le
 
 Paquet ActionExchangeAccept
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-paquetspaquetspaquets
 Paquet envoyé *par le client* si le joueur avec qui l'échange est censé être effectué accepte. Le paquet est relayé à tout le monde.
 
 *Ce paquet ne contient pas d'informations*
@@ -497,18 +519,19 @@ Ce paquet est envoyé à tout le monde. Il notifie à tout les clients que l'éc
 a qui l'échange était demandé ne sont pas suffisantes, soit par demande du joueur qui a initialisé l'échange.
 
 **contenu du paquet :**
- * raison de l'annulation (*reason*)
+ * Personne qui a annulé l'échange (*player_token*)
 
+Paquet ActionExchangeTransfer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Paquet PlayerUpdateProperty
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Paquet envoyé à tout le monde lorsqu'un joueur à un changement dans ses propriétés.
+Ce paquet est envoyé à tout le monde. Il notifie à tout les clients qu'un transfert de carte ou de propriété a été effectué.
+Le joueur "player_token" donne une propriété au joueur "to".
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * indiquer si c'est une propriétés en + ou en - (*is_added*)
- * indiquer la nature de la propriétés (*property*)
+ * id joueur envoyeur (*player_token*)
+ * id joueur receveur (*player_to*)
+ * Type (PROPERTY = 0, CARD = 1) (*transfer_type*)
+ * valeur, donc id d'une propriété/carte (*value*)
 
 Paquet ActionAuctionProperty
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -518,17 +541,7 @@ Paquet envoyé *par le client* lorsqu'un joueur souhaite vendre une propriété 
 **contenu du paquet :**
  * id du joueur (*id_player*)
  * nature de la propriétés (*property*)
- * prix de base (*min_price*)
-
-Paquet AuctionRound
-^^^^^^^^^^^^^^^^^^^
-
-Paquet envoyé à tout les clients pour leur indiquer qu'un tour d'enchères va débuter.
-
-**contenu du paquet :**
- * nature de la propriété mise en enchères (*property*)
- * id du joueur mettant la propriétés en enchères (*id_seller*)
- * prix actuel (*current_price*)
+ * enchère de base (*min_bid*)
 
 Paquet AuctionBid
 ^^^^^^^^^^^^^^^^^
@@ -537,25 +550,18 @@ Paquet envoyé *par un client* lorsque ce dernier enchérit durant une enchères
 qu'ils puissent suivre l'enchère en direct.
 
 **contenu du paquet :**
- * id du joueur (*id_bidder*)
- * prix proposé (*new_price*)
-
-Paquet AuctionConcede
-^^^^^^^^^^^^^^^^^^^^^
-
-Paquet envoyé *par un client* lorsque ce dernier ne souhaite pas participer à ce tour d'enchères. Ce paquet est relayé à tout
-le monde pour qu'ils puissent suivre l'enchères en direct.
-
-**contenu du paquet :**
- * id du joueur (*id_bidder*)
+ * id du joueur (*player_token*)
+ * enchère proposée (*bid*)
 
 Paquet AuctionEnd
 ^^^^^^^^^^^^^^^^^
 
 Paquet envoyé à tout le monde si personne n'enchérit pendant un tour d'enchères. Il signifie la fin des enchères.
 
-*Ce paquet ne contient pas d'informations*
-
+**contenu du paquet :**
+ * id du gagnant (*player_token*)
+ * montant que le joueur a enchérit (*bid*)
+ * temps restant pour le round action (*remaining_time*)
 
 Paquet ActionBuyProperty
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -563,8 +569,8 @@ Paquet ActionBuyProperty
 Paquet envoyé *par un client* lorsque le joueur veut acheter une propriété.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * nature de la propriété (*property*)
+ * id du joueur (*player_token*)
+ * id de la maison (*property_id*)
 
 Paquet ActionBuyPropertySucceed
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -572,8 +578,8 @@ Paquet ActionBuyPropertySucceed
 Paquet envoyé à tout le monde si l'achat de la propriété par un joueur est un succès.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * nature de la propriété (*property*)
+ * id du joueur (*player_token*)
+ * id de la maison (*property_id*)
 
 Paquet ActionMortgageProperty
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -581,8 +587,8 @@ Paquet ActionMortgageProperty
 Paquet envoyé *par un client* lorsque le joueur veut hypothéquer une propriété.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * nature de la propriété (*property*)
+ * id du joueur (*player_token*)
+ * id de la maison (*property_id*)
 
 Paquet ActionMortgageSucceed
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -590,8 +596,8 @@ Paquet ActionMortgageSucceed
 Paquet envoyé à tout le monde lorsqu'une hypothèque a été couronné de succès.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * nature de la propriété (*property*)
+ * id du joueur (*player_token*)
+ * id de la maison (*property_id*)
 
 Paquet ActionUnmortgageProperty
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -599,8 +605,8 @@ Paquet ActionUnmortgageProperty
 Paquet envoyé *par un client* lorsque le joueur veut déshypothéquer une propriété.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * nature de la propriété (*property*)
+ * id du joueur (*player_token*)
+ * id de la maison (*property_id*)
 
 Paquet ActionUnmortgageSucceed
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -608,8 +614,8 @@ Paquet ActionUnmortgageSucceed
 Paquet envoyé à tout le monde lorsqu'un déshypothèquement a été couronné de succès.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * nature de la propriété (*property*)
+ * id du joueur (*player_token*)
+ * id de la maison (*property_id*)
 
 
 Paquet ActionBuyHouse
@@ -618,8 +624,8 @@ Paquet ActionBuyHouse
 Paquet envoyé *par un client* lorsque le joueur veut acheter une maison
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * id de la maison (*id_house*)
+ * id du joueur (*player_token*)
+ * id de la maison (*property_id*)
 
 Paquet ActionBuyHouseSucceed
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -627,8 +633,8 @@ Paquet ActionBuyHouseSucceed
 Paquet envoyé à tout le monde lorsque l'achat d'une maison a été couronné de succès.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * id de la maison (*id_house*)
+ * id du joueur (*player_token*)
+ * id de la maison (*property_id*)
 
 Paquet ActionSellHouse
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -636,8 +642,8 @@ Paquet ActionSellHouse
 Paquet envoyé *par un clinet* lorsque le joueur veut vendre une maison.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * id de la maison (*id_house*)
+ * id du joueur (*player_token*)
+ * id de la maison (*property_id*)
 
 Paquet ActionSellHouseSucceed
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -645,5 +651,27 @@ Paquet ActionSellHouseSucceed
 Paquet envoyé à tout le monde lorsque la vente d'une maison a été couronné de succès.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
- * id de la maison (*id_house*)
+ * id du joueur (*player_token*)
+ * id de la maison (*property_id*)
+
+
+Paquets internes
+----------------
+
+Paquets internes au serveur (non liés au cli-serv)
+
+InternalInitConnection
+^^^^^^^^^^^^^^^^^^^^^^
+Paquet envoyé lorsque un joueur se connecte.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)
+
+InternalLobbyDisconnect
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Paquet interne pour gérer la déconnexion  d'un joueur dans le lobby. Ce paquet retire le joueur de la
+salle d'attente dans laquelle il est.
+
+**contenu du paquet :**
+ * id du joueur (*player_token*)

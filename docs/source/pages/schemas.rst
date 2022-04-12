@@ -4,8 +4,8 @@ Schema des paquets
 Schema des paquets du lobby
 ---------------------------
 
-*les paquets GetInRoom, GetInRoomSuccess, GetOutRoom et GetOutRoomSuccess*
- *ont été respectivement remplacé par EnterRoom, EnterRoomSuccess, LeaveRoom et LeaveRoomSuccess*
+*les paquets GetInRoom, GetInRoomSucceed, GetOutRoom et GetOutRoomSucceed*
+ *ont été respectivement remplacé par EnterRoom, EnterRoomSucceed, LeaveRoom et LeaveRoomSucceed*
 
 Connexion lobby
 ^^^^^^^^^^^^^^^

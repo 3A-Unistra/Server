@@ -10,10 +10,10 @@ from server.game_handler.data.cards import ChanceCard, CommunityCard, CardUtils
 from server.game_handler.data.exceptions import \
     GameNotExistsException
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
-    CreateGame, CreateGameSuccess, DeleteRoom, \
-    DeleteRoomSuccess, UpdateReason, BroadcastUpdateLobby, \
+    CreateGame, CreateGameSucceed, DeleteRoom, \
+    DeleteRoomSucceed, UpdateReason, BroadcastUpdateLobby, \
     BroadcastUpdateRoom, LeaveRoom, BroadcastNewRoomToLobby, \
-    LeaveRoomSuccess, NewHost
+    LeaveRoomSucceed, NewHost
 
 from django.conf import settings
 from server.game_handler.data.squares import Square, SquareUtils
@@ -186,7 +186,7 @@ class Engine:
                                                  player.channel_name)
 
         # sending success
-        self.send_packet(game_uid=game_token, packet=DeleteRoomSuccess(),
+        self.send_packet(game_uid=game_token, packet=DeleteRoomSucceed(),
                          channel_name=packet.player_token)
 
         self.remove_game(game_token)
@@ -245,7 +245,7 @@ class Engine:
         game.board.remove_player(
             game.board.get_player(packet.player_token))
 
-        game.send_packet(packet.player_token, LeaveRoomSuccess())
+        game.send_packet(packet.player_token, LeaveRoomSucceed())
 
         nb_players = len(game.board.players)
         # broadcast updated room status
@@ -311,7 +311,7 @@ class Engine:
         board.option_first_round_buy = packet.option_first_round_buy
         board.option_auction_enabled = packet.option_auction
         board.set_option_max_time(packet.option_max_time)
-        board.set_option_maxnb_rounds(packet.option_maxnb_rounds)
+        board.set_option_max_rounds(packet.option_max_rounds)
         board.set_option_start_balance(packet.starting_balance)
 
         # sending CreateGameSuccess to host
@@ -321,6 +321,7 @@ class Engine:
                              packet=CreateGameSuccess(player_token=packet.
                                                       player_token,
                              piece=piece))
+
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastNewRoomToLobby(
             game_token=new_game.uid,

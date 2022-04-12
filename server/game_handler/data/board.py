@@ -4,6 +4,7 @@ from typing import List, Optional
 import names
 
 from . import Player, Bank
+from .auction import Auction
 from .cards import ChanceCard, CommunityCard, CardActionType, Card
 from django.conf import settings
 
@@ -30,6 +31,7 @@ class Board:
     remaining_round_players: int
     starting_balance: int
     current_exchange: Optional[Exchange]
+    current_auction: Optional[Auction]
 
     # Options
     option_go_case_double_money: bool
@@ -110,7 +112,7 @@ class Board:
         else:
             self.option_max_time = given_time
 
-    def set_option_maxnb_rounds(self, nb_rounds):
+    def set_option_max_rounds(self, nb_rounds):
         """
         this function set the max_nb_rounds option if the max_time is within
         the [min, max] (else, default value is used)
@@ -118,10 +120,10 @@ class Board:
         """
         if nb_rounds < self.CONFIG.get('NB_ROUNDS_MIN') or \
                 nb_rounds > self.CONFIG.get('NB_ROUNDS_MAX'):
-            self.option_maxnb_rounds = self.CONFIG.get('NB_ROUNDS_DEFAULT')
+            self.option_max_rounds = self.CONFIG.get('NB_ROUNDS_DEFAULT')
 
         else:
-            self.option_maxnb_rounds = nb_rounds
+            self.option_max_rounds = nb_rounds
 
     def set_option_start_balance(self, balance):
         """
