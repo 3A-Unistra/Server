@@ -42,10 +42,12 @@ class PlayerPacket(Packet):
 
 
 class ChatPacket(PlayerPacket):
-
+    """
+        Packet containing message from unity
+        """
     message: str
 
-    def __init__(self, player_token, message):
+    def __init__(self, player_token: str = "", message: str = ""):
         super().__init__("ChatPacket", player_token)
         self.message = message
 
