@@ -367,7 +367,8 @@ class GameEngineConsumer(SyncConsumer):
             return
 
         if isinstance(packet, InternalLobbyDisconnect):
-            self.engine.disconnect_player(packet.player_token)
+            self.engine.disconnect_player(packet.player_token,
+                                          channel_name=channel_name)
             return
 
         if not isinstance(packet, LobbyPacket):
@@ -381,11 +382,11 @@ class GameEngineConsumer(SyncConsumer):
             return
 
         if isinstance(packet, DeleteRoom):
-            self.engine.delete_room(packet)
+            self.engine.delete_room(packet, channel_name)
             return
 
         if isinstance(packet, LeaveRoom):
-            self.engine.leave_game(packet)
+            self.engine.leave_game(packet=packet, channel_name=channel_name)
             return
 
         # Check if packet is not None and game token exists

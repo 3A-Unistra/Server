@@ -131,7 +131,7 @@ class Engine:
         self.games[game_uid].packets_queue.put(
             QueuePacket(packet=packet, channel_name=channel_name))
 
-    def delete_room(self, packet):
+    def delete_room(self, packet, channel_name: str):
         """
         delete instance of game as specified by the DeleteRoom packet
         warning : sender of the pocket must be host of the game
@@ -146,14 +146,14 @@ class Engine:
         if game_token not in self.games:
             self.send_packet(game_uid=game_token,
                              packet=ExceptionPacket(code=4207),
-                             channel_name=packet.player_token)
+                             channel_name=channel_name)
             return
 
         # if player sending it isn't host of the game
         if packet.player_token != self.games[game_token].host_player:
             self.send_packet(game_uid=game_token,
                              packet=ExceptionPacket(code=4206),
-                             channel_name=packet.player_token)
+                             channel_name=channel_name)
             return
 
         nb_players = len(self.games[game_token].board.players)
@@ -179,7 +179,7 @@ class Engine:
                                                      player.channel_name)
 
             # sending all lobby status to all the players of the game
-            self.send_all_lobby_status(player_token=player.get_id())
+            self.send_all_lobby_status(channel_name=channel_name)
 
             async_to_sync(
                 current.channel_layer.group_add)("lobby",
@@ -187,11 +187,11 @@ class Engine:
 
         # sending success
         self.send_packet(game_uid=game_token, packet=DeleteRoomSucceed(),
-                         channel_name=packet.player_token)
+                         channel_name=channel_name)
 
         self.remove_game(game_token)
 
-    def leave_game(self, packet):
+    def leave_game(self, packet, channel_name: str):
         """
         in case the host wants to leave the game and he is the only one
         remaining, we need to handle the LeaveRoom packet here before sending
@@ -245,7 +245,7 @@ class Engine:
         game.board.remove_player(
             game.board.get_player(packet.player_token))
 
-        game.send_packet(packet.player_token, LeaveRoomSucceed())
+        game.send_packet(channel_name=channel_name, packet=LeaveRoomSucceed())
 
         nb_players = len(game.board.players)
         # broadcast updated room status
@@ -261,7 +261,7 @@ class Engine:
         game.send_packet_to_group(update, "lobby")
 
         # because the player left, he has to get the status of all the rooms
-        self.send_all_lobby_status(packet.player_token)
+        self.send_all_lobby_status(channel_name=channel_name)
         return
 
     def create_game(self, packet: Packet, channel_name: str):
@@ -289,7 +289,6 @@ class Engine:
             return
 
         # adding a new game
-        id_new_game = new_game.uid
         self.add_game(new_game)
 
         print("[engine.create_game()] created game instance")
@@ -315,12 +314,11 @@ class Engine:
         board.set_option_start_balance(packet.starting_balance)
 
         # sending CreateGameSuccess to host
-        print("channel_name = " + channel_name)
         piece = board.assign_piece(packet.player_token)
         new_game.send_packet(channel_name=channel_name,
-                             packet=CreateGameSuccess(player_token=packet.
+                             packet=CreateGameSucceed(player_token=packet.
                                                       player_token,
-                             piece=piece))
+                                                      piece=piece))
 
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastNewRoomToLobby(
@@ -332,7 +330,6 @@ class Engine:
             has_password=(board.option_password != ""))
 
         # adding host to the game group
-        print(packet.player_token)
         async_to_sync(new_game.channel_layer.group_discard)("lobby",
                                                             packet.
                                                             player_token)
@@ -362,9 +359,9 @@ class Engine:
                     max_nb_players=board.players_nb,
                     is_private=board.option_is_private,
                     has_password=(board.option_password != ""))
-                game_c.send_packet(player_token, packet)
+                game_c.send_packet(channel_name=channel_name, packet=packet)
 
-    def disconnect_player(self, player_token: str):
+    def disconnect_player(self, player_token: str, channel_name: str):
 
         # find out if the player is in a game and which one
         in_game = False
@@ -380,4 +377,5 @@ class Engine:
             return
 
         self.leave_game(LeaveRoom(player_token=player_token,
-                                  game_token=game_token))
+                                  game_token=game_token),
+                        channel_name=channel_name)

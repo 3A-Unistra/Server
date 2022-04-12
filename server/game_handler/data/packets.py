@@ -233,7 +233,6 @@ class StatusRoom(LobbyPacket):
         self.starting_balance = starting_balance
 
     def deserialize(self, obj: object):
-<<<<<<< HEAD
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
         self.game_name = obj['game_name'] if 'game_name' in obj else ""
         self.nb_players = convert_to_int(obj['nb_players'])
@@ -245,24 +244,11 @@ class StatusRoom(LobbyPacket):
             'option_double_on_start' in obj else False
         self.option_max_time = bool(obj['option_max_time']) if \
             'option_max_time' in obj else False
-        self.option_maxnb_rounds = bool(obj['option_maxnb_rounds']) if \
-            'option_maxnb_rounds' in obj else False
+        self.option_max_rounds = bool(obj['option_max_rounds']) if \
+            'option_max_rounds' in obj else False
         self.option_first_round_buy = bool(obj['option_first_round_buy']) \
             if 'option_first_round_buy' in obj else 0
         self.starting_balance = convert_to_int(obj['starting_balance'])
-=======
-        self.game_token = obj['game_token']
-        self.name = obj['name']
-        self.nb_players = obj['nb_players']
-        self.max_nb_players = obj['max_nb_players']
-        self.players = obj['players']
-        self.option_auction = obj['option_auction']
-        self.option_double_on_start = obj['option_double_on_start']
-        self.option_max_time = obj['option_max_time']
-        self.option_max_rounds = obj['option_max_rounds']
-        self.option_first_round_buy = obj['option_first_round_buy']
-        self.starting_balance = obj['starting_balance']
->>>>>>> main
 
 
 class BroadcastNewRoomToLobby(LobbyPacket):
@@ -851,7 +837,6 @@ class CreateGame(LobbyPacket):
                  option_max_time: int = 0,
                  option_max_rounds: int = 0,
                  option_first_round_buy: bool = False):
-
         super().__init__("CreateGame")
         self.player_token = player_token
         self.password = password
@@ -866,7 +851,7 @@ class CreateGame(LobbyPacket):
         self.option_first_round_buy = option_first_round_buy
 
     def deserialize(self, obj: object):
-        self.player_token = obj['player_token'] if 'player_token' in\
+        self.player_token = obj['player_token'] if 'player_token' in \
                                                    obj else ""
         self.password = obj['password'] if 'password' in obj else ""
         self.max_nb_players = convert_to_int(obj['max_nb_players'])
