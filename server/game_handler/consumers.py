@@ -363,7 +363,7 @@ class GameEngineConsumer(SyncConsumer):
         # if internal packet:
         if isinstance(packet, InternalLobbyConnect):
             # sending infos about all the lobbies
-            self.engine.send_all_lobby_status(player_token=packet.player_token)
+            self.engine.send_all_lobby_status(channel_name=channel_name)
             return
 
         if isinstance(packet, InternalLobbyDisconnect):

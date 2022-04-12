@@ -315,12 +315,12 @@ class Engine:
         board.set_option_start_balance(packet.starting_balance)
 
         # sending CreateGameSuccess to host
-        print()
+        print("channel_name = " + channel_name)
         piece = board.assign_piece(packet.player_token)
         new_game.send_packet(channel_name=channel_name,
-                         packet=CreateGameSuccess(player_token=packet.
-                                                  player_token,
-                                                  piece=piece))
+                             packet=CreateGameSuccess(player_token=packet.
+                                                      player_token,
+                             piece=piece))
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastNewRoomToLobby(
             game_token=new_game.uid,
@@ -345,10 +345,10 @@ class Engine:
         new_game.send_packet_to_group(update, "lobby")
         print("[engine.create_game()] sent BroadcastNewRoomToLobby")
 
-    def send_all_lobby_status(self, player_token: str):
+    def send_all_lobby_status(self, channel_name: str):
         """
         send status of all the games that are in LOBBY state
-        :param player_token: player_token to send the status to
+        :param channel_name: player_token to send the status to
         """
         for game in self.games:
             game_c = self.games[game]
