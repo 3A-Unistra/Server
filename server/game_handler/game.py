@@ -213,14 +213,15 @@ class Game(Thread):
                 if packet.password != "":
                     if packet.password != self.board.option_password:
                         self.send_lobby_packet(channel_name=queue_packet.
-                                         channel_name,
-                                         packet=ExceptionPacket(code=4201))
+                                               channel_name,
+                                               packet=ExceptionPacket(
+                                                   code=4201))
                         return
                 # if game is full
                 if len(self.board.players) == self.board.players_nb:
                     self.send_lobby_packet(channel_name=queue_packet.
                                            channel_name,
-                                     packet=ExceptionPacket(code=4202))
+                                           packet=ExceptionPacket(code=4202))
                     return
 
                 # all the checks are fine, add the player to the game
@@ -242,7 +243,7 @@ class Game(Thread):
                 # send success of getting in room
                 piece = self.board.assign_piece(packet.player_token)
                 self.send_lobby_packet(channel_name=queue_packet.channel_name,
-                                 packet=EnterRoomSucceed(piece))
+                                       packet=EnterRoomSucceed(piece))
 
                 # sending status of room
                 player_uid = []
@@ -315,14 +316,14 @@ class Game(Thread):
                 if packet.player_token != self.host_player:
                     self.send_lobby_packet(channel_name=queue_packet.
                                            channel_name,
-                                     packet=ExceptionPacket(code=4205))
+                                           packet=ExceptionPacket(code=4205))
                     return
 
                 # check if game is not full
                 if len(self.board.players) == self.board.players_nb:
                     self.send_lobby_packet(channel_name=queue_packet.
                                            channel_name,
-                                     packet=ExceptionPacket(code=4202))
+                                           packet=ExceptionPacket(code=4202))
                     return
 
                 # add bot to the game
