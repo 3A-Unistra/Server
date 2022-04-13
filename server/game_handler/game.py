@@ -212,18 +212,20 @@ class Game(Thread):
 
                 if packet.password != "":
                     if packet.password != self.board.option_password:
-                        self.send_packet(channel_name=packet.player_token,
+                        self.send_lobby_packet(channel_name=queue_packet.
+                                         channel_name,
                                          packet=ExceptionPacket(code=4201))
                         return
                 # if game is full
                 if len(self.board.players) == self.board.players_nb:
-                    self.send_packet(channel_name=packet.player_token,
+                    self.send_lobby_packet(channel_name=queue_packet.
+                                           channel_name,
                                      packet=ExceptionPacket(code=4202))
                     return
 
                 # all the checks are fine, add the player to the game
                 self.board.add_player(
-                    Player(user=user, channel_name=self.channel_layer,
+                    Player(user=user, channel_name=queue_packet.channel_name,
                            bot=False))
 
                 # player leaves lobby group
@@ -239,7 +241,7 @@ class Game(Thread):
 
                 # send success of getting in room
                 piece = self.board.assign_piece(packet.player_token)
-                self.send_packet(channel_name=packet.player_token,
+                self.send_lobby_packet(channel_name=queue_packet.channel_name,
                                  packet=EnterRoomSucceed(piece))
 
                 # sending status of room
@@ -263,7 +265,8 @@ class Game(Thread):
                                     board.option_max_time,
                                     starting_balance=self.
                                     board.starting_balance)
-                self.send_packet(packet.player_token, status)
+                self.send_lobby_packet(channel_name=packet.player_token,
+                                       packet=status)
 
                 # broadcast to lobby group
                 reason = UpdateReason.NEW_PLAYER.value
@@ -310,13 +313,15 @@ class Game(Thread):
             elif isinstance(packet, AddBot):
                 # check if the host is the one sending the packet
                 if packet.player_token != self.host_player:
-                    self.send_packet(channel_name=packet.player_token,
+                    self.send_lobby_packet(channel_name=queue_packet.
+                                           channel_name,
                                      packet=ExceptionPacket(code=4205))
                     return
 
                 # check if game is not full
                 if len(self.board.players) == self.board.players_nb:
-                    self.send_packet(channel_name=packet.player_token,
+                    self.send_lobby_packet(channel_name=queue_packet.
+                                           channel_name,
                                      packet=ExceptionPacket(code=4202))
                     return
 
@@ -1967,6 +1972,22 @@ class Game(Thread):
         if player.bot is True:
             return
         self.send_packet(player.channel_name, packet)
+
+    def send_lobby_packet(self, channel_name: str, packet: Packet):
+        """
+                Send packet to lobby channel layer
+
+                :param channel_name: Channel to send packet to
+                :param packet: Packet to send
+                """
+        if channel_name is None:
+            return
+
+        async_to_sync(self.channel_layer.send)(
+            channel_name, {
+                'type': 'lobby.callback',
+                'packet': packet.serialize()
+            })
 
     def send_packet(self, channel_name: str, packet: Packet):
         """

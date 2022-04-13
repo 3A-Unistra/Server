@@ -273,6 +273,27 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             }
         )
 
+    async def player_callback(self, content):
+        """
+        When player gets packet from engine, this function is called
+        GameEngine -> PlayerConsumer -> WebGL
+        """
+        packet = content.get('packet', None)
+
+        if packet is None:
+            return
+
+        packet_content = json.loads(packet)
+
+        try:
+            packet = PacketUtils.deserialize_packet(packet_content)
+        except PacketException:
+            # send error packet (or ignore)
+            return
+
+        # Send packet to front/cli
+        await self.send(packet.serialize())
+
     async def send_lobby_packet(self, content):
         packet = content.get('packet', None)
 
