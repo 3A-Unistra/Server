@@ -146,10 +146,7 @@ class Board:
         :param player_token: player id
         """
 
-        try:  # get user from database
-            user = User.objects.get(id=player_token)
-        except User.DoesNotExist:
-            return
+        user = User(id=player_token)
 
         favorite_piece = user.piece
         taken = False
