@@ -268,7 +268,8 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             {
                 'type': 'process.lobby.packets',
                 'content': packet.serialize(),
-                'channel_name': self.channel_name
+                'channel_name': self.channel_name,
+                'game_token': self.game_token
             }
         )
 
