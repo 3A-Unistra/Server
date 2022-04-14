@@ -245,7 +245,8 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             {
                 'type': 'process.lobby.packets',
                 'content': packet.serialize(),
-                'channel_name': self.channel_name
+                'channel_name': self.channel_name,
+                'game_token': "" if self.game_token is None else self.game_token
             }
         )
         print("[consumer.LobbyConsumer.receive_json] sent to game engine")
@@ -273,7 +274,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             }
         )
 
-    async def player_callback(self, content):
+    async def lobby_callback(self, content):
         """
         When player gets packet from engine, this function is called
         GameEngine -> PlayerConsumer -> WebGL
@@ -368,6 +369,9 @@ class GameEngineConsumer(SyncConsumer):
             return
 
         channel_name = content['channel_name']
+
+        if content['game_token'] == "":
+            return
 
         log.info("process_packets_info")
 

@@ -289,7 +289,7 @@ class Game(Thread):
                 if packet.player_token != self.host_player:
                     return  # ignore the launch request
 
-                self.broadcast_packet(packet=AppletPrepare())
+                self.send_packet_to_group(AppletPrepare(), self.uid)
                 # putting the game in waiting mode (waiting for AppletReady
                 # from all the players)
                 self.state = GameState.WAITING_PLAYERS
