@@ -425,6 +425,8 @@ class GameEngineConsumer(SyncConsumer):
             self.engine.leave_game(packet=packet, channel_name=channel_name)
             return
 
+        print("Processing packet=%s (%s)", packet.name, packet.serialize())
+
         # Send packet to game thread
         self.engine.send_packet(game_uid=game_token, packet=packet,
                                 channel_name=channel_name)
