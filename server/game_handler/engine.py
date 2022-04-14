@@ -104,6 +104,8 @@ class Engine:
         :param uid: UUID of an existing game
         """
 
+        print("remove_game(%s)" % uid)
+
         if uid not in self.games:
             raise GameNotExistsException()
 

@@ -370,10 +370,11 @@ class GameEngineConsumer(SyncConsumer):
         if 'channel_name' not in content:
             return
 
-        channel_name = content['channel_name']
-
-        if content['game_token'] == "":
+        if 'game_token' not in content:
             return
+
+        channel_name = content['channel_name']
+        game_token = content['game_token']
 
         log.info("process_packets_info")
 
@@ -385,6 +386,10 @@ class GameEngineConsumer(SyncConsumer):
             # send error packet (or ignore)
             print("[consumer.EngineConsumer.process_lobby_packets] "
                   "PacketException")
+            return
+
+        # Check if packet was successfully deserialized
+        if packet is None:
             return
 
         # if internal packet:
@@ -408,6 +413,10 @@ class GameEngineConsumer(SyncConsumer):
             self.engine.create_game(packet, channel_name)
             return
 
+        # All actions after this condition require a game_token
+        if game_token == "":
+            return
+
         if isinstance(packet, DeleteRoom):
             self.engine.delete_room(packet, channel_name)
             return
@@ -415,16 +424,6 @@ class GameEngineConsumer(SyncConsumer):
         if isinstance(packet, LeaveRoom):
             self.engine.leave_game(packet=packet, channel_name=channel_name)
             return
-
-        # Check if packet is not None and game token exists
-        if packet is None or 'game_token' not in content:
-            return
-
-        game_token = content['game_token']
-
-        # get channel name
-        channel_name = content[
-            'channel_name'] if 'channel_name' in content else ''
 
         # Send packet to game thread
         self.engine.send_packet(game_uid=game_token, packet=packet,
