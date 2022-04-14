@@ -246,7 +246,8 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
                 'type': 'process.lobby.packets',
                 'content': packet.serialize(),
                 'channel_name': self.channel_name,
-                'game_token': "" if self.game_token is None else self.game_token
+                'game_token': "" if self.game_token is None else
+                self.game_token
             }
         )
         print("[consumer.LobbyConsumer.receive_json] sent to game engine")
