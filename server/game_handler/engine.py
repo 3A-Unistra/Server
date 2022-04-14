@@ -284,6 +284,7 @@ class Engine:
             return  # or maybe send error
 
         new_game = Game()
+        self.add_game(new_game)
         if len(self.games) > getattr(settings, "MAX_NUMBER_OF_GAMES", 10):
             print("[engine.create_game()] too many games")
             self.send_packet(game_uid=new_game.uid,
@@ -291,9 +292,6 @@ class Engine:
                              channel_name=channel_name)
             self.remove_game(new_game.uid)
             return
-
-        # adding a new game
-        self.add_game(new_game)
 
         print("[engine.create_game()] created game instance")
         print("[engine.create_game() game uid: " + new_game.uid)
@@ -319,10 +317,11 @@ class Engine:
 
         # sending CreateGameSuccess to host
         piece = board.assign_piece(packet.player_token)
-        new_game.send_packet(channel_name=channel_name,
-                             packet=CreateGameSucceed(player_token=packet.
-                                                      player_token,
-                                                      piece=piece))
+        new_game.send_lobby_packet(channel_name=channel_name,
+                                   packet=CreateGameSucceed(player_token=
+                                                            packet.
+                                                            player_token,
+                                                            piece=piece))
 
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastNewRoomToLobby(
