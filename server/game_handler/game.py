@@ -34,7 +34,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     ActionExchangeDecline, ActionExchangeCounter, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
-    ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd
+    ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
+    PlayerReconnect
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -164,20 +165,6 @@ class Game(Thread):
 
     def process_packet(self, queue_packet: QueuePacket):
         packet: Packet = queue_packet.packet
-
-        if self.state.value > GameState.LOBBY.value:
-            # Heartbeat only in "game"
-            if isinstance(packet, PingPacket):
-                player = self.board.get_player(packet.player_token)
-                if player is None:
-                    return
-
-                player.ping = True
-                return
-
-            if isinstance(packet, InternalPlayerDisconnect):
-                # TODO: HANDLE CLIENT SIDE DISCONNECT
-                pass
 
         # check player validity
         if isinstance(packet, InternalCheckPlayerValidity):
@@ -349,22 +336,55 @@ class Game(Thread):
                         # 4100 => invalid player
                         packet=ExceptionPacket(code=4100))
 
-        if self.state is GameState.WAITING_PLAYERS:
-            # WebGL app is ready to play
-            if not isinstance(packet, AppletReady):
+            # Heartbeat only in "game"
+            if isinstance(packet, PingPacket):
+                player = self.board.get_player(packet.player_token)
+                if player is None:
+                    return
+
+                player.ping = True
                 return
-            # Player could not be null -> we are checking before, if this
-            # player exists.
-            player = self.board.get_player(packet.player_token)
 
-            # Set player to connected (bot disabled)
-            player.connect()
+            # AppletReady -> connect from client
+            # Could be first connect as reconnect
+            if isinstance(packet, AppletReady):
+                player = self.board.get_player(packet.player_token)
 
-            # init ping heartbeat
-            player.ping = True
-            player.ping_timeout = datetime.now() + timedelta(
-                seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
-            return
+                # Set player to connected (bot disabled)
+                player.connect()
+
+                # init ping heartbeat
+                player.ping = True
+                player.ping_timeout = datetime.now() + timedelta(
+                    seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
+
+                # Waiting_players => first connection => not sending anything
+                if self.state is not GameState.WAITING_PLAYERS:
+                    self.broadcast_packet(PlayerReconnect(
+                        player_token=player.get_id()
+                    ))
+                    # TODO: RECONNECT => Send global state to player
+                return
+
+            if self.state is GameState.WAITING_PLAYERS:
+                # WebGL app is ready to play
+                # Player could not be null -> we are checking before, if this
+                # player exists.
+                player = self.board.get_player(packet.player_token)
+
+                # Set player to connected (bot disabled)
+                player.connect()
+
+                # init ping heartbeat
+                player.ping = True
+                player.ping_timeout = datetime.now() + timedelta(
+                    seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
+                return
+
+
+            if isinstance(packet, InternalPlayerDisconnect):
+                # TODO: HANDLE CLIENT SIDE DISCONNECT
+                pass
 
         if self.state is GameState.START_DICE:
 

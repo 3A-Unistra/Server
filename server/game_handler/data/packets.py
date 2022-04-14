@@ -355,19 +355,13 @@ class PlayerDisconnect(PlayerPacket):
 class PlayerReconnect(PlayerPacket):
     reason: str
 
-    def __init__(self, player_token: str = "", reason: str = ""):
+    def __init__(self, player_token: str = ""):
         super().__init__(name=self.__class__.__name__,
                          player_token=player_token)
-        self.reason = reason
-
-    def deserialize(self, obj: object):
-        super().deserialize(obj)
-        self.reason = obj["reason"]
-
 
 class GameStartDice(Packet):
     def __init__(self):
-        super(GameStartDice, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
 
 
 class GameStartDiceThrow(PlayerPacket):
@@ -379,7 +373,7 @@ class GameStartDiceResults(Packet):
     dice_result: []
 
     def __init__(self, dice_result: [] = None):
-        super(GameStartDiceResults, self).__init__(self.__class__.__name__)
+        super().__init__(self.__class__.__name__)
         self.dice_result = [] if dice_result is None else dice_result
 
     def deserialize(self, obj: object):
