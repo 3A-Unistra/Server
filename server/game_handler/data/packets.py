@@ -930,7 +930,7 @@ class InternalLobbyConnect(InternalPacket):
     player_token: str
 
     def __init__(self, player_token: str = ""):
-        super().__init__("DeleteRoomSucceed")
+        super().__init__("InternalLobbyConnect")
         self.player_token = player_token
 
     def deserialize(self, obj: object):
@@ -941,7 +941,7 @@ class InternalLobbyDisconnect(InternalPacket):
     player_token: str
 
     def __init__(self, player_token: str = ""):
-        super().__init__("DeleteRoomSucceed")
+        super().__init__("InternalLobbyDisconnect")
         self.player_token = player_token
 
     def deserialize(self, obj: object):
@@ -1010,6 +1010,7 @@ class PacketUtils:
         "AddBot": AddBot,
         "BroadcastUpdateRoom": BroadcastUpdateRoom,
         "BroadcastUpdateLobby": BroadcastUpdateLobby,
+        "BroadcastNewRoomToLobby": BroadcastNewRoomToLobby,
         "StatusRoom": StatusRoom,
         "NewHost": NewHost,
         # Internal packets

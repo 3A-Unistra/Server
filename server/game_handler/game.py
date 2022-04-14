@@ -2000,8 +2000,11 @@ class Game(Thread):
         if channel_name is None:
             return
 
+        function_name = 'lobby.callback' if self.state.LOBBY \
+            else 'player.callback'
+
         async_to_sync(self.channel_layer.send)(
             channel_name, {
-                'type': 'player.callback',
+                'type': function_name,
                 'packet': packet.serialize()
             })

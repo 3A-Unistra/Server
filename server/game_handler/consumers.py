@@ -303,7 +303,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         if packet is None:
             return
 
-        await self.send_json(packet)
+        await self.send(packet)
 
 
 class GameEngineConsumer(SyncConsumer):
@@ -395,6 +395,7 @@ class GameEngineConsumer(SyncConsumer):
         # if internal packet:
         if isinstance(packet, InternalLobbyConnect):
             # sending infos about all the lobbies
+            print("InternalLobbyConnect channel_name: %s" % channel_name)
             self.engine.send_all_lobby_status(channel_name=channel_name)
             return
 
