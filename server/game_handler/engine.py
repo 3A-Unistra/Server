@@ -321,13 +321,14 @@ class Engine:
         piece = board.assign_piece(packet.player_token)
         new_game.send_lobby_packet(channel_name=channel_name,
                                    packet=CreateGameSucceed(
+                                       game_token=new_game.uid,
                                        player_token=packet.player_token,
                                        piece=piece))
 
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastNewRoomToLobby(
             game_token=new_game.uid,
-            game_name=new_game.name,
+            game_name=new_game.public_name,
             nb_players=len(board.players),
             max_nb_players=board.players_nb,
             is_private=board.option_is_private,

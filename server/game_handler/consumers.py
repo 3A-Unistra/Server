@@ -9,7 +9,7 @@ from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
     PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
     CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket, LeaveRoom, \
-    InternalLobbyDisconnect
+    InternalLobbyDisconnect, CreateGameSucceed
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -256,11 +256,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
     async def disconnect(self, code):
         # if the player is in the lobby group, he is not in a waiting room
         # therefore, we can just take him out of that group
-        lobby_group = await self.channel_layer.group_channels('lobby')
-        if self.channel_name in lobby_group:
-            await self.channel_layer.group_discard("lobby",
-                                                   self.channel_name)
-            return
+        await self.channel_layer.group_discard("lobby", self.channel_name)
 
         # in case the player is in a waiting room, we have to take him out
         # of it.  in order to do that, we use InternalLobbyDisconnect,
@@ -293,6 +289,9 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         except PacketException:
             # send error packet (or ignore)
             return
+
+        if isinstance(packet, CreateGameSucceed):
+            self.game_token = packet.game_token
 
         # Send packet to front/cli
         await self.send(packet.serialize())

@@ -876,16 +876,20 @@ class CreateGame(LobbyPacket):
 
 class CreateGameSucceed(LobbyPacket):
     player_token: str
+    game_token: str
     piece: int
 
-    def __init__(self, player_token: str = "", piece: int = 0):
+    def __init__(self, player_token: str = "", game_token: str = "",
+                 piece: int = 0):
         super().__init__("CreateGameSucceed")
         self.player_token = player_token
+        self.game_token = game_token
         self.piece = piece
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token'] if 'player_token' in obj else 0
         self.piece = convert_to_int(obj['piece'])
+        self.game_token = obj['game_token'] if 'game_token' in obj else ''
 
 
 class AddBot(LobbyPacket):
