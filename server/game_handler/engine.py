@@ -210,9 +210,13 @@ class Engine:
         game_token = packet.game_token
         game = self.games[game_token]
 
+        if self.games[game_token].state == GameState.WAITING_PLAYERS:
+            return
+
         if len(game.board.players) == 1:
             self.delete_room(DeleteRoom(player_token=packet.player_token,
-                                        game_token=game_token))
+                                        game_token=game_token),
+                             channel_name=channel_name)
 
             async_to_sync(game.channel_layer.
                           group_add)("lobby", packet.player_token)
