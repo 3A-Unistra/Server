@@ -1,5 +1,6 @@
 import json
 import logging
+
 from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
@@ -261,7 +262,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         # in case the player is in a waiting room, we have to take him out
         # of it.  in order to do that, we use InternalLobbyDisconnect,
         # which is handled in the EngineConsumer
-        packet = InternalLobbyDisconnect(self.channel_name)
+        packet = InternalLobbyDisconnect(self.player_token)
 
         await self.channel_layer.send(
             'game_engine',

@@ -353,13 +353,16 @@ class Engine:
         send status of all the games that are in LOBBY state
         :param channel_name: player_token to send the status to
         """
+        print("game length: %d" % len(self.games))
         for game in self.games:
             game_c = self.games[game]
             board = game_c.board
+            print("Processing state %d for %s" % (
+            game_c.state.value, game_c.public_name))
             if game_c.state == GameState.LOBBY:
                 packet = BroadcastNewRoomToLobby(
                     game_token=game,
-                    game_name=game_c.name,
+                    game_name=game_c.public_name,
                     nb_players=len(board.players),
                     max_nb_players=board.players_nb,
                     is_private=board.option_is_private,

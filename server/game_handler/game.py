@@ -105,10 +105,10 @@ class Game(Thread):
     games: {}
     host_player: Player
 
-    def __init__(self, uid: str = str(uuid.uuid4()), **kwargs):
-        super(Game, self).__init__(daemon=True, name="Game_%s" % uid, **kwargs)
+    def __init__(self, **kwargs):
+        self.uid = str(uuid.uuid4())
+        super().__init__(daemon=True, name="Game_%s" % self.uid, **kwargs)
         self.channel_layer = get_channel_layer()
-        self.uid = uid
         self.state = GameState.OFFLINE
         self.packets_queue = Queue()
         self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
