@@ -41,9 +41,7 @@ class TestPacket(TestCase):
         self.json_Ping = \
             '{"name": "Ping", ' \
             '"player_token": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d"}'
-        self.json_AppletPrepare = \
-            '{"name": "AppletPrepare", ' \
-            '"player_token": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d"}'
+        self.json_AppletPrepare = '{"name": "AppletPrepare"}'
         self.json_AppletReady = \
             '{"name": "AppletReady", ' \
             '"player_token": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d"}'
@@ -55,8 +53,7 @@ class TestPacket(TestCase):
             '"reason": ""}'
         self.json_PlayerReconnect = \
             '{"name": "PlayerReconnect", ' \
-            '"player_token": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d", ' \
-            '"reason": "timeout"}'
+            '"player_token": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d"}'
         self.json_GameStartDice = '{"name": "GameStartDice"}'
         self.json_GameStartDiceThrow = \
             '{"name": "GameStartDiceThrow", ' \
@@ -229,8 +226,7 @@ class TestPacket(TestCase):
         assert packet.player_token == '23b3a6c7-6990-44b1-b466-8f8c3da5ec7d'
 
     def test_serialize_AppletPrepare(self):
-        packet = AppletPrepare(
-            player_token="23b3a6c7-6990-44b1-b466-8f8c3da5ec7d")
+        packet = AppletPrepare()
         assert packet.serialize() == self.json_AppletPrepare
 
     def test_deserialize_AppletPrepare(self):
@@ -238,7 +234,6 @@ class TestPacket(TestCase):
             json.loads(self.json_AppletPrepare))
         assert isinstance(packet, AppletPrepare)
         assert packet.name == 'AppletPrepare'
-        assert packet.player_token == '23b3a6c7-6990-44b1-b466-8f8c3da5ec7d'
 
     def test_serialize_AppletReady(self):
         packet = AppletReady(
@@ -277,8 +272,7 @@ class TestPacket(TestCase):
 
     def test_serialize_PlayerReconnect(self):
         packet = PlayerReconnect(
-            player_token="23b3a6c7-6990-44b1-b466-8f8c3da5ec7d",
-            reason="timeout")
+            player_token="23b3a6c7-6990-44b1-b466-8f8c3da5ec7d")
         assert packet.serialize() == self.json_PlayerReconnect
 
     def test_deserialize_PlayerReconnect(self):
@@ -287,7 +281,6 @@ class TestPacket(TestCase):
         assert isinstance(packet, PlayerReconnect)
         assert packet.name == 'PlayerReconnect'
         assert packet.player_token == '23b3a6c7-6990-44b1-b466-8f8c3da5ec7d'
-        assert packet.reason == 'timeout'
 
     def test_serialize_GameStartDice(self):
         packet = GameStartDice()

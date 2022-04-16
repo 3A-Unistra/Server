@@ -389,6 +389,7 @@ class PlayerReconnect(PlayerPacket):
         super().__init__(name=self.__class__.__name__,
                          player_token=player_token)
 
+
 class GameStartDice(Packet):
     def __init__(self):
         super().__init__(self.__class__.__name__)

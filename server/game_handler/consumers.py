@@ -440,7 +440,8 @@ class GameEngineConsumer(SyncConsumer):
             )
             return
 
-        print("Processing packet=%s => (%s)" % (packet.name, packet.serialize()))
+        print("Processing packet=%s => (%s)" %
+              (packet.name, packet.serialize()))
 
         # Send packet to game thread
         self.engine.send_packet(game_uid=game_token, packet=packet,

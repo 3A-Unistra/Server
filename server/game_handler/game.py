@@ -170,23 +170,27 @@ class Game(Thread):
         if isinstance(packet, InternalCheckPlayerValidity):
             # Only accept connection, if player exists and game is started
 
-            valid = True
+            player: Optional[Player] = None
 
             if not self.board.player_exists(packet.player_token):
                 valid = False
             elif self.state.value <= GameState.LOBBY.value:
                 valid = False
             # Player already online
-            elif self.board.get_player(packet.player_token).online:
-                valid = False
+            else:
+                player = self.board.get_player(packet.player_token)
+                valid = player.online
 
             self.send_packet(
                 channel_name=queue_packet.channel_name,
                 packet=InternalCheckPlayerValidity(valid=valid))
+
             if not valid:
                 return
 
-            # Else handle connection.
+            # Change channel_name
+            player.channel_name = queue_packet.channel_name
+            return
 
         # Before Player validity check
         if self.state is GameState.LOBBY and isinstance(packet, EnterRoom):
@@ -387,12 +391,26 @@ class Game(Thread):
                 player.ping = True
                 player.ping_timeout = datetime.now() + timedelta(
                     seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
-                return
 
+                # Add player to game group
+                async_to_sync(self.channel_layer.group_add)(
+                    self.uid, player.channel_name
+                )
+
+                return
 
             if isinstance(packet, InternalPlayerDisconnect):
                 # TODO: HANDLE CLIENT SIDE DISCONNECT
-                pass
+                # Add player to game group
+                player = self.board.get_player(packet.player_token)
+
+                if player is None:
+                    return
+
+                async_to_sync(self.channel_layer.group_discard)(
+                    self.uid, player.channel_name
+                )
+                return
 
         if self.state is GameState.START_DICE:
 
