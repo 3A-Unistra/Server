@@ -176,29 +176,25 @@ class Game(Thread):
                 player.ping = True
                 return
 
-            if isinstance(packet, InternalPlayerDisconnect):
-                # TODO: HANDLE CLIENT SIDE DISCONNECT
-                pass
+            # check player validity
+            if isinstance(packet, InternalCheckPlayerValidity):
+                # Only accept connection, if player exists and game is started
 
-        # check player validity
-        if isinstance(packet, InternalCheckPlayerValidity):
-            # Only accept connection, if player exists and game is started
+                valid = True
 
-            valid = True
+                if not self.board.player_exists(packet.player_token):
+                    valid = False
+                elif self.state.value <= GameState.LOBBY.value:
+                    valid = False
+                # Player already online
+                elif self.board.get_player(packet.player_token).online:
+                    valid = False
 
-            if not self.board.player_exists(packet.player_token):
-                valid = False
-            elif self.state.value <= GameState.LOBBY.value:
-                valid = False
-            # Player already online
-            elif self.board.get_player(packet.player_token).online:
-                valid = False
-
-            self.send_packet(
-                channel_name=queue_packet.channel_name,
-                packet=InternalCheckPlayerValidity(valid=valid))
-            if not valid:
-                return
+                self.send_packet(
+                    channel_name=queue_packet.channel_name,
+                    packet=InternalCheckPlayerValidity(valid=valid))
+                if not valid:
+                    return
 
             # Else handle connection.
 
@@ -506,9 +502,11 @@ class Game(Thread):
 
                 self.proceed_dice_choice(player=player, choice=choice)
             elif self.state is GameState.ACTION_START_WAIT:
+                # Action start wait
                 self.state = GameState.ACTION_TIMEOUT_WAIT
                 self.set_timeout(self.CONFIG.get('ACTION_TIMEOUT_WAIT'))
                 self.broadcast_packet(ActionStart())
+
             elif self.state is GameState.ACTION_TIMEOUT_WAIT:
                 # Tour is ended
                 self.proceed_action_tour_end()
