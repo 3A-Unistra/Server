@@ -168,7 +168,7 @@ class EnterRoomSucceed(LobbyPacket):
     piece: int
 
     def __init__(self, piece: int = 0):
-        super().__init__("EnterRoomSucceed")
+        super().__init__(self.__class__.__name__)
         self.piece = piece
 
     def deserialize(self, obj: object):
@@ -180,7 +180,7 @@ class LeaveRoom(LobbyPacket):
     game_token: str
 
     def __init__(self, player_token: str = "", game_token: str = ""):
-        super().__init__("LeaveRoom")
+        super().__init__(self.__class__.__name__)
         self.player_token = player_token
         self.game_token = game_token
 
@@ -230,7 +230,7 @@ class StatusRoom(LobbyPacket):
                  option_max_time: int = 0, option_max_rounds: int = 0,
                  option_first_round_buy: bool = False,
                  starting_balance: int = 0):
-        super().__init__("StatusRoom")
+        super().__init__(self.__class__.__name__)
         self.game_token = game_token
         self.game_name = game_name
         self.nb_players = nb_players
@@ -269,7 +269,7 @@ class BroadcastNewRoomToLobby(LobbyPacket):
     def __init__(self, game_token: str = "", game_name: str = "",
                  nb_players: int = 0, max_nb_players: int = 0,
                  is_private: bool = False, has_password: bool = False):
-        super().__init__("BroadcastNewRoomToLobby")
+        super().__init__(self.__class__.__name__)
         self.game_token = game_token
         self.game_name = game_name
         self.nb_players = nb_players
@@ -292,7 +292,7 @@ class BroadcastUpdateLobby(LobbyPacket):
 
     def __init__(self, game_token: str = "",
                  reason: int = 0):
-        super().__init__("BroadcastUpdatedRoom")
+        super().__init__(self.__class__.__name__)
         self.game_token = game_token
         self.reason = reason
 
@@ -309,7 +309,7 @@ class BroadcastUpdateRoom(LobbyPacket):
 
     def __init__(self, game_token: str = "", nb_players: int = 0,
                  reason: int = 0, player: str = None):
-        super().__init__("BroadcastUpdatedRoom")
+        super().__init__(self.__class__.__name__)
         self.game_token = game_token
         self.nb_players = nb_players
         self.player = player
@@ -324,7 +324,7 @@ class BroadcastUpdateRoom(LobbyPacket):
 
 class NewHost(LobbyPacket):
     def __init__(self):
-        super().__init__("NewHost")
+        super().__init__(self.__class__.__name__)
 
 
 class PingPacket(PlayerPacket):
@@ -336,7 +336,7 @@ class AppletPrepare(LobbyPacket):
     player_token: str
 
     def __init__(self, player_token: str = ""):
-        super().__init__("AppletPrepare")
+        super().__init__(self.__class__.__name__)
         self.player_token = player_token
 
     def deserialize(self, obj: object):

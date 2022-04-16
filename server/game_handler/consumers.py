@@ -10,7 +10,7 @@ from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
     PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
     CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket, LeaveRoom, \
-    InternalLobbyDisconnect, CreateGameSucceed
+    InternalLobbyDisconnect, CreateGameSucceed, EnterRoom
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -241,7 +241,9 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             return
 
         # send to game engine consumer
-        print("[consumer.LobbyConsumer.receive_json] sending to game engine")
+        print("[consumer.LobbyConsumer.receive_json] sending to "
+              "game engine (%s)" % packet.name)
+
         await self.channel_layer.send(
             'game_engine',
             {
@@ -409,11 +411,16 @@ class GameEngineConsumer(SyncConsumer):
             # not supposed to happen
             return
 
+        print("real lobbyPacket shit")
+
         if isinstance(packet, CreateGame):
             print("[consumer.EngineConsumer.process_lobby_packets] "
                   "sending to engine.create_game")
             self.engine.create_game(packet, channel_name)
             return
+
+        if isinstance(packet, EnterRoom):
+            game_token = packet.game_token
 
         # All actions after this condition require a game_token
         if game_token == "":

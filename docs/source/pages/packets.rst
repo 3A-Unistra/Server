@@ -203,7 +203,7 @@ Ce paquet ne peut être envoyé que par l'hôte de la partie.
 DeleteRoomSucceed
 ^^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour lui signaler le succès de la suppression d'une partie.
-Les autres joueurs seront prévenus via un BroadcastUpdatedRoom avec le champ *state* à CLOSED.
+Les autres joueurs seront prévenus via un BroadcastUpdateRoom avec le champ *state* à CLOSED.
 
 *ce paquet ne contient pas d'informations*
 
