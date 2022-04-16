@@ -230,9 +230,9 @@ class Game(Thread):
                            bot=False))
 
                 # player leaves lobby group
-                async_to_sync(
-                    self.channel_layer.group_discard)("lobby",
-                                                      packet.player_token)
+                async_to_sync(self.channel_layer.group_discard)(
+                    "lobby", queue_packet.channel_name
+                )
                 # add player to this specific game group
                 async_to_sync(
                     self.channel_layer.group_add)(self.uid,
@@ -242,8 +242,11 @@ class Game(Thread):
 
                 # send success of getting in room
                 piece = self.board.assign_piece(packet.player_token)
-                self.send_lobby_packet(channel_name=queue_packet.channel_name,
-                                       packet=EnterRoomSucceed(piece))
+                self.send_lobby_packet(
+                    channel_name=queue_packet.channel_name,
+                    packet=EnterRoomSucceed(game_token=self.uid,
+                                            piece=piece)
+                )
 
                 # sending status of room
                 player_uid = []
@@ -1961,7 +1964,7 @@ class Game(Thread):
         :param group_name: Name of the channels group
         :param packet: packet to be sent
         """
-        print("send_packet_to_group(%s)" % group_name)
+        print("send_packet_to_group(%s, %s)" % (packet.name, group_name))
         async_to_sync(self.channel_layer.group_send)(
             group_name, {
                 'type': 'send.lobby.packet',

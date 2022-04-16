@@ -193,12 +193,14 @@ class Engine:
 
         self.remove_game(game_token)
 
-    def leave_game(self, packet, channel_name: str):
+    def leave_game(self, packet, game_token: str, channel_name: str):
         """
         in case the host wants to leave the game and he is the only one
         remaining, we need to handle the LeaveRoom packet here before sending
         it to the concerned game instance
         :param packet: must be LeaveRoom instance
+        :param game_token:
+        :param channel_name:
         """
 
         if not isinstance(packet, LeaveRoom):
@@ -209,7 +211,6 @@ class Engine:
             # ignore
             return
 
-        game_token = packet.game_token
         game = self.games[game_token]
 
         if self.games[game_token].state == GameState.WAITING_PLAYERS:
@@ -268,7 +269,6 @@ class Engine:
 
         # because the player left, he has to get the status of all the rooms
         self.send_all_lobby_status(channel_name=channel_name)
-        return
 
     def create_game(self, packet: Packet, channel_name: str):
         """
@@ -386,4 +386,5 @@ class Engine:
 
         self.leave_game(LeaveRoom(player_token=player_token,
                                   game_token=game_token),
+                        game_token=game_token,
                         channel_name=channel_name)

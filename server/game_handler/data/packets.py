@@ -166,13 +166,16 @@ class ExceptionPacket(Packet):
 
 class EnterRoomSucceed(LobbyPacket):
     piece: int
+    game_token: str
 
-    def __init__(self, piece: int = 0):
+    def __init__(self, game_token: str = "", piece: int = 0):
         super().__init__(self.__class__.__name__)
         self.piece = piece
+        self.game_token = game_token
 
     def deserialize(self, obj: object):
-        self.piece = convert_to_int(obj['piece'])
+        self.piece = convert_to_int(obj["piece"])
+        self.game_token = obj["game_token"] if "game_token" in obj else ""
 
 
 class LeaveRoom(LobbyPacket):
