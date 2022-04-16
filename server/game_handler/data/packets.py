@@ -352,6 +352,12 @@ class PlayerDisconnect(PlayerPacket):
         self.reason = obj["reason"]
 
 
+class PlayerDefeat(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+
+
 class PlayerReconnect(PlayerPacket):
     reason: str
 
@@ -922,6 +928,7 @@ class PacketUtils:
         "AppletReady": AppletReady,
         "PlayerDisconnect": PlayerDisconnect,
         "PlayerReconnect": PlayerReconnect,
+        "PlayerDefeat": PlayerDefeat,
         "GameStartDice": GameStartDice,
         "GameStartDiceThrow": GameStartDiceThrow,
         "GameStartDiceResults": GameStartDiceResults,

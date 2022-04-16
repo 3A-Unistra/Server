@@ -35,7 +35,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
-    ActionStart
+    ActionStart, PlayerDefeat
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -1271,9 +1271,15 @@ class Game(Thread):
 
         current_player = self.board.get_current_player()
 
-        if current_player.is_bankrupt():
-            # TODO: defeat.
-            pass
+        if not current_player.is_bankrupt():
+            return
+
+        current_player.bankrupt = True
+
+        # Send PlayerDefeat
+        self.broadcast_packet(PlayerDefeat(
+            player_token=current_player.get_id()
+        ))
 
     def check_game_status(self) -> bool:
         """
