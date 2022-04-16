@@ -9,7 +9,7 @@ from .data.exceptions import PacketException, GameNotExistsException
 from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
     PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
-    CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket, LeaveRoom, \
+    CreateGame, InternalLobbyConnect, LobbyPacket, LeaveRoom, \
     InternalLobbyDisconnect, CreateGameSucceed, EnterRoom, EnterRoomSucceed
 from .engine import Engine
 
@@ -205,7 +205,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             return await self.close(code=4000)
 
         self.player_token = str(self.scope['user'].id)
-        print(self.channel_name)
+        print("User %s connected to lobby" % self.player_token)
 
         # sending the internal packet to the EngineConsumer
         packet = InternalLobbyConnect(
@@ -426,10 +426,6 @@ class GameEngineConsumer(SyncConsumer):
         # All actions after this condition require a game_token
         if game_token == "":
             print("[%s] game_token is empty" % packet.name)
-            return
-
-        if isinstance(packet, DeleteRoom):
-            self.engine.delete_room(packet, channel_name)
             return
 
         if isinstance(packet, LeaveRoom):

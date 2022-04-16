@@ -326,8 +326,15 @@ class BroadcastUpdateRoom(LobbyPacket):
 
 
 class NewHost(LobbyPacket):
-    def __init__(self):
+    player_token: str
+
+    def __init__(self, player_token: str = ""):
         super().__init__(self.__class__.__name__)
+        self.player_token = player_token
+
+    def deserialize(self, obj: object):
+        self.player_token = obj[
+            'player_token'] if 'player_token' in obj else ""
 
 
 class PingPacket(PlayerPacket):
@@ -913,26 +920,6 @@ class AddBot(LobbyPacket):
         self.game_token = obj['game_token']
 
 
-class DeleteRoom(LobbyPacket):
-    player_token: str
-    game_token: str
-
-    def __init__(self, player_token: str = "", game_token: str = ""):
-        super().__init__("DeleteRoom")
-        self.player_token = player_token
-        self.game_token = game_token
-
-    def deserialize(self, obj: object):
-        self.player_token = obj['player_token']
-        self.game_token = obj['game_token']
-
-
-class DeleteRoomSucceed(LobbyPacket):
-
-    def __init__(self):
-        super().__init__("DeleteRoomSucceed")
-
-
 class InternalLobbyConnect(InternalPacket):
     player_token: str
 
@@ -1012,8 +999,6 @@ class PacketUtils:
         "CreateGame": CreateGame,
         "CreateGameSucceed": CreateGameSucceed,
         "LaunchGame": LaunchGame,
-        "DeleteRoom": DeleteRoom,
-        "DeleteRoomSucceed": DeleteRoomSucceed,
         "AddBot": AddBot,
         "BroadcastUpdateRoom": BroadcastUpdateRoom,
         "BroadcastUpdateLobby": BroadcastUpdateLobby,
