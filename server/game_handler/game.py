@@ -475,6 +475,7 @@ class Game(Thread):
                 if self.board.get_online_real_players_count() == 0:
                     # After timeout, if no one is connected
                     # Stop game
+                    print("Stopping game after timeout with no players online")
                     self.state = GameState.STOP_THREAD
                     return
                 else:
@@ -531,6 +532,7 @@ class Game(Thread):
         del self.games[self.uid]
 
     def set_timeout(self, seconds: int):
+        print("Setting timeout to %d seconds." % seconds)
         self.timeout = datetime.now() + timedelta(seconds=seconds)
 
     def timeout_expired(self) -> bool:
@@ -2001,7 +2003,7 @@ class Game(Thread):
         if channel_name is None:
             return
 
-        function_name = 'lobby.callback' if self.state.LOBBY \
+        function_name = 'lobby.callback' if self.state == GameState.LOBBY \
             else 'player.callback'
 
         async_to_sync(self.channel_layer.send)(
