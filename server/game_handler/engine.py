@@ -157,7 +157,7 @@ class Engine:
         # player leaves game group
         async_to_sync(
             game.channel_layer.group_discard)(game.uid,
-                                              packet.player_token)
+                                              channel_name)
         # add player to the lobby group
         async_to_sync(
             game.channel_layer.group_add)("lobby", channel_name)
@@ -242,7 +242,7 @@ class Engine:
                         bot=False)
         board.add_player(player)
 
-        new_game.host_player = packet.player_token
+        new_game.host_player = player
         board.players_nb = packet.max_nb_players
         board.option_password = packet.password
         board.option_is_private = packet.is_private
@@ -277,7 +277,7 @@ class Engine:
         print("[engine.create_game()] remove player from lobby group")
 
         async_to_sync(new_game.channel_layer.group_add)(new_game.uid,
-                                                        packet.player_token)
+                                                        channel_name)
         print("[engine.create_game()] added player to game group")
 
         new_game.send_packet_to_group(update, "lobby")

@@ -234,9 +234,9 @@ class Game(Thread):
                 "lobby", queue_packet.channel_name
             )
             # add player to this specific game group
-            async_to_sync(
-                self.channel_layer.group_add)(self.uid,
-                                              packet.player_token)
+            async_to_sync(self.channel_layer.group_add)(
+                self.uid, queue_packet.channel_name
+            )
 
             nb_players = len(self.board.players)
 
@@ -296,11 +296,13 @@ class Game(Thread):
 
         if self.state is GameState.LOBBY:
             if isinstance(packet, LaunchGame):
+                print("received LaunchGame")
                 player = self.board.get_player(packet.player_token)
                 # check if player_token is the token of the game host
                 if player != self.host_player:
                     return  # ignore the launch request
 
+                print("Set state to GameState.WAITING_PLAYERS")
                 # putting the game in waiting mode (waiting for AppletReady
                 # from all the players)
                 self.state = GameState.WAITING_PLAYERS
@@ -313,14 +315,7 @@ class Game(Thread):
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
                 # broadcasting update to players
                 reason = UpdateReason.LAUNCHING_GAME.value
-                nb_players = len(self.board.players)
 
-                # this should be sent to lobby and to game group
-                update = BroadcastUpdateRoom(game_token=self.uid,
-                                             nb_players=nb_players,
-                                             reason=reason,
-                                             player=player.get_id())
-                self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
                                               reason=reason)
                 self.send_packet_to_group(update, "lobby")
@@ -1974,7 +1969,6 @@ class Game(Thread):
                 'type': 'send.lobby.packet',
                 'packet': packet.serialize()
             })
-        print("sent packet to group : (%s)" % group_name)
 
     def send_packet_to_player(self, player: Player, packet: Packet):
         if player.bot is True:

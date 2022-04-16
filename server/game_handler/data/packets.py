@@ -339,15 +339,8 @@ class PingPacket(PlayerPacket):
 
 
 class AppletPrepare(LobbyPacket):
-    player_token: str
-
-    def __init__(self, player_token: str = ""):
+    def __init__(self):
         super().__init__(self.__class__.__name__)
-        self.player_token = player_token
-
-    def deserialize(self, obj: object):
-        self.player_token = obj['player_token'] if 'player_token' in \
-                                                   obj else ""
 
 
 class AppletReady(PlayerPacket):
