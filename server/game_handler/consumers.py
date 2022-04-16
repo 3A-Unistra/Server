@@ -10,7 +10,8 @@ from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
     PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
     CreateGame, InternalLobbyConnect, LobbyPacket, LeaveRoom, \
-    InternalLobbyDisconnect, CreateGameSucceed, EnterRoom, EnterRoomSucceed
+    InternalLobbyDisconnect, CreateGameSucceed, EnterRoom, EnterRoomSucceed, \
+    LaunchGame, PlayerLobbyPacket
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -239,6 +240,9 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
 
         if isinstance(packet, InternalPacket):
             return
+
+        if isinstance(packet, PlayerLobbyPacket):
+            packet.player_token = self.player_token
 
         # send to game engine consumer
         print("[consumer.LobbyConsumer.receive_json] sending to "

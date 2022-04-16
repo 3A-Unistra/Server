@@ -202,6 +202,13 @@ class Game(Thread):
 
             # Else handle connection.
 
+        if isinstance(packet, PlayerPacket):
+            if not self.board.player_exists(packet.player_token):
+                return self.send_packet(
+                    channel_name=queue_packet.channel_name,
+                    # 4100 => invalid player
+                    packet=ExceptionPacket(code=4100))
+
         if self.state is GameState.LOBBY:
             if isinstance(packet, EnterRoom):
 
@@ -288,14 +295,18 @@ class Game(Thread):
                 return
 
             elif isinstance(packet, LaunchGame):
+                player = self.board.get_player(packet.player_token)
                 # check if player_token is the token of the game host
-                if packet.player_token != self.host_player:
+                if player != self.host_player:
                     return  # ignore the launch request
 
-                self.send_packet_to_group(AppletPrepare(), self.uid)
                 # putting the game in waiting mode (waiting for AppletReady
                 # from all the players)
                 self.state = GameState.WAITING_PLAYERS
+
+                # Send AppletPrepare to group (should disconnect at this pt)
+                self.send_packet_to_group(AppletPrepare(), self.uid)
+
                 # setting timeout to wait for the players to send AppletReady
                 self.set_timeout(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
@@ -307,7 +318,7 @@ class Game(Thread):
                 update = BroadcastUpdateRoom(game_token=self.uid,
                                              nb_players=nb_players,
                                              reason=reason,
-                                             player=packet.player_token)
+                                             player=player.get_id())
                 self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
                                               reason=reason)
@@ -315,8 +326,10 @@ class Game(Thread):
                 return
 
             elif isinstance(packet, AddBot):
+                player = self.board.get_player(packet.player_token)
+
                 # check if the host is the one sending the packet
-                if packet.player_token != self.host_player:
+                if player != self.host_player:
                     self.send_lobby_packet(channel_name=queue_packet.
                                            channel_name,
                                            packet=ExceptionPacket(code=4205))
@@ -342,22 +355,12 @@ class Game(Thread):
                 update = BroadcastUpdateRoom(game_token=self.uid,
                                              nb_players=nb_players,
                                              reason=reason,
-                                             player=packet.player_token)
+                                             player=p.get_id())
                 self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
                                               reason=reason)
                 self.send_packet_to_group(update, "lobby")
                 return
-
-        else:
-            # If state is not lobby
-            # Check for packet validity
-            if isinstance(packet, PlayerPacket):
-                if not self.board.player_exists(packet.player_token):
-                    return self.send_packet(
-                        channel_name=queue_packet.channel_name,
-                        # 4100 => invalid player
-                        packet=ExceptionPacket(code=4100))
 
         if self.state is GameState.WAITING_PLAYERS:
             # WebGL app is ready to play

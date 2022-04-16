@@ -122,35 +122,31 @@ class PlayerValid(Packet):
         super().__init__(self.__class__.__name__)
 
 
-class EnterRoom(LobbyPacket):
-    player_token: str
+class PlayerLobbyPacket(PlayerPacket, LobbyPacket):
+    pass
+
+
+class EnterRoom(PlayerLobbyPacket):
     game_token: str
     password: str
 
     def __init__(self, player_token: str = "", game_token: str = "",
                  password: str = ""):
-        super(EnterRoom, self).__init__(self.__class__.__name__)
-        self.player_token = player_token
+        super().__init__(self.__class__.__name__, player_token=player_token)
         self.game_token = game_token
         self.password = password
 
     def deserialize(self, obj: object):
-        self.player_token = obj["player_token"] if 'player_token' in \
-                                                   obj else ""
-        self.game_token = obj["game_token"] if 'game_token' in obj else ""
-        self.password = obj["password"] if 'password' in obj else ""
+        super().deserialize(obj)
+        self.game_token = obj["game_token"] if "game_token" in obj else ""
+        self.password = obj["password"] if "password" in obj else ""
 
 
-class LaunchGame(Packet):
-    player_token: str
+class LaunchGame(PlayerLobbyPacket):
 
     def __init__(self, player_token: str = ""):
-        super().__init__(self.__class__.__name__)
-        self.player_token = player_token
-
-    def deserialize(self, obj: object):
-        self.player_token = obj["player_token"] if 'player_token' in \
-                                                   obj else ""
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
 
 
 class ExceptionPacket(Packet):
@@ -315,7 +311,7 @@ class BroadcastUpdateRoom(LobbyPacket):
         super().__init__(self.__class__.__name__)
         self.game_token = game_token
         self.nb_players = nb_players
-        self.player = player
+        self.player = "" if player is None else player
         self.reason = reason
 
     def deserialize(self, obj: object):
@@ -902,20 +898,18 @@ class CreateGameSucceed(LobbyPacket):
         self.game_token = obj['game_token'] if 'game_token' in obj else ''
 
 
-class AddBot(LobbyPacket):
-    player_token: str
+class AddBot(PlayerLobbyPacket):
     game_token: str
     bot_difficulty: int
 
     def __init__(self, player_token: str = "", game_token: str = "",
                  bot_difficulty: int = 0):
-        super().__init__("AddBot")
-        self.player_token = player_token
+        super().__init__("AddBot", player_token=player_token)
         self.game_token = game_token
         self.bot_difficulty = bot_difficulty
 
     def deserialize(self, obj: object):
-        self.player_token = obj['player_token']
+        super().deserialize(obj)
         self.bot_difficulty = convert_to_int(obj['bot_difficulty'])
         self.game_token = obj['game_token']
 
