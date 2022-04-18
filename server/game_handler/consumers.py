@@ -27,6 +27,8 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
 
     async def connect(self):
         # User is anonymous
+        print("PlayerConsumer: connect")
+
         if self.scope["user"] is None:
             # Reject the connection
             return await self.close(code=4000)
@@ -168,6 +170,10 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         # Send validity token
         if isinstance(packet, InternalCheckPlayerValidity):
             self.valid = packet.valid
+            print("Get InternalCheckPlayerValidity packet is %s (%s)"
+                  % ("valid" if self.valid else "not valid",
+                     packet.serialize()))
+
             # TODO : check
             if packet.valid:
                 packet = PlayerValid()
@@ -192,7 +198,7 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         if packet is None:
             return
 
-        await self.send_json(packet)
+        await self.send(packet)
 
 
 class LobbyConsumer(AsyncJsonWebsocketConsumer):

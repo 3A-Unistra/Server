@@ -179,7 +179,7 @@ class Game(Thread):
             # Player already online
             else:
                 player = self.board.get_player(packet.player_token)
-                valid = player.online
+                valid = not player.online
 
             self.send_packet(
                 channel_name=queue_packet.channel_name,
@@ -370,32 +370,23 @@ class Game(Thread):
                 player.ping_timeout = datetime.now() + timedelta(
                     seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
 
+                print("add player=%s to group %s (%s)"
+                      % (player.get_id(),
+                         self.uid,
+                         player.channel_name))
+
+                # Add player to game group
+                async_to_sync(self.channel_layer.group_add)(
+                    self.uid, player.channel_name
+                )
+
                 # Waiting_players => first connection => not sending anything
                 if self.state is not GameState.WAITING_PLAYERS:
                     self.broadcast_packet(PlayerReconnect(
                         player_token=player.get_id()
                     ))
                     # TODO: RECONNECT => Send global state to player
-                return
-
-            if self.state is GameState.WAITING_PLAYERS:
-                # WebGL app is ready to play
-                # Player could not be null -> we are checking before, if this
-                # player exists.
-                player = self.board.get_player(packet.player_token)
-
-                # Set player to connected (bot disabled)
-                player.connect()
-
-                # init ping heartbeat
-                player.ping = True
-                player.ping_timeout = datetime.now() + timedelta(
-                    seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
-
-                # Add player to game group
-                async_to_sync(self.channel_layer.group_add)(
-                    self.uid, player.channel_name
-                )
+                    return
 
                 return
 
@@ -1992,7 +1983,7 @@ class Game(Thread):
 
     def broadcast_packet(self, packet: Packet):
         async_to_sync(self.channel_layer.group_send)(
-            self.uid, {"type": "game_update", "packet": packet.serialize()}
+            self.uid, {"type": "send.packet", "packet": packet.serialize()}
         )
 
     def send_packet_to_group(self, packet: Packet, group_name: str):
