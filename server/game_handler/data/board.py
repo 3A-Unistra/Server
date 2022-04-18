@@ -139,17 +139,17 @@ class Board:
         else:
             self.starting_balance = balance
 
-    def assign_piece(self, player_token: str):
+    def assign_piece(self, user: User):
         """
         assigns a piece to a player
         If the favorite piece from the player is taken, it'll assign a random
         non-taken piece
-        :param player_token: player id
+        :param user: User
         """
 
-        user = User(id=player_token)
-
         favorite_piece = user.piece
+        player = self.get_player(user.id)
+
         taken = False
         for player in self.players:
             if player.piece == favorite_piece:
@@ -157,7 +157,7 @@ class Board:
                 break
 
         if not taken:
-            self.get_player(player_token).piece = favorite_piece
+            player.piece = favorite_piece
             return favorite_piece
 
         if taken:
@@ -170,7 +170,7 @@ class Board:
                         taken_new_piece = True
                         break
                 if not taken_new_piece:
-                    self.get_player(player_token).piece = i
+                    player.piece = i
                     return i
 
         return -1   # this should not happen

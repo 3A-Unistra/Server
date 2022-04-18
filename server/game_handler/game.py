@@ -200,6 +200,8 @@ class Game(Thread):
             except User.DoesNotExist:
                 return
 
+            print("Lobby user.name=%s" % user.name)
+
             if packet.password != "":
                 if packet.password != self.board.option_password:
                     self.send_lobby_packet(channel_name=queue_packet.
@@ -231,7 +233,7 @@ class Game(Thread):
             nb_players = len(self.board.players)
 
             # send success of getting in room
-            piece = self.board.assign_piece(packet.player_token)
+            piece = self.board.assign_piece(user)
             self.send_lobby_packet(
                 channel_name=queue_packet.channel_name,
                 packet=EnterRoomSucceed(game_token=self.uid,
@@ -582,6 +584,10 @@ class Game(Thread):
         self.state = GameState.STARTING
         self.set_timeout(seconds=self.CONFIG.get('GAME_STARTING_TIMEOUT'))
 
+        # set money
+        for player in self.board.players:
+            player.money = self.board.starting_balance
+
         # send coherent information to all players
         players = []
         for player in self.board.get_online_players():
@@ -705,8 +711,9 @@ class Game(Thread):
         Proceed tour actions
         :param packet: Packet received
         """
-
+        print("proceed_tour_actions(%s)" % packet.serialize())
         if not isinstance(packet, PlayerPropertyPacket):
+            print("PAcket not playerPropertyPacket")
             return
 
         # Get player
@@ -714,19 +721,23 @@ class Game(Thread):
 
         # Check if player is current player, else ignore
         if player != self.board.get_current_player():
+            print("player != self.board.current_player")
             return
 
         # Its impossible to be bankrupted and be the current_player...
         if player.bankrupt:
+            print("player is bankrupt")
             return
 
         square = self.board.get_property(packet.property_id)
 
         if square is None:
+            print("square is none")
             # Ignore packet.
             return
 
         if isinstance(packet, ActionBuyProperty):
+            print("ActionBuyProperty")
 
             # Check if player is on this property
             if player.position != packet.property_id:

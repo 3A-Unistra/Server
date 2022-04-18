@@ -221,6 +221,11 @@ class Engine:
             print("[engine.create_game()] player in another game")
             return  # or maybe send error
 
+        try:  # get user from database
+            user = User.objects.get(id=packet.player_token)
+        except User.DoesNotExist:
+            return
+
         new_game = Game()
         self.add_game(new_game)
         if len(self.games) > getattr(settings, "MAX_NUMBER_OF_GAMES", 10):
@@ -237,7 +242,7 @@ class Engine:
         board = new_game.board
 
         # adding host to the game
-        player = Player(user=User(id=packet.player_token),
+        player = Player(user=user,
                         channel_name=channel_name,
                         bot=False)
         board.add_player(player)
@@ -254,7 +259,7 @@ class Engine:
         board.set_option_start_balance(packet.starting_balance)
 
         # sending CreateGameSuccess to host
-        piece = board.assign_piece(packet.player_token)
+        piece = board.assign_piece(player.user)
         new_game.send_lobby_packet(channel_name=channel_name,
                                    packet=CreateGameSucceed(
                                        game_token=new_game.uid,
