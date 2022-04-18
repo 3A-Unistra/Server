@@ -80,6 +80,7 @@ class Board:
         self.total_company_squares = 0
         self.total_properties_color_squares = {}
         self.current_exchange = None
+        self.current_auction = None
         self.bank = Bank(0, 0)  # TODO: AFTER AKI'S MERGE
         self.search_square_indexes()
         self.search_card_indexes()

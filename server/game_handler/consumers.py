@@ -1,5 +1,6 @@
 import json
 import logging
+
 from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
@@ -8,8 +9,9 @@ from .data.exceptions import PacketException, GameNotExistsException
 from .data.packets import PacketUtils, PlayerPacket, \
     ExceptionPacket, InternalCheckPlayerValidity, PlayerValid, \
     PlayerDisconnect, InternalPacket, InternalPlayerDisconnect, \
-    CreateGame, DeleteRoom, InternalLobbyConnect, LobbyPacket, LeaveRoom, \
-    InternalLobbyDisconnect
+    CreateGame, InternalLobbyConnect, LobbyPacket, LeaveRoom, \
+    InternalLobbyDisconnect, CreateGameSucceed, EnterRoom, EnterRoomSucceed, \
+    LaunchGame, PlayerLobbyPacket
 from .engine import Engine
 
 log = logging.getLogger(__name__)
@@ -25,6 +27,8 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
 
     async def connect(self):
         # User is anonymous
+        print("PlayerConsumer: connect")
+
         if self.scope["user"] is None:
             # Reject the connection
             return await self.close(code=4000)
@@ -166,6 +170,10 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         # Send validity token
         if isinstance(packet, InternalCheckPlayerValidity):
             self.valid = packet.valid
+            print("Get InternalCheckPlayerValidity packet is %s (%s)"
+                  % ("valid" if self.valid else "not valid",
+                     packet.serialize()))
+
             # TODO : check
             if packet.valid:
                 packet = PlayerValid()
@@ -190,7 +198,7 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         if packet is None:
             return
 
-        await self.send_json(packet)
+        await self.send(packet)
 
 
 class LobbyConsumer(AsyncJsonWebsocketConsumer):
@@ -204,7 +212,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             return await self.close(code=4000)
 
         self.player_token = str(self.scope['user'].id)
-        print(self.channel_name)
+        print("User %s connected to lobby" % self.player_token)
 
         # sending the internal packet to the EngineConsumer
         packet = InternalLobbyConnect(
@@ -239,8 +247,13 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         if isinstance(packet, InternalPacket):
             return
 
+        if isinstance(packet, PlayerLobbyPacket):
+            packet.player_token = self.player_token
+
         # send to game engine consumer
-        print("[consumer.LobbyConsumer.receive_json] sending to game engine")
+        print("[consumer.LobbyConsumer.receive_json] sending to "
+              "game engine (%s)" % packet.name)
+
         await self.channel_layer.send(
             'game_engine',
             {
@@ -256,23 +269,20 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
     async def disconnect(self, code):
         # if the player is in the lobby group, he is not in a waiting room
         # therefore, we can just take him out of that group
-        lobby_group = await self.channel_layer.group_channels('lobby')
-        if self.channel_name in lobby_group:
-            await self.channel_layer.group_discard("lobby",
-                                                   self.channel_name)
-            return
+        await self.channel_layer.group_discard("lobby", self.channel_name)
 
         # in case the player is in a waiting room, we have to take him out
         # of it.  in order to do that, we use InternalLobbyDisconnect,
         # which is handled in the EngineConsumer
-        packet = InternalLobbyDisconnect(self.channel_name)
+        packet = InternalLobbyDisconnect(self.player_token)
 
         await self.channel_layer.send(
             'game_engine',
             {
                 'type': 'process.lobby.packets',
                 'content': packet.serialize(),
-                'channel_name': self.channel_name
+                'channel_name': self.channel_name,
+                'game_token': self.game_token
             }
         )
 
@@ -294,6 +304,10 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             # send error packet (or ignore)
             return
 
+        if isinstance(packet, CreateGameSucceed) or \
+                isinstance(packet, EnterRoomSucceed):
+            self.game_token = packet.game_token
+
         # Send packet to front/cli
         await self.send(packet.serialize())
 
@@ -303,7 +317,7 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         if packet is None:
             return
 
-        await self.send_json(packet)
+        await self.send(packet)
 
 
 class GameEngineConsumer(SyncConsumer):
@@ -370,10 +384,11 @@ class GameEngineConsumer(SyncConsumer):
         if 'channel_name' not in content:
             return
 
-        channel_name = content['channel_name']
-
-        if content['game_token'] == "":
+        if 'game_token' not in content:
             return
+
+        channel_name = content['channel_name']
+        game_token = content['game_token']
 
         log.info("process_packets_info")
 
@@ -387,9 +402,14 @@ class GameEngineConsumer(SyncConsumer):
                   "PacketException")
             return
 
+        # Check if packet was successfully deserialized
+        if packet is None:
+            return
+
         # if internal packet:
         if isinstance(packet, InternalLobbyConnect):
             # sending infos about all the lobbies
+            print("InternalLobbyConnect channel_name: %s" % channel_name)
             self.engine.send_all_lobby_status(channel_name=channel_name)
             return
 
@@ -402,29 +422,32 @@ class GameEngineConsumer(SyncConsumer):
             # not supposed to happen
             return
 
+        print("[%s] real lobbyPacket shit" % packet.name)
+
         if isinstance(packet, CreateGame):
             print("[consumer.EngineConsumer.process_lobby_packets] "
                   "sending to engine.create_game")
             self.engine.create_game(packet, channel_name)
             return
 
-        if isinstance(packet, DeleteRoom):
-            self.engine.delete_room(packet, channel_name)
+        if isinstance(packet, EnterRoom):
+            game_token = packet.game_token
+
+        # All actions after this condition require a game_token
+        if game_token == "":
+            print("[%s] game_token is empty" % packet.name)
             return
 
         if isinstance(packet, LeaveRoom):
-            self.engine.leave_game(packet=packet, channel_name=channel_name)
+            self.engine.leave_game(
+                packet=packet,
+                game_token=game_token,
+                channel_name=channel_name
+            )
             return
 
-        # Check if packet is not None and game token exists
-        if packet is None or 'game_token' not in content:
-            return
-
-        game_token = content['game_token']
-
-        # get channel name
-        channel_name = content[
-            'channel_name'] if 'channel_name' in content else ''
+        print("Processing packet=%s => (%s)" %
+              (packet.name, packet.serialize()))
 
         # Send packet to game thread
         self.engine.send_packet(game_uid=game_token, packet=packet,

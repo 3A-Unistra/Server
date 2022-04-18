@@ -188,25 +188,6 @@ Paquet envoyé *par le client* (le host) lorsqu'il ajoute un bot à la partie
  * id du room (*game_token*)
  * difficulté du bot (*bot_difficulty*)
 
-
-DeleteRoom
-^^^^^^^^^^
-
-Paquet envoyé *par le client* lorsqu'un joueur veut supprimer la partie (avant qu'elle soit lancée).
-Ce paquet ne peut être envoyé que par l'hôte de la partie.
-
-**contenu du paquet :**
- * id du joueur (*player_token*)
- * id de la partie (*game_token*)
-
-
-DeleteRoomSucceed
-^^^^^^^^^^^^^^^^^
-Paquet envoyé au client pour lui signaler le succès de la suppression d'une partie.
-Les autres joueurs seront prévenus via un BroadcastUpdatedRoom avec le champ *state* à CLOSED.
-
-*ce paquet ne contient pas d'informations*
-
 NewHost
 ^^^^^^^
 
