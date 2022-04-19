@@ -261,7 +261,7 @@ class Game(Thread):
                                 board.option_max_time,
                                 starting_balance=self.
                                 board.starting_balance)
-            self.send_lobby_packet(channel_name=packet.player_token,
+            self.send_lobby_packet(channel_name=queue_packet.channel_name,
                                    packet=status)
 
             # broadcast to lobby group
