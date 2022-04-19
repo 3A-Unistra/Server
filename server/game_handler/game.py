@@ -166,6 +166,7 @@ class Game(Thread):
     def process_packet(self, queue_packet: QueuePacket):
         packet: Packet = queue_packet.packet
 
+       # broadcast_tchat
         if isinstance(packet,ChatPacket):
             self.broadcast_packet(packet)
 
