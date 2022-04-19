@@ -166,10 +166,6 @@ class Game(Thread):
     def process_packet(self, queue_packet: QueuePacket):
         packet: Packet = queue_packet.packet
 
-       # broadcast_tchat
-        if isinstance(packet,ChatPacket):
-            self.broadcast_packet(packet)
-
         if self.state.value > GameState.LOBBY.value:
             # Heartbeat only in "game"
             if isinstance(packet, PingPacket):
@@ -348,6 +344,11 @@ class Game(Thread):
             # If state is not lobby
             # Check for packet validity
             if isinstance(packet, PlayerPacket):
+                # broadcast_tchat
+                if isinstance(packet, ChatPacket):
+                    # if the message is too long
+                    if (message.length <= 128):
+                        self.broadcast_packet(packet)
                 if not self.board.player_exists(packet.player_token):
                     return self.send_packet(
                         channel_name=queue_packet.channel_name,

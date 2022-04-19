@@ -51,7 +51,6 @@ class ChatPacket(PlayerPacket):
         super().__init__("ChatPacket", player_token)
         self.message = message
 
-
     def deserialize(self, obj: object):
         super().deserialize(obj)
         self.message = obj["message"]
