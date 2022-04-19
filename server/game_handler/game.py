@@ -345,15 +345,15 @@ class Game(Thread):
             # Check for packet validity
             if isinstance(packet, PlayerPacket):
                 if not self.board.player_exists(packet.player_token):
-                    # broadcast_tchat
-                    if isinstance(packet, ChatPacket):
-                        # if the message is too long
-                        if (message.length <= 128):
-                            self.broadcast_packet(packet)git
                     return self.send_packet(
                         channel_name=queue_packet.channel_name,
                         # 4100 => invalid player
                         packet=ExceptionPacket(code=4100))
+                    # broadcast_tchat
+                    if isinstance(packet, ChatPacket):
+                        # if the message is too long
+                        if (message.length <= 128):
+                            self.broadcast_packet(packet)
 
         if self.state is GameState.WAITING_PLAYERS:
             # WebGL app is ready to play
