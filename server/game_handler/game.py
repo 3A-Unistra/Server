@@ -344,12 +344,12 @@ class Game(Thread):
             # If state is not lobby
             # Check for packet validity
             if isinstance(packet, PlayerPacket):
-                # broadcast_tchat
-                if isinstance(packet, ChatPacket):
-                    # if the message is too long
-                    if (message.length <= 128):
-                        self.broadcast_packet(packet)
                 if not self.board.player_exists(packet.player_token):
+                    # broadcast_tchat
+                    if isinstance(packet, ChatPacket):
+                        # if the message is too long
+                        if (message.length <= 128):
+                            self.broadcast_packet(packet)git
                     return self.send_packet(
                         channel_name=queue_packet.channel_name,
                         # 4100 => invalid player
