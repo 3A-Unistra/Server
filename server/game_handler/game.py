@@ -354,8 +354,9 @@ class Game(Thread):
             # broadcast_tchat
             if isinstance(packet, ChatPacket):
                 # if the message is too long
-                if (packet.message.length <= 128):return
+                if (packet.message.length <= 128):
                     self.broadcast_packet(packet)
+                    return
 
         if self.state is GameState.WAITING_PLAYERS:
             # WebGL app is ready to play
