@@ -349,11 +349,13 @@ class Game(Thread):
                         channel_name=queue_packet.channel_name,
                         # 4100 => invalid player
                         packet=ExceptionPacket(code=4100))
-                    # broadcast_tchat
-                    if isinstance(packet, ChatPacket):
-                        # if the message is too long
-                        if (message.length <= 128):
-                            self.broadcast_packet(packet)
+
+        if self.state.value > GameState.STARTING.value:
+            # broadcast_tchat
+            if isinstance(packet, ChatPacket):
+                # if the message is too long
+                if (message.length <= 128):
+                    self.broadcast_packet(packet)
 
         if self.state is GameState.WAITING_PLAYERS:
             # WebGL app is ready to play
