@@ -35,7 +35,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
-    ActionStart
+    ActionStart, ChatPacket
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -350,11 +350,11 @@ class Game(Thread):
                         # 4100 => invalid player
                         packet=ExceptionPacket(code=4100))
 
-        if self.state.value > GameState.STARTING.value:
+        if self.state.value > GameState.LOBBY.value:
             # broadcast_tchat
             if isinstance(packet, ChatPacket):
                 # if the message is too long
-                if (message.length <= 128):
+                if (packet.message.length <= 128):return
                     self.broadcast_packet(packet)
 
         if self.state is GameState.WAITING_PLAYERS:
