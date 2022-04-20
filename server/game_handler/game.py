@@ -354,7 +354,7 @@ class Game(Thread):
             # broadcast_tchat
             if isinstance(packet, ChatPacket):
                 # if the message is too long
-                if (len(packet.message) <= 128):
+                if (len(packet.message)<= 128):
                     self.broadcast_packet(packet)
                 return
 

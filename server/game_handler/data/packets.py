@@ -22,9 +22,9 @@ class Packet:
 class LobbyPacket(Packet):
     """
     Lobby packet => inherits Packet
-    """
-    pass
 
+    pass
+    """
 
 class PlayerPacket(Packet):
     """
@@ -58,9 +58,9 @@ class ChatPacket(PlayerPacket):
 class InternalPacket(Packet):
     """
     Packet for Internal communication
-    """
-    pass
 
+    pass
+    """
 
 class PlayerPropertyPacket(PlayerPacket):
     """
