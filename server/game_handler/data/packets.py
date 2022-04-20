@@ -18,13 +18,15 @@ class Packet:
         pass
 
 
-def convert_to_int(value) -> int:
+def convert_to_int(obj, key) -> int:
     """
     static function used in deserialization
     :param value: value to deserialize
     """
+    if key not in obj:
+        return 0
     try:
-        return int(value)
+        return int(key)
     except ValueError:
         return 0
 
@@ -159,7 +161,7 @@ class ExceptionPacket(Packet):
         self.code = code
 
     def deserialize(self, obj: object):
-        self.code = convert_to_int(obj["code"])
+        self.code = convert_to_int(obj, "code")
 
 
 class EnterRoomSucceed(LobbyPacket):
@@ -172,7 +174,7 @@ class EnterRoomSucceed(LobbyPacket):
         self.game_token = game_token
 
     def deserialize(self, obj: object):
-        self.piece = convert_to_int(obj["piece"])
+        self.piece = convert_to_int(obj, "piece")
         self.game_token = obj["game_token"] if "game_token" in obj else ""
 
 
@@ -248,8 +250,8 @@ class StatusRoom(LobbyPacket):
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
         self.game_name = obj['game_name'] if 'game_name' in obj else ""
-        self.nb_players = convert_to_int(obj['nb_players'])
-        self.max_nb_players = convert_to_int(obj['max_nb_players'])
+        self.nb_players = convert_to_int(obj, 'nb_players')
+        self.max_nb_players = convert_to_int(obj, 'max_nb_players')
         self.players = obj['players'] if 'players' in obj else []
         self.option_auction = convert_to_bool(obj, 'option_auction')
         self.option_double_on_start = convert_to_bool(obj, 'double_on_start')
@@ -257,7 +259,7 @@ class StatusRoom(LobbyPacket):
         self.option_max_rounds = convert_to_bool(obj, 'option_max_rounds')
         self.option_first_round_buy = \
             convert_to_bool(obj, 'option_first_round_buy')
-        self.starting_balance = convert_to_int(obj['starting_balance'])
+        self.starting_balance = convert_to_int(obj, 'starting_balance')
 
 
 class BroadcastNewRoomToLobby(LobbyPacket):
@@ -282,8 +284,8 @@ class BroadcastNewRoomToLobby(LobbyPacket):
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
         self.game_name = obj['game_name'] if 'game_name' in obj else ""
-        self.nb_players = convert_to_int(obj['nb_players'])
-        self.max_nb_players = convert_to_int(obj['max_nb_players'])
+        self.nb_players = convert_to_int(obj, 'nb_players')
+        self.max_nb_players = convert_to_int(obj, 'max_nb_players')
         self.is_private = convert_to_bool(obj, 'is_private')
         self.has_password = convert_to_bool(obj, 'has_password')
 
@@ -300,7 +302,7 @@ class BroadcastUpdateLobby(LobbyPacket):
 
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else 0
-        self.reason = convert_to_int(obj['reason'])
+        self.reason = convert_to_int(obj, 'reason')
 
 
 class BroadcastUpdateRoom(LobbyPacket):
@@ -319,9 +321,9 @@ class BroadcastUpdateRoom(LobbyPacket):
 
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
-        self.nb_players = convert_to_int(obj['nb_players'])
+        self.nb_players = convert_to_int(obj, 'nb_players')
         self.player = obj['player'] if 'player' in obj else 0
-        self.reason = convert_to_int(obj['reason'])
+        self.reason = convert_to_int(obj, 'reason')
 
 
 class NewHost(LobbyPacket):
@@ -470,7 +472,7 @@ class RoundDiceChoice(PlayerPacket):
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.choice = convert_to_int(obj['choice'])
+        self.choice = convert_to_int(obj, 'choice')
 
 
 class RoundDiceResults(PlayerPacket):
@@ -491,9 +493,9 @@ class RoundDiceResults(PlayerPacket):
     def deserialize(self, obj: object):
         super().deserialize(obj)
         # TODO check enum validity
-        self.result = convert_to_int(obj['result'])
-        self.dice1 = convert_to_int(obj['dice1'])
-        self.dice2 = convert_to_int(obj['dice2'])
+        self.result = convert_to_int(obj, 'result')
+        self.dice1 = convert_to_int(obj, 'dice1')
+        self.dice2 = convert_to_int(obj, 'dice2')
 
 
 class PlayerMove(PlayerPacket):
@@ -507,7 +509,7 @@ class PlayerMove(PlayerPacket):
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.destination = convert_to_int(obj['destination'])
+        self.destination = convert_to_int(obj, 'destination')
 
 
 class RoundRandomCard(PlayerPacket):
@@ -523,7 +525,7 @@ class RoundRandomCard(PlayerPacket):
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.card_id = convert_to_int(obj['card_id'])
+        self.card_id = convert_to_int(obj, 'card_id')
         self.is_community = convert_to_bool(obj, 'is_community')
 
 
@@ -545,8 +547,8 @@ class PlayerUpdateBalance(PlayerPacket):
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.old_balance = convert_to_int(obj['old_balance'])
-        self.new_balance = convert_to_int(obj['new_balance'])
+        self.old_balance = convert_to_int(obj, 'old_balance')
+        self.new_balance = convert_to_int(obj, 'new_balance')
         self.reason = obj['reason'] if 'reason' in obj else ""
 
 
@@ -566,7 +568,7 @@ class PlayerPayDebt(PlayerPacket):
     def deserialize(self, obj: object):
         super().deserialize(obj)
         self.player_to = obj['player_to'] if 'player_to' in obj else ""
-        self.amount = convert_to_int(obj['amount'])
+        self.amount = convert_to_int(obj, 'amount')
         self.reason = obj['reason'] if 'reason' in obj else ""
 
 
@@ -652,12 +654,12 @@ class ActionExchangeTradeSelect(PlayerPacket):
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.value = convert_to_int(obj['value'])
+        self.value = convert_to_int(obj, 'value')
 
         if not ExchangeTradeSelectType.has_value(self.value):
             self.value = 0
 
-        self.exchange_type = convert_to_int(obj['exchange_type'])
+        self.exchange_type = convert_to_int(obj, 'exchange_type')
 
 
 class ActionExchangeSend(PlayerPacket):
@@ -705,7 +707,7 @@ class ActionExchangeTransfer(PlayerPacket):
 
     def deserialize(self, obj: object):
         self.player_to = obj['player_to']
-        self.value = convert_to_int(obj['value'])
+        self.value = convert_to_int(obj, 'value')
         self.transfer_type = obj['transfer_type']
 
 
@@ -720,7 +722,7 @@ class ActionAuctionProperty(PlayerPacket):
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.min_bid = convert_to_int(obj["min_bid"])
+        self.min_bid = convert_to_int(obj, "min_bid")
 
 
 class AuctionBid(PlayerPacket):
@@ -733,7 +735,7 @@ class AuctionBid(PlayerPacket):
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.bid = convert_to_int(obj["bid"])
+        self.bid = convert_to_int(obj, "bid")
 
 
 class AuctionEnd(PlayerPacket):
@@ -859,7 +861,7 @@ class CreateGame(LobbyPacket):
         self.player_token = obj['player_token'] if 'player_token' in \
                                                    obj else ""
         self.password = obj['password'] if 'password' in obj else ""
-        self.max_nb_players = convert_to_int(obj['max_nb_players'])
+        self.max_nb_players = convert_to_int(obj, 'max_nb_players')
         self.is_private = convert_to_bool(obj, 'is_private')
         self.game_name = obj['game_name'] if 'game_name' in obj else ""
         self.option_auction = convert_to_bool(obj, 'option_auction')
@@ -885,7 +887,7 @@ class CreateGameSucceed(LobbyPacket):
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token'] if 'player_token' in obj else 0
-        self.piece = convert_to_int(obj['piece'])
+        self.piece = convert_to_int(obj, 'piece')
         self.game_token = obj['game_token'] if 'game_token' in obj else ''
 
 
@@ -901,7 +903,7 @@ class AddBot(PlayerLobbyPacket):
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.bot_difficulty = convert_to_int(obj['bot_difficulty'])
+        self.bot_difficulty = convert_to_int(obj, 'bot_difficulty')
         self.game_token = obj['game_token']
 
 
