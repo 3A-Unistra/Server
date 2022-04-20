@@ -169,16 +169,17 @@ class Engine:
                 if game.board.players[i] != game.host_player:
                     game.host_player = game.board.players[i]
 
-                    game.broadcast_packet(NewHost(
+                    game.send_packet_to_group(NewHost(
                         player_token=game.host_player.get_id()
-                    ))
+                    ), game.uid)
                     break
 
         # if checks passed, kick out player
         game.board.remove_player(
             game.board.get_player(packet.player_token))
 
-        game.send_packet(channel_name=channel_name, packet=LeaveRoomSucceed())
+        game.send_lobby_packet(channel_name=channel_name,
+                               packet=LeaveRoomSucceed())
 
         nb_players = len(game.board.players)
 
