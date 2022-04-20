@@ -263,6 +263,7 @@ class Game(Thread):
                                 board.starting_balance)
             self.send_lobby_packet(channel_name=queue_packet.channel_name,
                                    packet=status)
+            print("[game.py] sent packet statusRoom")
 
             # broadcast to lobby group
             reason = UpdateReason.NEW_PLAYER.value
