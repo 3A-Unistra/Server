@@ -1684,6 +1684,12 @@ class Game(Thread):
         if card.action_type is CardActionType.GOTO_POSITION:
             passed_go = card.action_value < player.position
             player.position = card.action_value
+
+            self.broadcast_packet(PlayerMove(
+                player_token=player.get_id(),
+                destination=card.action_value
+            ))
+
             # Move player actions
             self.proceed_move_player_actions(player=player,
                                              passed_go=passed_go)
