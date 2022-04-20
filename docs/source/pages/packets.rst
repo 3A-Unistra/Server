@@ -113,6 +113,7 @@ Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby 
         HOST_LEFT = 5
         LAUNCHING_GAME = 6
         NEW_BOT = 7
+        DELETE_BOT = 8
     }
 
 :
@@ -140,6 +141,7 @@ Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladi
         HOST_LEFT = 5
         LAUNCHING_GAME = 6
         NEW_BOT = 7
+        DELETE_BOT = 8
     }
 
 :
@@ -187,6 +189,14 @@ Paquet envoyé *par le client* (le host) lorsqu'il ajoute un bot à la partie
  * id du joueur (*player_token*)
  * id du room (*game_token*)
  * difficulté du bot (*bot_difficulty*)
+
+
+DeleteBot
+^^^^^^^^^
+Paquet envoyé *par le client* lorsque le host veut supprimer un bot.
+
+**contenu du paquet :**
+ * id du bot (*bot_token*)
 
 NewHost
 ^^^^^^^
