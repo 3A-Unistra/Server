@@ -26,7 +26,7 @@ def convert_to_int(obj, key) -> int:
     if key not in obj:
         return 0
     try:
-        return int(key)
+        return int(obj[key])
     except ValueError:
         return 0
 
@@ -39,7 +39,7 @@ def convert_to_bool(obj, key) -> bool:
     if key not in obj:
         return False
     try:
-        return bool(key)
+        return bool(obj[key])
     except ValueError:
         return False
 
