@@ -62,7 +62,7 @@ Paquet envoyé *par le client* lorsqu'il veut créer une partie
  * id du player créant la partie (*player_token*)
  * nombre de joueurs (*max_nb_players*)
  * mot de passe (peut être un champ vide) (*password*)
- * nom de la partie (*name*)
+ * nom de la partie (*game_name*)
  * partie privé ou public (*is_private*)
  * montant de base pour chaque joueur (*starting_balance*)
  * activer/désactiver enchère (*option_auctions*)
@@ -113,6 +113,7 @@ Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby 
         HOST_LEFT = 5
         LAUNCHING_GAME = 6
         NEW_BOT = 7
+        DELETE_BOT = 8
     }
 
 :
@@ -140,6 +141,7 @@ Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladi
         HOST_LEFT = 5
         LAUNCHING_GAME = 6
         NEW_BOT = 7
+        DELETE_BOT = 8
     }
 
 :
@@ -151,7 +153,7 @@ Ce paquet est envoyé aux clients lorsque une nouvelle salle d'attente est cré�
 
 **contenu du paquet :**
  * id de la salle (*game_token*)
- * nom de la salle (*name*)
+ * nom de la salle (*game_name*)
  * nombre de joueurs (*nb_players*)
  * nombre de joueurs max (*max_nb_players*)
  * privé ou non (*is_private*)
@@ -165,7 +167,7 @@ Ce paquet est envoyé lorsqu'un joueur rejoint une salle. Ce paquet comporte tou
 
 **contenu du paquet :**
  * id du lobby (*game_token*)
- * nom de la partie (*name*)
+ * nom de la partie (*game_name*)
  * le nombre de joueur (*nb_players*)
  * le nombre de joueurs max (*max_nb_players*)
  * la liste des joueurs (*players*)
@@ -189,23 +191,12 @@ Paquet envoyé *par le client* (le host) lorsqu'il ajoute un bot à la partie
  * difficulté du bot (*bot_difficulty*)
 
 
-DeleteRoom
-^^^^^^^^^^
-
-Paquet envoyé *par le client* lorsqu'un joueur veut supprimer la partie (avant qu'elle soit lancée).
-Ce paquet ne peut être envoyé que par l'hôte de la partie.
+DeleteBot
+^^^^^^^^^
+Paquet envoyé *par le client* lorsque le host veut supprimer un bot.
 
 **contenu du paquet :**
- * id du joueur (*player_token*)
- * id de la partie (*game_token*)
-
-
-DeleteRoomSucceed
-^^^^^^^^^^^^^^^^^
-Paquet envoyé au client pour lui signaler le succès de la suppression d'une partie.
-Les autres joueurs seront prévenus via un BroadcastUpdatedRoom avec le champ *state* à CLOSED.
-
-*ce paquet ne contient pas d'informations*
+ * id du bot (*bot_token*)
 
 NewHost
 ^^^^^^^
