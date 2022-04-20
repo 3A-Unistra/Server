@@ -706,8 +706,12 @@ class Game(Thread):
             self.board.remaining_round_players = len(
                 self.board.get_non_bankrupt_players()) - 1
         else:
-            # remaining players - 1
-            self.board.next_player()
+            player = self.board.get_current_player()
+
+            # Check if player has no doubles and not bankrupt
+            if player.doubles <= 0 or player.bankrupt:
+                # remaining players - 1
+                self.board.next_player()
 
         # Get current player
         current_player = self.board.get_current_player()

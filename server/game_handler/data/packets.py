@@ -21,7 +21,8 @@ class Packet:
 def convert_to_int(obj, key) -> int:
     """
     static function used in deserialization
-    :param value: value to deserialize
+    :param key: Key to get bool from
+    :param obj: JSON deserialized object
     """
     if key not in obj:
         return 0
@@ -34,7 +35,8 @@ def convert_to_int(obj, key) -> int:
 def convert_to_bool(obj, key) -> bool:
     """
     static function used in deserialization
-    :param value: value to deserialize
+    :param key: Key to get bool from
+    :param obj: JSON deserialized object
     """
     if key not in obj:
         return False
