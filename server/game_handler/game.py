@@ -442,7 +442,6 @@ class Game(Thread):
                 )
                 return
 
-
         if self.state.value > GameState.WAITING_PLAYERS.value:
             # broadcast_tchat
             if isinstance(packet, ChatPacket):
