@@ -29,13 +29,15 @@ def convert_to_int(value) -> int:
         return 0
 
 
-def convert_to_bool(value) -> bool:
+def convert_to_bool(obj, key) -> bool:
     """
     static function used in deserialization
     :param value: value to deserialize
     """
+    if key not in obj:
+        return False
     try:
-        return bool(value)
+        return bool(key)
     except ValueError:
         return False
 
@@ -100,7 +102,7 @@ class InternalCheckPlayerValidity(InternalPacket):
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token']
-        self.valid = convert_to_bool(obj['valid'])
+        self.valid = convert_to_bool(obj, 'valid')
 
 
 class InternalPlayerDisconnect(InternalPacket):
@@ -249,12 +251,12 @@ class StatusRoom(LobbyPacket):
         self.nb_players = convert_to_int(obj['nb_players'])
         self.max_nb_players = convert_to_int(obj['max_nb_players'])
         self.players = obj['players'] if 'players' in obj else []
-        self.option_auction = convert_to_bool(obj['option_auction'])
-        self.option_double_on_start = convert_to_bool(obj['double_on_start'])
-        self.option_max_time = convert_to_bool(obj['option_max_time'])
-        self.option_max_rounds = convert_to_bool(obj['option_max_rounds'])
+        self.option_auction = convert_to_bool(obj, 'option_auction')
+        self.option_double_on_start = convert_to_bool(obj, 'double_on_start')
+        self.option_max_time = convert_to_bool(obj, 'option_max_time')
+        self.option_max_rounds = convert_to_bool(obj, 'option_max_rounds')
         self.option_first_round_buy = \
-            convert_to_bool(obj['option_first_round_buy'])
+            convert_to_bool(obj, 'option_first_round_buy')
         self.starting_balance = convert_to_int(obj['starting_balance'])
 
 
@@ -282,8 +284,8 @@ class BroadcastNewRoomToLobby(LobbyPacket):
         self.game_name = obj['game_name'] if 'game_name' in obj else ""
         self.nb_players = convert_to_int(obj['nb_players'])
         self.max_nb_players = convert_to_int(obj['max_nb_players'])
-        self.is_private = convert_to_bool(obj['is_private'])
-        self.has_password = convert_to_bool(obj['has_password'])
+        self.is_private = convert_to_bool(obj, 'is_private')
+        self.has_password = convert_to_bool(obj, 'has_password')
 
 
 class BroadcastUpdateLobby(LobbyPacket):
@@ -522,7 +524,7 @@ class RoundRandomCard(PlayerPacket):
     def deserialize(self, obj: object):
         super().deserialize(obj)
         self.card_id = convert_to_int(obj['card_id'])
-        self.is_community = convert_to_bool(obj['is_community'])
+        self.is_community = convert_to_bool(obj, 'is_community')
 
 
 class PlayerUpdateBalance(PlayerPacket):
@@ -858,15 +860,15 @@ class CreateGame(LobbyPacket):
                                                    obj else ""
         self.password = obj['password'] if 'password' in obj else ""
         self.max_nb_players = convert_to_int(obj['max_nb_players'])
-        self.is_private = convert_to_bool(obj['is_private'])
+        self.is_private = convert_to_bool(obj, 'is_private')
         self.game_name = obj['game_name'] if 'game_name' in obj else ""
-        self.option_auction = convert_to_bool(obj['option_auction'])
+        self.option_auction = convert_to_bool(obj, 'option_auction')
         self.option_double_on_start = \
-            convert_to_bool(obj['option_double_on_start'])
-        self.option_max_time = convert_to_bool(obj['option_max_time'])
-        self.option_max_rounds = convert_to_int(obj['option_max_rounds'])
+            convert_to_bool(obj, 'option_double_on_start')
+        self.option_max_time = convert_to_bool(obj, 'option_max_time')
+        self.option_max_rounds = convert_to_int(obj, 'option_max_rounds')
         self.option_first_round_buy = \
-            convert_to_bool(obj['option_first_round_buy'])
+            convert_to_bool(obj, 'option_first_round_buy')
 
 
 class CreateGameSucceed(LobbyPacket):
