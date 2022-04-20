@@ -203,6 +203,7 @@ class UpdateReason(Enum):
     HOST_LEFT = 5
     LAUNCHING_GAME = 6
     NEW_BOT = 7
+    DELETE_BOT = 8
 
     @staticmethod
     def has_value(value):
@@ -924,6 +925,16 @@ class InternalLobbyDisconnect(InternalPacket):
         self.player_token = obj['player_token']
 
 
+class DeleteBot(LobbyPacket):
+    bot_token: str
+
+    def __init__(self, bot_token: str = ""):
+        super().__init__("DeleteBot")
+
+    def deserialize(self, obj: object):
+        self.bot_token = obj['bot_token'] if 'bot_token' in obj else ""
+
+
 class PacketUtils:
     packets = {
         # Utility packets
@@ -987,6 +998,7 @@ class PacketUtils:
         "BroadcastNewRoomToLobby": BroadcastNewRoomToLobby,
         "StatusRoom": StatusRoom,
         "NewHost": NewHost,
+        "DeleteBot": DeleteBot,
         # Internal packets
         "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
         "InternalPlayerDisconnect": InternalPlayerDisconnect,

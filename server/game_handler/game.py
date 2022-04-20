@@ -35,7 +35,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
-    ActionStart, PlayerReconnect
+    ActionStart, PlayerReconnect, DeleteBot
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -349,6 +349,39 @@ class Game(Thread):
                                               reason=reason)
                 self.send_packet_to_group(update, "lobby")
                 return
+
+            elif isinstance(packet, DeleteBot):
+
+                token = packet.bot_token
+
+                if token == "":
+                    return
+
+                if not self.board.player_exists(uid=token):
+                    return
+
+                bot = self.board.get_player(token)
+
+                self.board.remove_player(player=bot)
+
+                reason = UpdateReason.DELETE_BOT.value
+
+                # this should be sent to lobby and to game group
+                update = BroadcastUpdateRoom(game_token=self.uid,
+                                             nb_players=len(self.
+                                                            board.players),
+                                             reason=reason,
+                                             player=bot.get_id())
+
+                self.send_packet_to_group(update, self.uid)
+
+                update = BroadcastUpdateLobby(game_token=self.uid,
+                                              reason=reason)
+
+                self.send_packet_to_group(update, "lobby")
+
+                return
+
         else:
             # Heartbeat only in "game"
             if isinstance(packet, PingPacket):
