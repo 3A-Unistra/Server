@@ -1495,8 +1495,20 @@ class Game(Thread):
         Warning: Dices are not rolled in this function!
         :param player: Player moved
         """
+
+        print("move_player(%s) dices: (%d, %d) current_pos: %d" %
+              (player.get_name(),
+               player.current_dices[0],
+               player.current_dices[1],
+               player.position))
+
         # Move player and check if he reached start
         passed_go = self.board.move_player_with_dices(player)
+
+        print("move_player(%s) updated_pos: %d, passed_go %r" %
+              (player.get_name(),
+               player.position,
+               passed_go))
 
         # Broadcast new player position
         self.broadcast_packet(PlayerMove(
@@ -1616,6 +1628,9 @@ class Game(Thread):
         :param player: Player who drawn card
         :param card: Card to handle action
         """
+
+        print("process_card_actions(%s) => card: %d (%s)"
+              % (player.get_name(), card.id_, card.action_type.name))
 
         if not card.available:  # WTF?
             return

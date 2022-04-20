@@ -379,7 +379,7 @@ class Board:
         """
         temp_position = player.position
         player.position = (player.position
-                           + cases) % len(self.squares)
+                           + cases) % self.total_squares
         return player.position < temp_position
 
     def draw_random_card(self, deck: List[Card]) -> Optional[Card]:
