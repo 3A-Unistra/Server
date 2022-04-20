@@ -433,9 +433,16 @@ class Game(Thread):
                 if player is None:
                     return
 
+                player.disconnect()
+
                 async_to_sync(self.channel_layer.group_discard)(
                     self.uid, player.channel_name
                 )
+
+                if self.board.get_online_real_players_count() == 0:
+                    print("Player disconnected, stopping game.")
+                    self.state = GameState.STOP_THREAD
+
                 return
 
         if self.state is GameState.START_DICE:
