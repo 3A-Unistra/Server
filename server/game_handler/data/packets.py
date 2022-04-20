@@ -18,13 +18,13 @@ class Packet:
         pass
 
 
-
 class LobbyPacket(Packet):
     """
     Lobby packet => inherits Packet
 
     pass
     """
+
 
 class PlayerPacket(Packet):
     """
@@ -55,12 +55,14 @@ class ChatPacket(PlayerPacket):
         super().deserialize(obj)
         self.message = obj["message"]
 
+
 class InternalPacket(Packet):
     """
     Packet for Internal communication
 
     pass
     """
+
 
 class PlayerPropertyPacket(PlayerPacket):
     """
@@ -826,7 +828,6 @@ class CreateGame(LobbyPacket):
                  option_max_time: int = 0,
                  option_max_rounds: int = 0,
                  option_first_round_buy: bool = False):
-
         super().__init__("CreateGame")
         self.player_token = player_token
         self.password = password
