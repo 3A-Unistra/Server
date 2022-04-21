@@ -34,7 +34,6 @@ packet==0.5
 pause==0.3
 platformdirs==2.5.1
 pluggy==1.0.0
-psycopg2==2.9.3
 py==1.11.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
