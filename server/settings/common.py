@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+from decouple import config
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -128,9 +130,9 @@ JWT_KEY = '@xxw!3fx@wjfi+%t-#m5^m4n&r#(-gz$nz2o24tij%9a&w'
 
 # django channels layers
 
-REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
-REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')
-REDIS_PORT = os.getenv('REDIS_PORT', 6379)
+REDIS_HOST = config('REDIS_HOST', default='127.0.0.1')
+REDIS_PASSWORD = config('REDIS_PASSWORD', default='')
+REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
 REDIS_CONNECTION_STRING = "redis://:%s@%s:%s/0" % (
     REDIS_PASSWORD, REDIS_HOST, REDIS_PORT)
 
@@ -148,7 +150,7 @@ CHANNEL_LAYERS = {
 }
 
 # If server is localhost then SERVER_OFFLINE should be True
-SERVER_OFFLINE = os.getenv('SERVER_OFFLINE', 'False').lower() in ('true', '1')
+SERVER_OFFLINE = config('SERVER_OFFLINE', default=False, cast=bool)
 
 ENGINE_CONFIG = {
     'TICK_RATE': 20,

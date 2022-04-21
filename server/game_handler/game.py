@@ -434,9 +434,16 @@ class Game(Thread):
                 if player is None:
                     return
 
+                player.disconnect()
+
                 async_to_sync(self.channel_layer.group_discard)(
                     self.uid, player.channel_name
                 )
+
+                if self.board.get_online_real_players_count() == 0:
+                    print("Player disconnected, stopping game.")
+                    self.state = GameState.STOP_THREAD
+
                 return
 
         if self.state is GameState.START_DICE:
@@ -699,8 +706,12 @@ class Game(Thread):
             self.board.remaining_round_players = len(
                 self.board.get_non_bankrupt_players()) - 1
         else:
-            # remaining players - 1
-            self.board.next_player()
+            player = self.board.get_current_player()
+
+            # Check if player has no doubles and not bankrupt
+            if player.doubles <= 0 or player.bankrupt:
+                # remaining players - 1
+                self.board.next_player()
 
         # Get current player
         current_player = self.board.get_current_player()
@@ -1496,8 +1507,20 @@ class Game(Thread):
         Warning: Dices are not rolled in this function!
         :param player: Player moved
         """
+
+        print("move_player(%s) dices: (%d, %d) current_pos: %d" %
+              (player.get_name(),
+               player.current_dices[0],
+               player.current_dices[1],
+               player.position))
+
         # Move player and check if he reached start
         passed_go = self.board.move_player_with_dices(player)
+
+        print("move_player(%s) updated_pos: %d, passed_go %r" %
+              (player.get_name(),
+               player.position,
+               passed_go))
 
         # Broadcast new player position
         self.broadcast_packet(PlayerMove(
@@ -1542,11 +1565,15 @@ class Game(Thread):
             ))
         elif isinstance(case, TaxSquare):
             # Receiver=None is bank
+            print("TaxSquare ! player should pay: %d, current_balance: %d"
+                  % (case.tax_price, player.money))
             self.player_balance_pay(player=player,
                                     receiver=None,
                                     amount=case.tax_price,
                                     reason="tax_square")
-            self.board.board_money += case.tax_price
+
+            print("TaxSquare ! player new balance: %d (board money): %d"
+                  % (player.money, self.board.board_money))
         elif isinstance(case, FreeParkingSquare):
 
             # change all debts targeting the bank (None) to this player
@@ -1588,6 +1615,7 @@ class Game(Thread):
 
         elif isinstance(case, CommunitySquare) and not backward:
             card = self.board.draw_random_community_card()
+            print("Moved on CommunitySquare!")
 
             if card is None:
                 # TODO: Send exception packet
@@ -1617,6 +1645,9 @@ class Game(Thread):
         :param player: Player who drawn card
         :param card: Card to handle action
         """
+
+        print("process_card_actions(%s) => card: %d (%s)"
+              % (player.get_name(), card.id_, card.action_type.name))
 
         if not card.available:  # WTF?
             return
@@ -1658,6 +1689,12 @@ class Game(Thread):
         if card.action_type is CardActionType.GOTO_POSITION:
             passed_go = card.action_value < player.position
             player.position = card.action_value
+
+            self.broadcast_packet(PlayerMove(
+                player_token=player.get_id(),
+                destination=card.action_value
+            ))
+
             # Move player actions
             self.proceed_move_player_actions(player=player,
                                              passed_go=passed_go)

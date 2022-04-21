@@ -119,6 +119,8 @@ class AuthMiddleware:
                 user.avatar = ""
                 user.save()
 
+                print("Creating new user=%s" % token)
+
                 return user
 
             return None
