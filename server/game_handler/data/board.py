@@ -81,12 +81,15 @@ class Board:
         self.total_properties_color_squares = {}
         self.current_exchange = None
         self.current_auction = None
-        self.bank = Bank(0, 0)  # TODO: AFTER AKI'S MERGE
         self.search_square_indexes()
         self.search_card_indexes()
         self.option_first_round_buy = False
-        self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
-        self.starting_balance = self.CONFIG.get("STARTING_BALANCE_DEFAULT")
+        self.CONFIG = getattr(settings, 'ENGINE_CONFIG', None)
+        self.starting_balance = self.CONFIG.get('STARTING_BALANCE_DEFAULT')
+        self.bank = Bank(
+            nb_house=self.CONFIG.get('BANK_HOUSES_COUNT'),
+            nb_hotel=self.CONFIG.get('BANK_HOTELS_COUNT')
+        )
         self.search_square_indexes()
         self.search_card_indexes()
 
