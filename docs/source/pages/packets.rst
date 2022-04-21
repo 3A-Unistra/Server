@@ -103,7 +103,6 @@ Ce paquet est envoyé au joueur du lobby général lorsque le statut d'un lobby 
 .. code-block:: python
     :caption: Enum UpdateReason
 
-    {
     class UpdateReason(Enum):
         NEW_CONNECTION = 0
         NEW_PLAYER = 1
@@ -131,7 +130,6 @@ Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladi
 .. code-block:: python
     :caption: Enum UpdateReason
 
-    {
     class UpdateReason(Enum):
         NEW_CONNECTION = 0
         NEW_PLAYER = 1
@@ -274,9 +272,6 @@ Lorsque tous les joueurs sont prêts et ont chargé le jeu.
       ]
     }
 
-
-
-
 PlayerDisconnect
 ^^^^^^^^^^^^^^^^
 
@@ -297,6 +292,13 @@ Lorsqu'un joueur se reconnecte après un crash ou timeout.
  * identifiant du joueur
  * raison de la deconnexion
 
+PlayerDefeat
+^^^^^^^^^^^^
+
+Lorsqu'un joueur a perdu (solde négatif a la fin de son tour)
+
+**contenu du paquet :**
+ * identifiant du joueur (*player_token*)
 
 GameStartDice
 ^^^^^^^^^^^^^
