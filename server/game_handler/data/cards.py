@@ -51,8 +51,7 @@ class Card:
         else:  # Should not happen.
             self.action_type = CardActionType.RECEIVE_BANK
 
-        self.action_value = int(obj['action_value']) if 'action_value' \
-                                                        in obj else 0
+        self.action_value = int(obj['value']) if 'value' in obj else 0
         self.alt = int(obj['alt']) if 'alt' in obj else 0
 
 
