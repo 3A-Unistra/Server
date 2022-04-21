@@ -1565,11 +1565,15 @@ class Game(Thread):
             ))
         elif isinstance(case, TaxSquare):
             # Receiver=None is bank
+            print("TaxSquare ! player should pay: %d, current_balance: %d"
+                  % (case.tax_price, player.money))
             self.player_balance_pay(player=player,
                                     receiver=None,
                                     amount=case.tax_price,
                                     reason="tax_square")
-            self.board.board_money += case.tax_price
+
+            print("TaxSquare ! player new balance: %d (board money): %d"
+                  % (player.money, self.board.board_money))
         elif isinstance(case, FreeParkingSquare):
 
             # change all debts targeting the bank (None) to this player
@@ -1611,6 +1615,7 @@ class Game(Thread):
 
         elif isinstance(case, CommunitySquare) and not backward:
             card = self.board.draw_random_community_card()
+            print("Moved on CommunitySquare!")
 
             if card is None:
                 # TODO: Send exception packet

@@ -225,6 +225,7 @@ class Engine:
         try:  # get user from database
             user = User.objects.get(id=packet.player_token)
         except User.DoesNotExist:
+            print("[engine.create_game()] user does not exists")
             return
 
         new_game = Game()
