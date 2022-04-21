@@ -429,31 +429,21 @@ class Game(Thread):
 
                 return
 
-            if isinstance(packet, InternalPlayerDisconnect):
-                # TODO: HANDLE CLIENT SIDE DISCONNECT
-                # Add player to game group
-                player = self.board.get_player(packet.player_token)
+        if isinstance(packet, InternalPlayerDisconnect):
+            # Add player to game group
+            player = self.board.get_player(packet.player_token)
 
-                if player is None:
-                    return
-
-                player.disconnect()
-
-                async_to_sync(self.channel_layer.group_discard)(
-                    self.uid, player.channel_name
-                )
-
-                if self.board.get_online_real_players_count() == 0:
-                    print("Player disconnected, stopping game.")
-                    self.state = GameState.STOP_THREAD
-
+            if player is None:
                 return
 
+            self.disconnect_player(player, reason="client_disconnect")
+            return
+
         if self.state.value > GameState.WAITING_PLAYERS.value:
-            # broadcast_tchat
+            # broadcast_chat
             if isinstance(packet, ChatPacket):
                 # if the message is too long
-                if (len(packet.message) <= 128):
+                if len(packet.message) <= 128:
                     self.broadcast_packet(packet)
                 return
 
@@ -747,7 +737,6 @@ class Game(Thread):
         """
         Process to tour end, cancel all actions and check if player is bankrupt
         """
-        # TODO : process loose
         self.broadcast_packet(ActionTimeout())
 
         # set exchange to None
@@ -1077,11 +1066,16 @@ class Game(Thread):
             remaining_time=auction.tour_action_remaining_seconds
         ))
 
+        self.board.current_auction = None
+
+        # If current_player is disconnected, end tour
+        if not self.board.get_current_player().online:
+            self.proceed_action_tour_end()
+            return
+
         # Recover old timeout
         self.set_timeout(seconds=auction.tour_action_remaining_seconds)
         self.state = GameState.ACTION_TIMEOUT_WAIT
-
-        self.board.current_auction = None
 
     def proceed_exchange(self, packet: PlayerPacket):
         exchange: Optional[Exchange] = self.board.current_exchange
@@ -1401,7 +1395,8 @@ class Game(Thread):
             return True
 
         # Win
-        if len(self.board.get_non_bankrupt_players()) == 0:
+        if len(self.board.get_non_bankrupt_players()) == 1:
+            # One player remaining! Easy win!
             # TODO: proceed to win
             return True
 
@@ -1648,14 +1643,33 @@ class Game(Thread):
                 self.process_card_actions(player=player, card=card)
 
     def disconnect_player(self, player: Player, reason: str = ""):
-        player.disconnect()
         # TODO: Maybe handle bot should make actions here? buy etc
-
         # Send to all players a disconnecting player packet
         self.broadcast_packet(PlayerDisconnect(
             reason=reason,
             player_token=player.get_id()
         ))
+
+        player.disconnect()
+
+        async_to_sync(self.channel_layer.group_discard)(
+            self.uid, player.channel_name
+        )
+
+        # Waiting players => ignore players_count == 0
+        if self.state is GameState.WAITING_PLAYERS:
+            return
+
+        if self.board.get_online_real_players_count() == 0:
+            print("Player disconnected, stopping game.")
+            self.state = GameState.STOP_THREAD
+            return
+
+        # If player is actual player, end tour
+        if self.board.get_current_player() == player:
+            if self.board.current_auction is None:
+                self.proceed_action_tour_end()
+        return
 
     def process_card_actions(self, player: Player, card: Card):
         """

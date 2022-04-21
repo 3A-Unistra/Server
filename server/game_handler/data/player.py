@@ -151,7 +151,7 @@ class Player:
         A player is bankrupt if he has debts
         :return: Player is bankrupt or not
         """
-        return len(self.debts) > 0
+        return self.get_total_debts() > 0
 
     def has_debts(self) -> bool:
         return self.is_bankrupt()
