@@ -98,6 +98,10 @@ class TaxSquare(Square):
         super().__init__(id_)
         self.tax_price = tax_price
 
+    def deserialize(self, obj: dict):
+        super().deserialize(obj)
+        self.tax_price = int(obj['value']) if 'value' in obj else 0
+
 
 class GoSquare(Square):
     def __init__(self, id_: int = 0):
