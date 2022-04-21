@@ -26,6 +26,8 @@ services:
       - "${DAPHNE_PORT}:${DAPHNE_PORT}"
     env_file:
       - .env
+    environment:
+      - /docker/data/db.sqlite3:/app/db.sqlite3
     networks:
       - back
     depends_on:
@@ -37,6 +39,8 @@ services:
     command: bash -c "python manage.py migrate && python manage.py runworker game_engine"
     env_file:
       - .env
+    environment:
+      - /docker/data/db.sqlite3:/app/db.sqlite3
     networks:
       - back
     depends_on:

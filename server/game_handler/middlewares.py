@@ -65,6 +65,8 @@ class AuthMiddleware:
             query = scope["query_string"].decode("utf8")
             token = parse_qs(query).get('token', None)
 
+            print("middleware: get %s" % query)
+
             if (jwt_token_list := token) is not None:
 
                 # could be an uuid
@@ -73,9 +75,11 @@ class AuthMiddleware:
                 # check if token is an uuid
                 if self.offline:
                     if not is_valid_uuid(jwt_token):
+                        print("Middleware: user uuid not valid")
                         scope['user'] = None
                         return None
                     else:
+                        print("Middleware: user uuid valid")
                         token = jwt_token
                 else:
                     # decode jwt and get jti
@@ -114,6 +118,8 @@ class AuthMiddleware:
                 user.password = token
                 user.avatar = ""
                 user.save()
+
+                print("Creating new user=%s" % token)
 
                 return user
 

@@ -1,5 +1,4 @@
 from unittest import TestCase
-
 from server.game_handler.engine import Engine, Game, GameState
 
 

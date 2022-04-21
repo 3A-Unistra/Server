@@ -35,7 +35,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
-    ActionStart, PlayerDefeat
+    ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -105,10 +105,10 @@ class Game(Thread):
     games: {}
     host_player: Player
 
-    def __init__(self, uid: str = str(uuid.uuid4()), **kwargs):
-        super(Game, self).__init__(daemon=True, name="Game_%s" % uid, **kwargs)
+    def __init__(self, **kwargs):
+        self.uid = str(uuid.uuid4())
+        super().__init__(daemon=True, name="Game_%s" % self.uid, **kwargs)
         self.channel_layer = get_channel_layer()
-        self.uid = uid
         self.state = GameState.OFFLINE
         self.packets_queue = Queue()
         self.CONFIG = getattr(settings, "ENGINE_CONFIG", None)
@@ -166,154 +166,169 @@ class Game(Thread):
     def process_packet(self, queue_packet: QueuePacket):
         packet: Packet = queue_packet.packet
 
-        if self.state.value > GameState.LOBBY.value:
-            # Heartbeat only in "game"
-            if isinstance(packet, PingPacket):
-                player = self.board.get_player(packet.player_token)
-                if player is None:
-                    return
+        # check player validity
+        if isinstance(packet, InternalCheckPlayerValidity):
+            # Only accept connection, if player exists and game is started
 
-                player.ping = True
+            player: Optional[Player] = None
+
+            if not self.board.player_exists(packet.player_token):
+                valid = False
+            elif self.state.value <= GameState.LOBBY.value:
+                valid = False
+            # Player already online
+            else:
+                player = self.board.get_player(packet.player_token)
+                valid = not player.online
+
+            self.send_packet(
+                channel_name=queue_packet.channel_name,
+                packet=InternalCheckPlayerValidity(valid=valid))
+
+            if not valid:
                 return
 
-            # check player validity
-            if isinstance(packet, InternalCheckPlayerValidity):
-                # Only accept connection, if player exists and game is started
+            # Change channel_name
+            player.channel_name = queue_packet.channel_name
+            return
 
-                valid = True
+        # Before Player validity check
+        if self.state is GameState.LOBBY and isinstance(packet, EnterRoom):
 
-                if not self.board.player_exists(packet.player_token):
-                    valid = False
-                elif self.state.value <= GameState.LOBBY.value:
-                    valid = False
-                # Player already online
-                elif self.board.get_player(packet.player_token).online:
-                    valid = False
+            try:  # get user from database
+                user = User.objects.get(id=packet.player_token)
+            except User.DoesNotExist:
+                return
 
-                self.send_packet(
-                    channel_name=queue_packet.channel_name,
-                    packet=InternalCheckPlayerValidity(valid=valid))
-                if not valid:
+            print("Lobby user.name=%s" % user.name)
+
+            if packet.password != "":
+                if packet.password != self.board.option_password:
+                    self.send_lobby_packet(channel_name=queue_packet.
+                                           channel_name,
+                                           packet=ExceptionPacket(
+                                               code=4201))
                     return
+            # if game is full
+            if len(self.board.players) == self.board.players_nb:
+                self.send_lobby_packet(channel_name=queue_packet.
+                                       channel_name,
+                                       packet=ExceptionPacket(code=4202))
+                return
 
-            # Else handle connection.
+            # all the checks are fine, add the player to the game
+            self.board.add_player(
+                Player(user=user, channel_name=queue_packet.channel_name,
+                       bot=False))
+
+            # player leaves lobby group
+            async_to_sync(self.channel_layer.group_discard)(
+                "lobby", queue_packet.channel_name
+            )
+            # add player to this specific game group
+            async_to_sync(self.channel_layer.group_add)(
+                self.uid, queue_packet.channel_name
+            )
+
+            nb_players = len(self.board.players)
+
+            # send success of getting in room
+            piece = self.board.assign_piece(user)
+            self.send_lobby_packet(
+                channel_name=queue_packet.channel_name,
+                packet=EnterRoomSucceed(game_token=self.uid,
+                                        piece=piece)
+            )
+
+            # sending status of room
+            player_uid = []
+            for player in self.board.players:
+                player_uid.append(player.get_id())
+            status = StatusRoom(game_token=self.uid,
+                                game_name=self.public_name,
+                                nb_players=nb_players,
+                                max_nb_players=self.board.players_nb,
+                                players=player_uid,
+                                option_auction=self.
+                                board.option_auction_enabled,
+                                option_double_on_start=self.
+                                board.option_go_case_double_money,
+                                option_max_rounds=self.
+                                board.option_max_rounds,
+                                option_first_round_buy=self.
+                                board.option_first_round_buy,
+                                option_max_time=self.
+                                board.option_max_time,
+                                starting_balance=self.
+                                board.starting_balance)
+            self.send_lobby_packet(channel_name=queue_packet.channel_name,
+                                   packet=status)
+            print("[game.py] sent packet statusRoom")
+
+            # broadcast to lobby group
+            reason = UpdateReason.NEW_PLAYER.value
+            # sent to lobby and to game group
+            update = BroadcastUpdateRoom(game_token=self.uid,
+                                         nb_players=nb_players,
+                                         reason=reason,
+                                         player=packet.player_token)
+            # sending to the people in the game
+            self.send_packet_to_group(update, self.uid)
+            update = BroadcastUpdateLobby(game_token=self.uid,
+                                          reason=reason)
+            # sending to the lobby people
+            self.send_packet_to_group(update, "lobby")
+            return
+
+        if isinstance(packet, PlayerPacket):
+            if not self.board.player_exists(packet.player_token):
+                return self.send_packet(
+                    channel_name=queue_packet.channel_name,
+                    # 4100 => invalid player
+                    packet=ExceptionPacket(code=4100))
 
         if self.state is GameState.LOBBY:
-            if isinstance(packet, EnterRoom):
-
-                try:  # get user from database
-                    user = User.objects.get(id=packet.player_token)
-                except User.DoesNotExist:
-                    return
-
-                if packet.password != "":
-                    if packet.password != self.board.option_password:
-                        self.send_packet(channel_name=packet.player_token,
-                                         packet=ExceptionPacket(code=4201))
-                        return
-                # if game is full
-                if len(self.board.players) == self.board.players_nb:
-                    self.send_packet(channel_name=packet.player_token,
-                                     packet=ExceptionPacket(code=4202))
-                    return
-
-                # all the checks are fine, add the player to the game
-                self.board.add_player(
-                    Player(user=user, channel_name=self.channel_layer,
-                           bot=False))
-
-                # player leaves lobby group
-                async_to_sync(
-                    self.channel_layer.group_discard)("lobby",
-                                                      packet.player_token)
-                # add player to this specific game group
-                async_to_sync(
-                    self.channel_layer.group_add)(self.uid,
-                                                  packet.player_token)
-
-                nb_players = len(self.board.players)
-
-                # send success of getting in room
-                piece = self.board.assign_piece(packet.player_token)
-                self.send_packet(channel_name=packet.player_token,
-                                 packet=EnterRoomSucceed(piece))
-
-                # sending status of room
-                player_uid = []
-                for player in self.board.players:
-                    player_uid.append(player.get_id())
-                status = StatusRoom(game_token=self.uid,
-                                    name=self.public_name,
-                                    nb_players=nb_players,
-                                    max_nb_players=self.board.players_nb,
-                                    players=player_uid,
-                                    option_auction=self.
-                                    board.option_auction_enabled,
-                                    option_double_on_start=self.
-                                    board.option_go_case_double_money,
-                                    option_max_rounds=self.
-                                    board.option_max_rounds,
-                                    option_first_round_buy=self.
-                                    board.option_first_round_buy,
-                                    option_max_time=self.
-                                    board.option_max_time,
-                                    starting_balance=self.
-                                    board.starting_balance)
-                self.send_packet(packet.player_token, status)
-
-                # broadcast to lobby group
-                reason = UpdateReason.NEW_PLAYER.value
-                # sent to lobby and to game group
-                update = BroadcastUpdateRoom(game_token=self.uid,
-                                             nb_players=nb_players,
-                                             reason=reason,
-                                             player=packet.player_token)
-                # sending to the people in the game
-                self.send_packet_to_group(update, self.uid)
-                update = BroadcastUpdateLobby(game_token=self.uid,
-                                              reason=reason)
-                # sending to the lobby people
-                self.send_packet_to_group(update, "lobby")
-                return
-
-            elif isinstance(packet, LaunchGame):
+            if isinstance(packet, LaunchGame):
+                print("received LaunchGame")
+                player = self.board.get_player(packet.player_token)
                 # check if player_token is the token of the game host
-                if packet.player_token != self.host_player:
+                if player != self.host_player:
                     return  # ignore the launch request
 
-                self.broadcast_packet(packet=AppletPrepare())
+                print("Set state to GameState.WAITING_PLAYERS")
                 # putting the game in waiting mode (waiting for AppletReady
                 # from all the players)
                 self.state = GameState.WAITING_PLAYERS
+
+                # Send AppletPrepare to group (should disconnect at this pt)
+                self.send_packet_to_group(AppletPrepare(), self.uid)
+
                 # setting timeout to wait for the players to send AppletReady
                 self.set_timeout(
                     seconds=self.CONFIG.get('WAITING_PLAYERS_TIMEOUT'))
                 # broadcasting update to players
                 reason = UpdateReason.LAUNCHING_GAME.value
-                nb_players = len(self.board.players)
 
-                # this should be sent to lobby and to game group
-                update = BroadcastUpdateRoom(game_token=self.uid,
-                                             nb_players=nb_players,
-                                             reason=reason,
-                                             player=packet.player_token)
-                self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
                                               reason=reason)
                 self.send_packet_to_group(update, "lobby")
                 return
 
             elif isinstance(packet, AddBot):
+                player = self.board.get_player(packet.player_token)
+
                 # check if the host is the one sending the packet
-                if packet.player_token != self.host_player:
-                    self.send_packet(channel_name=packet.player_token,
-                                     packet=ExceptionPacket(code=4205))
+                if player != self.host_player:
+                    self.send_lobby_packet(channel_name=queue_packet.
+                                           channel_name,
+                                           packet=ExceptionPacket(code=4205))
                     return
 
                 # check if game is not full
                 if len(self.board.players) == self.board.players_nb:
-                    self.send_packet(channel_name=packet.player_token,
-                                     packet=ExceptionPacket(code=4202))
+                    self.send_lobby_packet(channel_name=queue_packet.
+                                           channel_name,
+                                           packet=ExceptionPacket(code=4202))
                     return
 
                 # add bot to the game
@@ -329,39 +344,118 @@ class Game(Thread):
                 update = BroadcastUpdateRoom(game_token=self.uid,
                                              nb_players=nb_players,
                                              reason=reason,
-                                             player=packet.player_token)
+                                             player=p.get_id())
                 self.send_packet_to_group(update, self.uid)
                 update = BroadcastUpdateLobby(game_token=self.uid,
                                               reason=reason)
                 self.send_packet_to_group(update, "lobby")
                 return
 
+            elif isinstance(packet, DeleteBot):
+
+                token = packet.bot_token
+
+                if token == "":
+                    return
+
+                if not self.board.player_exists(uid=token):
+                    return
+
+                bot = self.board.get_player(token)
+
+                self.board.remove_player(player=bot)
+
+                reason = UpdateReason.DELETE_BOT.value
+
+                # this should be sent to lobby and to game group
+                update = BroadcastUpdateRoom(game_token=self.uid,
+                                             nb_players=len(self.
+                                                            board.players),
+                                             reason=reason,
+                                             player=bot.get_id())
+
+                self.send_packet_to_group(update, self.uid)
+
+                update = BroadcastUpdateLobby(game_token=self.uid,
+                                              reason=reason)
+
+                self.send_packet_to_group(update, "lobby")
+
+                return
+
         else:
-            # If state is not lobby
-            # Check for packet validity
-            if isinstance(packet, PlayerPacket):
-                if not self.board.player_exists(packet.player_token):
-                    return self.send_packet(
-                        channel_name=queue_packet.channel_name,
-                        # 4100 => invalid player
-                        packet=ExceptionPacket(code=4100))
+            # Heartbeat only in "game"
+            if isinstance(packet, PingPacket):
+                player = self.board.get_player(packet.player_token)
+                if player is None:
+                    return
+                player.ping = True
 
         if self.state is GameState.WAITING_PLAYERS:
             # WebGL app is ready to play
             if not isinstance(packet, AppletReady):
                 return
-            # Player could not be null -> we are checking before, if this
-            # player exists.
-            player = self.board.get_player(packet.player_token)
 
-            # Set player to connected (bot disabled)
-            player.connect()
+            # AppletReady -> connect from client
+            # Could be first connect as reconnect
+            if isinstance(packet, AppletReady):
+                player = self.board.get_player(packet.player_token)
 
-            # init ping heartbeat
-            player.ping = True
-            player.ping_timeout = datetime.now() + timedelta(
-                seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
-            return
+                # Set player to connected (bot disabled)
+                player.connect()
+
+                # init ping heartbeat
+                player.ping = True
+                player.ping_timeout = datetime.now() + timedelta(
+                    seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
+
+                print("add player=%s to group %s (%s)"
+                      % (player.get_id(),
+                         self.uid,
+                         player.channel_name))
+
+                # Add player to game group
+                async_to_sync(self.channel_layer.group_add)(
+                    self.uid, player.channel_name
+                )
+
+                # Waiting_players => first connection => not sending anything
+                if self.state is not GameState.WAITING_PLAYERS:
+                    self.broadcast_packet(PlayerReconnect(
+                        player_token=player.get_id()
+                    ))
+                    # TODO: RECONNECT => Send global state to player
+                    return
+
+                return
+
+            if isinstance(packet, InternalPlayerDisconnect):
+                # TODO: HANDLE CLIENT SIDE DISCONNECT
+                # Add player to game group
+                player = self.board.get_player(packet.player_token)
+
+                if player is None:
+                    return
+
+                player.disconnect()
+
+                async_to_sync(self.channel_layer.group_discard)(
+                    self.uid, player.channel_name
+                )
+
+                if self.board.get_online_real_players_count() == 0:
+                    print("Player disconnected, stopping game.")
+                    self.state = GameState.STOP_THREAD
+
+                return
+
+        if self.state.value > GameState.WAITING_PLAYERS.value:
+            # broadcast_tchat
+            if isinstance(packet, ChatPacket):
+                # if the message is too long
+                if (len(packet.message) <= 128):
+                    self.broadcast_packet(packet)
+                return
 
         if self.state is GameState.START_DICE:
 
@@ -463,6 +557,7 @@ class Game(Thread):
                 if self.board.get_online_real_players_count() == 0:
                     # After timeout, if no one is connected
                     # Stop game
+                    print("Stopping game after timeout with no players online")
                     self.state = GameState.STOP_THREAD
                     return
                 else:
@@ -521,6 +616,7 @@ class Game(Thread):
         del self.games[self.uid]
 
     def set_timeout(self, seconds: int):
+        print("Setting timeout to %d seconds." % seconds)
         self.timeout = datetime.now() + timedelta(seconds=seconds)
 
     def timeout_expired(self) -> bool:
@@ -541,6 +637,10 @@ class Game(Thread):
         self.board.set_bot_names()
         self.state = GameState.STARTING
         self.set_timeout(seconds=self.CONFIG.get('GAME_STARTING_TIMEOUT'))
+
+        # set money
+        for player in self.board.players:
+            player.money = self.board.starting_balance
 
         # send coherent information to all players
         players = []
@@ -619,8 +719,12 @@ class Game(Thread):
             self.board.remaining_round_players = len(
                 self.board.get_non_bankrupt_players()) - 1
         else:
-            # remaining players - 1
-            self.board.next_player()
+            player = self.board.get_current_player()
+
+            # Check if player has no doubles and not bankrupt
+            if player.doubles <= 0 or player.bankrupt:
+                # remaining players - 1
+                self.board.next_player()
 
         # Get current player
         current_player = self.board.get_current_player()
@@ -665,8 +769,9 @@ class Game(Thread):
         Proceed tour actions
         :param packet: Packet received
         """
-
+        print("proceed_tour_actions(%s)" % packet.serialize())
         if not isinstance(packet, PlayerPropertyPacket):
+            print("PAcket not playerPropertyPacket")
             return
 
         # Get player
@@ -674,19 +779,23 @@ class Game(Thread):
 
         # Check if player is current player, else ignore
         if player != self.board.get_current_player():
+            print("player != self.board.current_player")
             return
 
         # Its impossible to be bankrupted and be the current_player...
         if player.bankrupt:
+            print("player is bankrupt")
             return
 
         square = self.board.get_property(packet.property_id)
 
         if square is None:
+            print("square is none")
             # Ignore packet.
             return
 
         if isinstance(packet, ActionBuyProperty):
+            print("ActionBuyProperty")
 
             # Check if player is on this property
             if player.position != packet.property_id:
@@ -1417,8 +1526,20 @@ class Game(Thread):
         Warning: Dices are not rolled in this function!
         :param player: Player moved
         """
+
+        print("move_player(%s) dices: (%d, %d) current_pos: %d" %
+              (player.get_name(),
+               player.current_dices[0],
+               player.current_dices[1],
+               player.position))
+
         # Move player and check if he reached start
         passed_go = self.board.move_player_with_dices(player)
+
+        print("move_player(%s) updated_pos: %d, passed_go %r" %
+              (player.get_name(),
+               player.position,
+               passed_go))
 
         # Broadcast new player position
         self.broadcast_packet(PlayerMove(
@@ -1463,11 +1584,15 @@ class Game(Thread):
             ))
         elif isinstance(case, TaxSquare):
             # Receiver=None is bank
+            print("TaxSquare ! player should pay: %d, current_balance: %d"
+                  % (case.tax_price, player.money))
             self.player_balance_pay(player=player,
                                     receiver=None,
                                     amount=case.tax_price,
                                     reason="tax_square")
-            self.board.board_money += case.tax_price
+
+            print("TaxSquare ! player new balance: %d (board money): %d"
+                  % (player.money, self.board.board_money))
         elif isinstance(case, FreeParkingSquare):
 
             # change all debts targeting the bank (None) to this player
@@ -1509,6 +1634,7 @@ class Game(Thread):
 
         elif isinstance(case, CommunitySquare) and not backward:
             card = self.board.draw_random_community_card()
+            print("Moved on CommunitySquare!")
 
             if card is None:
                 # TODO: Send exception packet
@@ -1538,6 +1664,9 @@ class Game(Thread):
         :param player: Player who drawn card
         :param card: Card to handle action
         """
+
+        print("process_card_actions(%s) => card: %d (%s)"
+              % (player.get_name(), card.id_, card.action_type.name))
 
         if not card.available:  # WTF?
             return
@@ -1579,6 +1708,12 @@ class Game(Thread):
         if card.action_type is CardActionType.GOTO_POSITION:
             passed_go = card.action_value < player.position
             player.position = card.action_value
+
+            self.broadcast_packet(PlayerMove(
+                player_token=player.get_id(),
+                destination=card.action_value
+            ))
+
             # Move player actions
             self.proceed_move_player_actions(player=player,
                                              passed_go=passed_go)
@@ -1949,7 +2084,7 @@ class Game(Thread):
 
     def broadcast_packet(self, packet: Packet):
         async_to_sync(self.channel_layer.group_send)(
-            self.uid, {"type": "game_update", "packet": packet.serialize()}
+            self.uid, {"type": "send.packet", "packet": packet.serialize()}
         )
 
     def send_packet_to_group(self, packet: Packet, group_name: str):
@@ -1959,7 +2094,8 @@ class Game(Thread):
         :param group_name: Name of the channels group
         :param packet: packet to be sent
         """
-        async_to_sync(self.channel_layer.send)(
+        print("send_packet_to_group(%s, %s)" % (packet.name, group_name))
+        async_to_sync(self.channel_layer.group_send)(
             group_name, {
                 'type': 'send.lobby.packet',
                 'packet': packet.serialize()
@@ -1969,6 +2105,22 @@ class Game(Thread):
         if player.bot is True:
             return
         self.send_packet(player.channel_name, packet)
+
+    def send_lobby_packet(self, channel_name: str, packet: Packet):
+        """
+                Send packet to lobby channel layer
+
+                :param channel_name: Channel to send packet to
+                :param packet: Packet to send
+                """
+        if channel_name is None:
+            return
+
+        async_to_sync(self.channel_layer.send)(
+            channel_name, {
+                'type': 'lobby.callback',
+                'packet': packet.serialize()
+            })
 
     def send_packet(self, channel_name: str, packet: Packet):
         """
@@ -1980,8 +2132,11 @@ class Game(Thread):
         if channel_name is None:
             return
 
+        function_name = 'lobby.callback' if self.state == GameState.LOBBY \
+            else 'player.callback'
+
         async_to_sync(self.channel_layer.send)(
             channel_name, {
-                'type': 'player.callback',
+                'type': function_name,
                 'packet': packet.serialize()
             })

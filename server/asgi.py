@@ -7,9 +7,7 @@ For more information on this file, see
 https://docs.djangoproject.com/en/4.0/howto/deployment/asgi/
 """
 
-from channels.security.websocket import AllowedHostsOriginValidator
 from django.core.asgi import get_asgi_application
-
 
 django_asgi_app = get_asgi_application()
 
@@ -21,10 +19,8 @@ from .game_handler import routing
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
 
-    "websocket": AllowedHostsOriginValidator(
-        AuthMiddleware(
-            URLRouter(routing.websocket_urlpatterns)
-        )
+    "websocket": AuthMiddleware(
+        URLRouter(routing.websocket_urlpatterns)
     ),
 
     "channel": ChannelNameRouter({
