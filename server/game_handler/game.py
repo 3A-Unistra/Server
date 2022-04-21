@@ -35,7 +35,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
-    ActionStart, PlayerReconnect, DeleteBot
+    ActionStart, ChatPacket, PlayerReconnect, DeleteBot
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -389,8 +389,11 @@ class Game(Thread):
                 player = self.board.get_player(packet.player_token)
                 if player is None:
                     return
-
                 player.ping = True
+
+        if self.state is GameState.WAITING_PLAYERS:
+            # WebGL app is ready to play
+            if not isinstance(packet, AppletReady):
                 return
 
             # AppletReady -> connect from client
@@ -444,6 +447,14 @@ class Game(Thread):
                     print("Player disconnected, stopping game.")
                     self.state = GameState.STOP_THREAD
 
+                return
+
+        if self.state.value > GameState.WAITING_PLAYERS.value:
+            # broadcast_tchat
+            if isinstance(packet, ChatPacket):
+                # if the message is too long
+                if (len(packet.message) <= 128):
+                    self.broadcast_packet(packet)
                 return
 
         if self.state is GameState.START_DICE:

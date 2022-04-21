@@ -72,11 +72,27 @@ class PlayerPacket(Packet):
             self.player_token = obj["player_token"]
 
 
+class ChatPacket(PlayerPacket):
+    """
+        Packet containing message from unity
+        """
+    message: str
+
+    def __init__(self, player_token: str = "", message: str = ""):
+        super().__init__("ChatPacket", player_token)
+        self.message = message
+
+    def deserialize(self, obj: object):
+        super().deserialize(obj)
+        self.message = obj["message"]
+
+
 class InternalPacket(Packet):
     """
     Packet for Internal communication
-    """
+
     pass
+    """
 
 
 class PlayerPropertyPacket(PlayerPacket):
