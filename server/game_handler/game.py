@@ -84,6 +84,10 @@ class GameState(Enum):
     # When an auction was started (switches from ACTION_TIMEOUT_WAIT)
     ACTION_AUCTION = 10
 
+    GAME_WIN_TIMEOUT = 11
+
+    GAME_END_TIMEOUT = 12
+
 
 @dataclass
 class QueuePacket:
@@ -1663,6 +1667,10 @@ class Game(Thread):
         if self.board.get_online_real_players_count() == 0:
             print("Player disconnected, stopping game.")
             self.state = GameState.STOP_THREAD
+            return
+
+        if self.board.get_online_players_count() == 1:
+            # TODO: Player win?
             return
 
         # If player is actual player, end tour
