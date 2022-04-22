@@ -1687,8 +1687,9 @@ class Game(Thread):
         :param card: Card to handle action
         """
 
-        print("process_card_actions(%s) => card: %d (%s)"
-              % (player.get_name(), card.id_, card.action_type.name))
+        print("process_card_actions(%s) => card: %d (%s) available? %r"
+              % (player.get_name(), card.id_, card.action_type.name,
+              card.available))
 
         if not card.available:  # WTF?
             return
@@ -1706,6 +1707,8 @@ class Game(Thread):
 
         # Receive new injected money
         if card.action_type is CardActionType.RECEIVE_BANK:
+            print("card.action_type => receive bank val: %d"
+                  % card.action_value)
             self.player_balance_receive(player=player,
                                         amount=card.action_value,
                                         reason="card_receive_bank")
@@ -1713,6 +1716,7 @@ class Game(Thread):
 
         # Give to bank = give money to board
         if card.action_type is CardActionType.GIVE_BOARD:
+            print("card.action_type => give board val: %d" % card.action_value)
             self.player_balance_pay(player=player,
                                     receiver=None,
                                     amount=card.action_value,
@@ -1941,6 +1945,8 @@ class Game(Thread):
 
             if receiver is None:
                 self.board.board_money += amount
+                print("player.money >= amount ; board_money updated: %d"
+                      % self.board.board_money)
             else:
                 self.player_balance_receive(player=receiver,
                                             amount=amount,

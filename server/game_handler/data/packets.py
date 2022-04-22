@@ -79,7 +79,7 @@ class ChatPacket(PlayerPacket):
     message: str
 
     def __init__(self, player_token: str = "", message: str = ""):
-        super().__init__("ChatPacket", player_token)
+        super().__init__("Chat", player_token)
         self.message = message
 
     def deserialize(self, obj: object):
@@ -1013,6 +1013,7 @@ class PacketUtils:
         "ActionSellHouseSucceed": ActionSellHouseSucceed,
         "GameStart": GameStart,
         "PlayerValid": PlayerValid,
+        "Chat": ChatPacket,
         # Lobby packets
         "EnterRoom": EnterRoom,
         "EnterRoomSucceed": EnterRoomSucceed,
