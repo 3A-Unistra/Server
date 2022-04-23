@@ -686,7 +686,7 @@ class Game(Thread):
         dice_packet = GameStartDiceResults()
 
         for player in self.board.get_online_players():
-            is_winner = player.get_id() is highest.get_id()
+            is_winner = player is highest
             dice_packet.add_dice_result(player_token=player.get_id(),
                                         dice1=player.current_dices[0],
                                         dice2=player.current_dices[1],
