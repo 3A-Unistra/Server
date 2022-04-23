@@ -658,10 +658,10 @@ class Board:
         for player in self.get_non_bankrupt_players():
             if highest is None:
                 highest = player
-                highest_score = player.get_score()
+                highest_score = self.get_score(player)
                 continue
 
-            score = player.get_score()
+            score = self.get_score(player)
 
             if score <= highest_score:
                 continue

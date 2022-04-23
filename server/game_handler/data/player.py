@@ -56,6 +56,7 @@ class Player:
     }
     in_jail: bool = False
     bankrupt: bool = False  # True when player defeated
+    bankrupt_date: Optional[datetime]
     bot: bool = True
     current_dices: Tuple[int, int]
 
@@ -84,6 +85,7 @@ class Player:
         self.current_dices = (0, 0)
         self.start_dice_throw_received = False
         self.debts = collections.deque()
+        self.bankrupt_date = None
 
         if bot is True:
             self.online = True
@@ -213,3 +215,4 @@ class Player:
         if isinstance(other, Player):
             return self.get_id() == other.get_id()
         return False
+

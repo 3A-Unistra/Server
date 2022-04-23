@@ -12,6 +12,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import pause
 
+from server.game_handler import models
 from server.game_handler.data import Board, Player, Card
 from server.game_handler.data.auction import Auction
 from server.game_handler.data.cards import ChanceCard, CardActionType, \
@@ -35,7 +36,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
-    ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot, GameWin
+    ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot, GameWin, \
+    GameEnd
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -600,6 +602,12 @@ class Game(Thread):
                 # Tour is ended
                 self.proceed_action_tour_end()
 
+            elif self.state is GameState.GAME_WIN_TIMEOUT:
+                self.proceed_game_end()
+
+            elif self.state is GameState.GAME_END_TIMEOUT:
+                self.state = GameState.STOP_THREAD
+
     def proceed_stop(self):
         # Delete game
         self.state = GameState.STOP_THREAD
@@ -642,6 +650,49 @@ class Game(Thread):
             players.append(player.get_coherent_infos())
 
         self.broadcast_packet(GameStart(players=players))
+
+    def proceed_end_game(self):
+        self.broadcast_packet(GameEnd())
+
+        game = models.Game()
+        game.name = self.public_name
+        game.duration = (datetime.now() - self.start_date).total_seconds()
+        game.date = self.start_date
+        game.save()
+
+        sorted_players = []
+
+        for player in self.board.get_online_players():
+            sorted_players.append((self.board.get_score(player),
+                                   player))
+
+        sorted_players.sort(key=lambda x: x[0])
+        rank = 1
+
+        for score, player in sorted_players:
+            bot = player.bot and player.online
+            houses, hotels = self.board.get_player_buildings_count(player)
+
+            if player.bankrupt_date is None:
+                play_duration = game.duration
+            else:
+                play_duration = (player.bankrupt_date - self.start_date) \
+                    .total_seconds()
+            game_user = models.GameUser()
+            game_user.user = player.user if not bot else None
+            game_user.game = game
+            game_user.rank = rank
+            game_user.money = player.money
+            game_user.houses = hotels
+            game_user.hotels = hotels
+            game_user.host = self.host_player == player
+            game_user.bot = bot
+            game_user.duration = play_duration
+            game_user.save()
+            rank += 1
+
+        self.state = GameState.GAME_END_TIMEOUT
+        self.set_timeout(seconds=self.CONFIG.get('GAME_END_WAIT'))
 
     def start_begin_dice(self, re_roll=False):
         """
@@ -1444,18 +1495,20 @@ class Game(Thread):
         """
 
         if forced:
-            self.board.get_non_bankrupt_players()
-            pass
+            winner = self.board.get_highest_scorer()
         else:
             # The winner is the only and last non-bankrupt player
             winner = self.board.get_non_bankrupt_players()[0]
+
+        if winner is None:  # hmmmm
+            return
 
         self.broadcast_packet(GameWin(
             player_token=winner.get_id()
         ))
 
         self.state = GameState.GAME_WIN_TIMEOUT
-        self.set_timeout(seconds=self.CONFIG.get(''))
+        self.set_timeout(seconds=self.CONFIG.get('GAME_WIN_WAIT'))
 
     def proceed_dice_choice(self, player: Player,
                             choice: RoundDiceChoiceResult):
