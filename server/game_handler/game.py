@@ -35,7 +35,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
-    ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot
+    ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot, GameWin
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -1402,6 +1402,7 @@ class Game(Thread):
         if len(self.board.get_non_bankrupt_players()) == 1:
             # One player remaining! Easy win!
             # TODO: proceed to win
+            self.proceed_win()
             return True
 
         # Max rounds option is activated
@@ -1410,6 +1411,7 @@ class Game(Thread):
             if self.board.compute_current_round() >= \
                     self.board.option_max_rounds:
                 # TODO: proceed to check win.
+                self.proceed_win(forced=True)
                 return True
 
         return False
@@ -1434,6 +1436,26 @@ class Game(Thread):
                     seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
 
                 self.send_packet_to_player(player, PingPacket())
+
+    def proceed_win(self, forced: bool = False):
+        """
+        :param forced: Not one non-bankrupt player remaining
+        :return:
+        """
+
+        if forced:
+            self.board.get_non_bankrupt_players()
+            pass
+        else:
+            # The winner is the only and last non-bankrupt player
+            winner = self.board.get_non_bankrupt_players()[0]
+
+        self.broadcast_packet(GameWin(
+            player_token=winner.get_id()
+        ))
+
+        self.state = GameState.GAME_WIN_TIMEOUT
+        self.set_timeout(seconds=self.CONFIG.get(''))
 
     def proceed_dice_choice(self, player: Player,
                             choice: RoundDiceChoiceResult):
@@ -1688,8 +1710,8 @@ class Game(Thread):
         """
 
         print("process_card_actions(%s) => card: %d (%s) available? %r"
-              % (player.get_name(), card.id_, card.action_type.name,
-              card.available))
+              % (player.get_name(),
+                 card.id_, card.action_type.name, card.available))
 
         if not card.available:  # WTF?
             return
@@ -1726,6 +1748,14 @@ class Game(Thread):
         if card.action_type is CardActionType.MOVE_BACKWARD:
             self.board.move_player(player=player,
                                    cases=-card.action_value)
+
+            # Broadcast new player position
+            self.broadcast_packet(PlayerMove(
+                player_token=player.get_id(),
+                destination=player.position,
+                instant=True
+            ))
+
             # No actions for passed go
             self.proceed_move_player_actions(player=player,
                                              backward=True)
@@ -1737,7 +1767,8 @@ class Game(Thread):
 
             self.broadcast_packet(PlayerMove(
                 player_token=player.get_id(),
-                destination=card.action_value
+                destination=card.action_value,
+                instant=True
             ))
 
             # Move player actions

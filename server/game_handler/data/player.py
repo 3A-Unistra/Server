@@ -187,6 +187,17 @@ class Player:
             'piece': self.piece
         }
 
+    def get_score(self) -> int:
+        """
+        :return: Score without properties
+        """
+        score = self.money - self.get_total_debts()
+
+        if self.jail_cards['chance'] or self.jail_cards['community']:
+            score += 100
+
+        return score
+
     def get_id(self) -> str:
         """
         :return: Public_id if bot is a "real" bot, otherwise user.id
