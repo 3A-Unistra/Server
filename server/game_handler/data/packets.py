@@ -524,16 +524,19 @@ class RoundDiceResults(PlayerPacket):
 
 class PlayerMove(PlayerPacket):
     destination: int
+    instant: bool
 
     def __init__(self, player_token: str = "",
-                 destination: int = 0):
+                 destination: int = 0, instant: bool = False):
         super().__init__(name=self.__class__.__name__,
                          player_token=player_token)
         self.destination = destination
+        self.instant = instant
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
         self.destination = convert_to_int(obj, 'destination')
+        self.instant = convert_to_bool(obj, 'instant')
 
 
 class RoundRandomCard(PlayerPacket):
@@ -845,6 +848,17 @@ class ActionSellHouseSucceed(PlayerPropertyPacket):
                          property_id=property_id)
 
 
+class GameWin(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+
+
+class GameEnd(Packet):
+    def __init__(self):
+        super().__init__(self.__class__.__name__)
+
+
 # Lobby packets
 
 class CreateGame(LobbyPacket):
@@ -1014,6 +1028,8 @@ class PacketUtils:
         "GameStart": GameStart,
         "PlayerValid": PlayerValid,
         "Chat": ChatPacket,
+        "GameWin": GameWin,
+        "GameEnd": GameEnd,
         # Lobby packets
         "EnterRoom": EnterRoom,
         "EnterRoomSucceed": EnterRoomSucceed,

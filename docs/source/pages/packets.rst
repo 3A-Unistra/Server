@@ -647,6 +647,21 @@ Paquet envoyé à tout le monde lorsque la vente d'une maison a été couronné 
  * id du joueur (*player_token*)
  * id de la maison (*property_id*)
 
+Paquet GameWin
+^^^^^^^^^^^^^^
+
+Paquet envoyé à tout le monde lorsque le jeu a été gagné
+
+**contenu du paquet :**
+ * id du joueur qui a gagné (*player_token*)
+
+Paquet GameEnd
+^^^^^^^^^^^^^^
+
+Paquet envoyé à tout le monde lorsque tous les clients doivent quitter la room.
+(il s'arrête après 3/4 secondes)
+
+*ce paquet ne contient pas d'informations*
 
 Paquets internes
 ----------------
