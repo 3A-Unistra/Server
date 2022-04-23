@@ -215,4 +215,3 @@ class Player:
         if isinstance(other, Player):
             return self.get_id() == other.get_id()
         return False
-

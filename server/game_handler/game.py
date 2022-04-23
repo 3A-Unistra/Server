@@ -36,8 +36,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
-    ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot, GameWin, \
-    GameEnd
+    ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot,\
+    GameWin, GameEnd
 
 from server.game_handler.models import User
 from django.conf import settings
