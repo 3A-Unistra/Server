@@ -314,6 +314,11 @@ class Game(Thread):
 
                 double_on_start = self.board.option_go_case_double_money
                 first_round_buy = self.board.option_first_round_buy
+
+                # sending updated option to game group
+                players_uid = []
+                for player in self.board.players:
+                    players_uid.append(player.get_id())
                 self.send_packet_to_group(
                     group_name=self.uid,
                     packet=StatusRoom(
@@ -322,7 +327,7 @@ class Game(Thread):
                         nb_players=len(self.
                                        board.players),
                         max_nb_players=self.board.players_nb,
-                        players=[],
+                        players=players_uid,
                         option_auction=self.board.option_auction_enabled,
                         option_double_on_start=double_on_start,
                         option_max_time=self.board.option_max_time,
