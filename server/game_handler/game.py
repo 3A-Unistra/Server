@@ -899,7 +899,7 @@ class Game(Thread):
                 # Ignore packet.
                 return
 
-            price = square.rent_base + math.floor(0.6 * square.rent_base)
+            price = math.floor(0.6 * square.buy_price)
 
             if not player.has_enough_money(price):
                 return
