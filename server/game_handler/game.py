@@ -1350,7 +1350,8 @@ class Game(Thread):
                     or not exchange.can_send():
                 return
 
-            if exchange is ExchangeState.WAITING_SELECT:
+            if exchange is ExchangeState.STARTED or \
+                    exchange is ExchangeState.WAITING_SELECT:
 
                 # Check if player is the current player
                 if exchange.player != player:
