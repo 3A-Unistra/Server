@@ -171,6 +171,7 @@ class Game(Thread):
 
     def process_packet(self, queue_packet: QueuePacket):
         packet: Packet = queue_packet.packet
+        print("process_packet(%s)" % packet.serialize())
 
         # check player validity
         if isinstance(packet, InternalCheckPlayerValidity):
@@ -396,6 +397,7 @@ class Game(Thread):
                 if player is None:
                     return
                 player.ping = True
+                return
 
         if self.state is GameState.WAITING_PLAYERS:
             # WebGL app is ready to play

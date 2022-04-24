@@ -650,7 +650,8 @@ class ActionExchangePlayerSelect(PlayerPacket):
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
-        self.selected_player_token = obj["selected_token"]
+        self.selected_player_token = obj[
+            "selected_player_token"] if 'selected_player_token' in obj else ""
 
 
 class ExchangeTradeSelectType(Enum):
@@ -665,7 +666,7 @@ class ExchangeTradeSelectType(Enum):
 
 
 class ActionExchangeTradeSelect(PlayerPacket):
-    exchange_type: int
+    exchange_type: ExchangeTradeSelectType
     value: int
     update_affects_recipient: bool
 
@@ -676,17 +677,21 @@ class ActionExchangeTradeSelect(PlayerPacket):
         super().__init__(name=self.__class__.__name__,
                          player_token=player_token)
         self.value = value
-        self.exchange_type = exchange_type.value
+        self.exchange_type = exchange_type
         self.update_affects_recipient = update_affects_recipient
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
         self.value = convert_to_int(obj, 'value')
+        self.update_affects_recipient = convert_to_bool(
+            obj, 'update_affects_recipient')
 
-        if not ExchangeTradeSelectType.has_value(self.value):
-            self.value = 0
+        exchange_type = convert_to_int(obj, 'exchange_type')
 
-        self.exchange_type = convert_to_int(obj, 'exchange_type')
+        if not ExchangeTradeSelectType.has_value(exchange_type):
+            exchange_type = 0
+
+        self.exchange_type = ExchangeTradeSelectType(exchange_type)
 
 
 class ActionExchangeSend(PlayerPacket):
