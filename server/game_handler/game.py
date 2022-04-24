@@ -110,7 +110,6 @@ class Game(Thread):
     # reference to games dict
     games: {}
     host_player: Player
-    host_channel: str
 
     def __init__(self, **kwargs):
         self.uid = str(uuid.uuid4())
@@ -300,7 +299,7 @@ class Game(Thread):
                 # broadcast StatusRoom to group
 
                 # only host player can change options
-                if queue_packet.channel_name != self.host_channel:
+                if queue_packet.channel_name != self.host_player.channel_name:
                     return
 
                 # do necessary checks

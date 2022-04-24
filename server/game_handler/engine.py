@@ -170,7 +170,6 @@ class Engine:
                     game.send_packet_to_group(NewHost(
                         player_token=game.host_player.get_id()
                     ), game.uid)
-                    game.host_channel = game.board.players[i].channel_name
                     break
 
         # if checks passed, kick out player
@@ -253,7 +252,6 @@ class Engine:
         board.add_player(player)
 
         new_game.host_player = player
-        new_game.host_channel = channel_name
         board.set_nb_players(packet.max_nb_players)
         board.option_password = packet.password
         board.option_is_private = packet.is_private
