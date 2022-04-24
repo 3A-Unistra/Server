@@ -603,7 +603,7 @@ class Game(Thread):
                 self.proceed_action_tour_end()
 
             elif self.state is GameState.GAME_WIN_TIMEOUT:
-                self.proceed_game_end()
+                self.proceed_end_game()
 
             elif self.state is GameState.GAME_END_TIMEOUT:
                 self.state = GameState.STOP_THREAD
@@ -1682,6 +1682,9 @@ class Game(Thread):
         elif isinstance(case, OwnableSquare):
             # Pay rent :o
             if not case.has_owner() or case.mortgaged:
+                return
+            # Dont pay rent to yourself
+            if case.owner == player:
                 return
 
             # Calculate rent
