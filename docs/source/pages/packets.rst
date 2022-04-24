@@ -481,16 +481,15 @@ qu'ils puissent suivre l'échange en direct. Ceux qui ne sont pas concernés par
  les animations nécessaire.
 
 **contenu du paquet**
-  * id du joueur qui initialise l'échange (*id_init_request*)
-  * id du joueur avec qui l'échange veut être fait (*id_of_requested*)
-  * contenu de l'échange (*content_trade*)
+  * id du joueur (*player_token*)
 
 Paquet ActionExchangeDecline
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Paquet envoyé *par le client* si le joueur avec qui l'échange est censé être effectué refuse. Le paquet est relayé à tout le monde.
 
-*Ce paquet ne contient pas d'informations*
+**contenu du paquet**
+  * id du joueur (*player_token*)
 
 Paquet ActionExchangeCounter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -498,13 +497,15 @@ Paquet ActionExchangeCounter
 Ce paquet est *envoyé par le client* dans le cas où le joueur avec qui l'échange est censé être effectué veut effectuer une contre proposition.
 Le paquet est relayé à tout le monde. Pour la renégotiation de l'échange, le paquet *ActionExchangeTradeSelect* est utilisé.
 
-*Ce paquet ne contient pas d'informations*
+**contenu du paquet**
+  * id du joueur (*player_token*)
 
 Paquet ActionExchangeAccept
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Paquet envoyé *par le client* si le joueur avec qui l'échange est censé être effectué accepte. Le paquet est relayé à tout le monde.
 
-*Ce paquet ne contient pas d'informations*
+**contenu du paquet**
+  * id du joueur (*player_token*)
 
 Paquet ActionExchangeCancel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

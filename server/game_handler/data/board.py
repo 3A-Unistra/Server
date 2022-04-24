@@ -383,6 +383,9 @@ class Board:
         temp_position = player.position
         player.position = (player.position
                            + cases) % self.total_squares
+        print("move_player(%s) from %d to %d (dices: %d, cases: %d)"
+              % (player.get_name(), temp_position, player.position,
+                 player.dices_value(), cases))
         return player.position < temp_position
 
     def draw_random_card(self, deck: List[Card]) -> Optional[Card]:
