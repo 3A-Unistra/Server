@@ -889,7 +889,7 @@ class Game(Thread):
 
             self.player_balance_receive(
                 player=player,
-                amount=square.buy_price // 2,
+                amount=math.floor(0.5 * square.buy_price),
                 reason="action_mortgage"
             )
             return

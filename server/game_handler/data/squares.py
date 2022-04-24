@@ -40,9 +40,6 @@ class Square:
         """
         self.id_ = int(obj['id']) if 'id' in obj else 0
 
-    def clone(self) -> "Square":
-        return Square(self.id_)
-
 
 class OwnableSquare(Square):
     owner: Optional[Player]
@@ -67,9 +64,6 @@ class OwnableSquare(Square):
         super().deserialize(obj)
         self.buy_price = int(obj['buy_price'])
         self.rent_base = int(obj['rent_base'])
-
-    def clone(self) -> "OwnableSquare":
-        return OwnableSquare(self.id_, self.buy_price, self.rent_base)
 
 
 class ChanceSquare(Square):
@@ -107,9 +101,6 @@ class TaxSquare(Square):
     def deserialize(self, obj: dict):
         super().deserialize(obj)
         self.tax_price = int(obj['value']) if 'value' in obj else 0
-
-    def clone(self) -> "TaxSquare":
-        return TaxSquare(self.id_, self.tax_price)
 
 
 class GoSquare(Square):
@@ -158,13 +149,6 @@ class PropertySquare(OwnableSquare):
             self.rents[i] = obj['rent_%d' % i]
 
         self.color = '%s%s%s' % (obj['r'], obj['g'], obj['b'])
-
-    def clone(self) -> "PropertySquare":
-        square: PropertySquare = super().clone()
-        square.house_price = self.house_price
-        square.rents = self.rents
-        square.color = self.color
-        return square
 
     @staticmethod
     def is_distributed_equally(properties: List["PropertySquare"]) -> bool:
