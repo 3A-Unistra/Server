@@ -735,7 +735,10 @@ class ActionExchangeTransfer(PlayerPacket):
     def deserialize(self, obj: object):
         self.player_to = obj['player_to']
         self.value = convert_to_int(obj, 'value')
-        self.transfer_type = obj['transfer_type']
+
+        transfer_type = convert_to_int(obj, 'transfer_type')
+        if 0 <= transfer_type <= 1:
+            self.transfer_type = ExchangeTransferType(transfer_type)
 
 
 class ActionAuctionProperty(PlayerPacket):
