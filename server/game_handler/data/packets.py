@@ -79,7 +79,7 @@ class ChatPacket(PlayerPacket):
     message: str
 
     def __init__(self, player_token: str = "", message: str = ""):
-        super().__init__("ChatPacket", player_token)
+        super().__init__("Chat", player_token)
         self.message = message
 
     def deserialize(self, obj: object):
@@ -524,16 +524,19 @@ class RoundDiceResults(PlayerPacket):
 
 class PlayerMove(PlayerPacket):
     destination: int
+    instant: bool
 
     def __init__(self, player_token: str = "",
-                 destination: int = 0):
+                 destination: int = 0, instant: bool = False):
         super().__init__(name=self.__class__.__name__,
                          player_token=player_token)
         self.destination = destination
+        self.instant = instant
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
         self.destination = convert_to_int(obj, 'destination')
+        self.instant = convert_to_bool(obj, 'instant')
 
 
 class RoundRandomCard(PlayerPacket):
@@ -732,7 +735,10 @@ class ActionExchangeTransfer(PlayerPacket):
     def deserialize(self, obj: object):
         self.player_to = obj['player_to']
         self.value = convert_to_int(obj, 'value')
-        self.transfer_type = obj['transfer_type']
+
+        transfer_type = convert_to_int(obj, 'transfer_type')
+        if 0 <= transfer_type <= 1:
+            self.transfer_type = ExchangeTransferType(transfer_type)
 
 
 class ActionAuctionProperty(PlayerPacket):
@@ -843,6 +849,17 @@ class ActionSellHouseSucceed(PlayerPropertyPacket):
         super().__init__(self.__class__.__name__,
                          player_token=player_token,
                          property_id=property_id)
+
+
+class GameWin(PlayerPacket):
+    def __init__(self, player_token: str = ""):
+        super().__init__(self.__class__.__name__,
+                         player_token=player_token)
+
+
+class GameEnd(Packet):
+    def __init__(self):
+        super().__init__(self.__class__.__name__)
 
 
 # Lobby packets
@@ -1013,6 +1030,9 @@ class PacketUtils:
         "ActionSellHouseSucceed": ActionSellHouseSucceed,
         "GameStart": GameStart,
         "PlayerValid": PlayerValid,
+        "Chat": ChatPacket,
+        "GameWin": GameWin,
+        "GameEnd": GameEnd,
         # Lobby packets
         "EnterRoom": EnterRoom,
         "EnterRoomSucceed": EnterRoomSucceed,

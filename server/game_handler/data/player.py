@@ -56,6 +56,7 @@ class Player:
     }
     in_jail: bool = False
     bankrupt: bool = False  # True when player defeated
+    bankrupt_date: Optional[datetime]
     bot: bool = True
     current_dices: Tuple[int, int]
 
@@ -84,6 +85,7 @@ class Player:
         self.current_dices = (0, 0)
         self.start_dice_throw_received = False
         self.debts = collections.deque()
+        self.bankrupt_date = None
 
         if bot is True:
             self.online = True
@@ -186,6 +188,17 @@ class Player:
             'bankrupt': self.bankrupt,
             'piece': self.piece
         }
+
+    def get_score(self) -> int:
+        """
+        :return: Score without properties
+        """
+        score = self.money - self.get_total_debts()
+
+        if self.jail_cards['chance'] or self.jail_cards['community']:
+            score += 100
+
+        return score
 
     def get_id(self) -> str:
         """

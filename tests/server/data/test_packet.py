@@ -70,7 +70,7 @@ class TestPacket(TestCase):
             '"player_token": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d", ' \
             '"result": 0}'
         self.json_PlayerMove = \
-            '{"destination": 0, "name": "PlayerMove", ' \
+            '{"destination": 0, "instant": false, "name": "PlayerMove", ' \
             '"player_token": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d"}'
         self.json_RoundRandomCard = \
             '{"card_id": 1, "is_community": true, ' \

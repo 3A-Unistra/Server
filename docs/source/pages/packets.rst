@@ -449,7 +449,7 @@ Paquet ActionExchange
 Paquet envoyé par client lorsque le joueur veut effectuer un échange avec un autre joueur.
 
 **contenu du paquet**
- * id du joueur (*id_player*)
+ * id du joueur (*player_token*)
 
 Paquet ActionExchangePlayerSelect
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -457,9 +457,8 @@ Paquet ActionExchangePlayerSelect
 paquet *envoyé par le client* pour la sélection du joueur avec qui on veut faire l'échange. Ce paquet est relayé à tout les clients pour qu'ils puissent suivre l'échange en direct.
 
 **contenu du paquet**
- * id du joueur qui initialise l'échange (*id_init_request*)
- * id du joueur avec qui l'échange veut être fait (*id_of_requested*)
- * contenu de l'échange (*content_trade*, peut être nul)
+ * id du joueur (*player_token*)
+ * id du joueur selectionné (*selected_player_token*)
 
 
 Paquet ActionExchangeTradeSelect
@@ -468,9 +467,11 @@ Paquet ActionExchangeTradeSelect
 Ce paquet *envoyé par le client* spécifie la nature de l'échange. Il est relayé à tout les clients pour qu'ils puissent suivre l'échange en direct.
 
 **contenu du paquet**
- * id du joueur qui initialise l'échange (*id_init_request*)
- * id du joueur avec qui l'échange veut être fait (*id_of_requested*, peut être nul)
- * contenu de l'échange (*content_trade*)
+ * id du joueur (*player_token*)
+ * type d'échange (*exchange_type*) (PROPERTY = 0, MONEY = 1, LEAVE_JAIL_COMMUNITY_CARD = 2, LEAVE_JAIL_CHANCE_CARD = 3)
+ * valeur (id propriété etc) (*value*)
+ * concerne le joueur selectionné ou pas (*update_affects_recipient*)
+
 
 Paquet ActionExchangeSend
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -532,7 +533,7 @@ Paquet ActionAuctionProperty
 Paquet envoyé *par le client* lorsqu'un joueur souhaite vendre une propriété aux enchères.
 
 **contenu du paquet :**
- * id du joueur (*id_player*)
+ * id du joueur (*player_token*)
  * nature de la propriétés (*property*)
  * enchère de base (*min_bid*)
 
@@ -647,6 +648,21 @@ Paquet envoyé à tout le monde lorsque la vente d'une maison a été couronné 
  * id du joueur (*player_token*)
  * id de la maison (*property_id*)
 
+Paquet GameWin
+^^^^^^^^^^^^^^
+
+Paquet envoyé à tout le monde lorsque le jeu a été gagné
+
+**contenu du paquet :**
+ * id du joueur qui a gagné (*player_token*)
+
+Paquet GameEnd
+^^^^^^^^^^^^^^
+
+Paquet envoyé à tout le monde lorsque tous les clients doivent quitter la room.
+(il s'arrête après 3/4 secondes)
+
+*ce paquet ne contient pas d'informations*
 
 Paquets internes
 ----------------

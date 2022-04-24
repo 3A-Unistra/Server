@@ -12,6 +12,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import pause
 
+from server.game_handler import models
 from server.game_handler.data import Board, Player, Card
 from server.game_handler.data.auction import Auction
 from server.game_handler.data.cards import ChanceCard, CardActionType, \
@@ -35,7 +36,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
-    ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot
+    ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot,\
+    GameWin, GameEnd
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -600,6 +602,12 @@ class Game(Thread):
                 # Tour is ended
                 self.proceed_action_tour_end()
 
+            elif self.state is GameState.GAME_WIN_TIMEOUT:
+                self.proceed_end_game()
+
+            elif self.state is GameState.GAME_END_TIMEOUT:
+                self.state = GameState.STOP_THREAD
+
     def proceed_stop(self):
         # Delete game
         self.state = GameState.STOP_THREAD
@@ -642,6 +650,49 @@ class Game(Thread):
             players.append(player.get_coherent_infos())
 
         self.broadcast_packet(GameStart(players=players))
+
+    def proceed_end_game(self):
+        self.broadcast_packet(GameEnd())
+
+        game = models.Game()
+        game.name = self.public_name
+        game.duration = (datetime.now() - self.start_date).total_seconds()
+        game.date = self.start_date
+        game.save()
+
+        sorted_players = []
+
+        for player in self.board.get_online_players():
+            sorted_players.append((self.board.get_score(player),
+                                   player))
+
+        sorted_players.sort(key=lambda x: x[0])
+        rank = 1
+
+        for score, player in sorted_players:
+            bot = player.bot and player.online
+            houses, hotels = self.board.get_player_buildings_count(player)
+
+            if player.bankrupt_date is None:
+                play_duration = game.duration
+            else:
+                play_duration = (player.bankrupt_date - self.start_date) \
+                    .total_seconds()
+            game_user = models.GameUser()
+            game_user.user = player.user if not bot else None
+            game_user.game = game
+            game_user.rank = rank
+            game_user.money = player.money
+            game_user.houses = hotels
+            game_user.hotels = hotels
+            game_user.host = self.host_player == player
+            game_user.bot = bot
+            game_user.duration = play_duration
+            game_user.save()
+            rank += 1
+
+        self.state = GameState.GAME_END_TIMEOUT
+        self.set_timeout(seconds=self.CONFIG.get('GAME_END_WAIT'))
 
     def start_begin_dice(self, re_roll=False):
         """
@@ -686,7 +737,7 @@ class Game(Thread):
         dice_packet = GameStartDiceResults()
 
         for player in self.board.get_online_players():
-            is_winner = player.get_id() is highest.get_id()
+            is_winner = player == highest
             dice_packet.add_dice_result(player_token=player.get_id(),
                                         dice1=player.current_dices[0],
                                         dice2=player.current_dices[1],
@@ -848,7 +899,7 @@ class Game(Thread):
                 # Ignore packet.
                 return
 
-            price = math.floor(0.6 * square.rent_base)
+            price = math.floor(0.6 * square.buy_price)
 
             if not player.has_enough_money(price):
                 return
@@ -1402,6 +1453,7 @@ class Game(Thread):
         if len(self.board.get_non_bankrupt_players()) == 1:
             # One player remaining! Easy win!
             # TODO: proceed to win
+            self.proceed_win()
             return True
 
         # Max rounds option is activated
@@ -1410,6 +1462,7 @@ class Game(Thread):
             if self.board.compute_current_round() >= \
                     self.board.option_max_rounds:
                 # TODO: proceed to check win.
+                self.proceed_win(forced=True)
                 return True
 
         return False
@@ -1434,6 +1487,28 @@ class Game(Thread):
                     seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
 
                 self.send_packet_to_player(player, PingPacket())
+
+    def proceed_win(self, forced: bool = False):
+        """
+        :param forced: Not one non-bankrupt player remaining
+        :return:
+        """
+
+        if forced:
+            winner = self.board.get_highest_scorer()
+        else:
+            # The winner is the only and last non-bankrupt player
+            winner = self.board.get_non_bankrupt_players()[0]
+
+        if winner is None:  # hmmmm
+            return
+
+        self.broadcast_packet(GameWin(
+            player_token=winner.get_id()
+        ))
+
+        self.state = GameState.GAME_WIN_TIMEOUT
+        self.set_timeout(seconds=self.CONFIG.get('GAME_WIN_WAIT'))
 
     def proceed_dice_choice(self, player: Player,
                             choice: RoundDiceChoiceResult):
@@ -1608,6 +1683,9 @@ class Game(Thread):
             # Pay rent :o
             if not case.has_owner() or case.mortgaged:
                 return
+            # Dont pay rent to yourself
+            if case.owner == player:
+                return
 
             # Calculate rent
             rent = self.board.get_rent(case, player.current_dices)
@@ -1687,8 +1765,9 @@ class Game(Thread):
         :param card: Card to handle action
         """
 
-        print("process_card_actions(%s) => card: %d (%s)"
-              % (player.get_name(), card.id_, card.action_type.name))
+        print("process_card_actions(%s) => card: %d (%s) available? %r"
+              % (player.get_name(),
+                 card.id_, card.action_type.name, card.available))
 
         if not card.available:  # WTF?
             return
@@ -1706,6 +1785,8 @@ class Game(Thread):
 
         # Receive new injected money
         if card.action_type is CardActionType.RECEIVE_BANK:
+            print("card.action_type => receive bank val: %d"
+                  % card.action_value)
             self.player_balance_receive(player=player,
                                         amount=card.action_value,
                                         reason="card_receive_bank")
@@ -1713,6 +1794,7 @@ class Game(Thread):
 
         # Give to bank = give money to board
         if card.action_type is CardActionType.GIVE_BOARD:
+            print("card.action_type => give board val: %d" % card.action_value)
             self.player_balance_pay(player=player,
                                     receiver=None,
                                     amount=card.action_value,
@@ -1722,6 +1804,14 @@ class Game(Thread):
         if card.action_type is CardActionType.MOVE_BACKWARD:
             self.board.move_player(player=player,
                                    cases=-card.action_value)
+
+            # Broadcast new player position
+            self.broadcast_packet(PlayerMove(
+                player_token=player.get_id(),
+                destination=player.position,
+                instant=True
+            ))
+
             # No actions for passed go
             self.proceed_move_player_actions(player=player,
                                              backward=True)
@@ -1733,7 +1823,8 @@ class Game(Thread):
 
             self.broadcast_packet(PlayerMove(
                 player_token=player.get_id(),
-                destination=card.action_value
+                destination=card.action_value,
+                instant=True
             ))
 
             # Move player actions
@@ -1941,6 +2032,8 @@ class Game(Thread):
 
             if receiver is None:
                 self.board.board_money += amount
+                print("player.money >= amount ; board_money updated: %d"
+                      % self.board.board_money)
             else:
                 self.player_balance_receive(player=receiver,
                                             amount=amount,

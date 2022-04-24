@@ -369,11 +369,11 @@ class GameEngineConsumer(SyncConsumer):
             # if game not exists send error packet
             packet = ExceptionPacket(code=4102)
 
-            async_to_sync(self.channel_layer.send(
+            async_to_sync(self.channel_layer.send)(
                 channel_name, {
                     'type': 'player.callback',
                     'packet': packet.serialize()
-                }))
+                })
 
     def process_lobby_packets(self, content):
         """

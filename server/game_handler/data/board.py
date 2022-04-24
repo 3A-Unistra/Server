@@ -631,3 +631,42 @@ class Board:
 
         return [a for a in owned_squares if
                 isinstance(a, PropertySquare) and a.color == color]
+
+    def get_score(self, player: Player) -> int:
+        """
+        Get score WITH properties.
+        :param player: Player's score
+        :return:
+        """
+        score = player.get_score()
+
+        for square in self.get_owned_squares(player):
+            score += square.rent_base
+
+            if isinstance(square, PropertySquare):
+                score += square.nb_house * square.house_price
+
+        return score
+
+    def get_highest_scorer(self) -> Optional[Player]:
+        """
+        :return: Highest scorer
+        """
+        highest = None
+        highest_score = 0
+
+        for player in self.get_non_bankrupt_players():
+            if highest is None:
+                highest = player
+                highest_score = self.get_score(player)
+                continue
+
+            score = self.get_score(player)
+
+            if score <= highest_score:
+                continue
+
+            highest = player
+            highest_score = score
+
+        return highest

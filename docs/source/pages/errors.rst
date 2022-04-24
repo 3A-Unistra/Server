@@ -1,6 +1,21 @@
 Index des erreurs
 -----------------
 
+Consumer errors [4000-4099]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**4000** : Player jwt / token not valid
+
+**4001** : PlayerConsumer WebSocket connect: game_token is none
+
+Game errors [4100-4199]
+^^^^^^^^^^^^^^^^^^^^^^^
+
+**4100** : Invalid player
+
+**4101** : Ping timeout disconnect
+
+**4102** : Game not exists
 
 Lobby errors [4200-4299]
 ^^^^^^^^^^^^^^^^^^^^^^^^
