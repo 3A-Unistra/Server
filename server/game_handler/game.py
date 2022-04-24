@@ -301,6 +301,10 @@ class Game(Thread):
                 if player != self.host_player:
                     return  # ignore the launch request
 
+                # game cannot be launched with only one player
+                if len(self.board.players) <= 1:
+                    return
+
                 print("Set state to GameState.WAITING_PLAYERS")
                 # putting the game in waiting mode (waiting for AppletReady
                 # from all the players)
