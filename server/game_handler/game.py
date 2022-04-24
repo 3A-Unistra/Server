@@ -36,7 +36,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     AddBot, UpdateReason, BroadcastUpdateLobby, StatusRoom, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
-    ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot,\
+    ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot, \
     GameWin, GameEnd
 
 from server.game_handler.models import User
@@ -110,6 +110,7 @@ class Game(Thread):
     # reference to games dict
     games: {}
     host_player: Player
+    host_channel: str
 
     def __init__(self, **kwargs):
         self.uid = str(uuid.uuid4())
@@ -294,6 +295,48 @@ class Game(Thread):
                     packet=ExceptionPacket(code=4100))
 
         if self.state is GameState.LOBBY:
+            if isinstance(packet, StatusRoom):
+                # broadcast StatusRoom to group
+
+                # only host player can change options
+                if queue_packet.channel_name != self.host_channel:
+                    return
+
+                # do necessary checks
+                self.board.set_nb_players(packet.max_nb_players)
+                self.public_name = packet.game_name
+                self.board.option_first_round_buy = \
+                    packet.option_first_round_buy
+                self.board.option_auction_enabled = packet.option_auction
+                self.board.set_option_max_time(packet.option_max_time)
+                self.board.set_option_max_rounds(packet.option_max_rounds)
+                self.board.set_option_start_balance(packet.starting_balance)
+
+                double_on_start = self.board.option_go_case_double_money
+                first_round_buy = self.board.option_first_round_buy
+
+                # sending updated option to game group
+                players_uid = []
+                for player in self.board.players:
+                    players_uid.append(player.get_id())
+                self.send_packet_to_group(
+                    group_name=self.uid,
+                    packet=StatusRoom(
+                        game_token=self.uid,
+                        game_name=self.public_name,
+                        nb_players=len(self.
+                                       board.players),
+                        max_nb_players=self.board.players_nb,
+                        players=players_uid,
+                        option_auction=self.board.option_auction_enabled,
+                        option_double_on_start=double_on_start,
+                        option_max_time=self.board.option_max_time,
+                        option_max_rounds=self.board.option_max_rounds,
+                        option_first_round_buy=first_round_buy,
+                        starting_balance=self.board.starting_balance
+                    ))
+                return
+
             if isinstance(packet, LaunchGame):
                 print("received LaunchGame")
                 player = self.board.get_player(packet.player_token)
