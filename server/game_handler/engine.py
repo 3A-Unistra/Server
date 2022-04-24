@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from typing import List, Dict
@@ -78,7 +79,7 @@ class Engine:
 
         # set loaded cards
         game.board.load_data(
-            squares=[square.clone() for square in self.squares],
+            squares=[copy.copy(square) for square in self.squares],
             chance_deck=self.chance_deck.copy(),
             community_deck=self.community_deck.copy()
         )
