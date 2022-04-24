@@ -1248,8 +1248,10 @@ class Game(Thread):
             owner = exchange.selected_player if \
                 packet.update_affects_recipient else exchange.player
 
+            exchange_type = ExchangeTradeSelectType(packet.exchange_type)
+
             # Check type of exchange
-            if packet.exchange_type is ExchangeTradeSelectType.PROPERTY:
+            if exchange_type is ExchangeTradeSelectType.PROPERTY:
 
                 # Verify property_id
                 selected_square = self.board.get_property(packet.value)
@@ -1277,7 +1279,7 @@ class Game(Thread):
                     update_affects_recipient=packet.update_affects_recipient
                 ))
 
-            elif packet.exchange_type is ExchangeTradeSelectType.MONEY:
+            elif exchange_type is ExchangeTradeSelectType.MONEY:
 
                 if not owner.has_enough_money(packet.value):
                     return
@@ -1294,7 +1296,7 @@ class Game(Thread):
                     update_affects_recipient=packet.update_affects_recipient
                 ))
 
-            elif packet.exchange_type is ExchangeTradeSelectType. \
+            elif exchange_type is ExchangeTradeSelectType. \
                     LEAVE_JAIL_CHANCE_CARD:
 
                 if not owner.jail_cards['chance']:
@@ -1317,7 +1319,7 @@ class Game(Thread):
                     update_affects_recipient=packet.update_affects_recipient
                 ))
 
-            elif packet.exchange_type is ExchangeTradeSelectType. \
+            elif exchange_type is ExchangeTradeSelectType. \
                     LEAVE_JAIL_COMMUNITY_CARD:
 
                 if not owner.jail_cards['community']:
