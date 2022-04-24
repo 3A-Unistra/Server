@@ -159,9 +159,6 @@ class Engine:
         async_to_sync(
             game.channel_layer.group_discard)(game.uid,
                                               channel_name)
-        # add player to the lobby group
-        async_to_sync(
-            game.channel_layer.group_add)("lobby", channel_name)
 
         if len(game.board.players) > 1 and \
                 packet.player_token == game.host_player:
@@ -207,6 +204,10 @@ class Engine:
 
         # because the player left, he has to get the status of all the rooms
         self.send_all_lobby_status(channel_name=channel_name)
+
+        # add player to the lobby group
+        async_to_sync(
+            game.channel_layer.group_add)("lobby", channel_name)
 
     def create_game(self, packet: Packet, channel_name: str):
         """
@@ -310,7 +311,8 @@ class Engine:
                     max_nb_players=board.players_nb,
                     is_private=board.option_is_private,
                     has_password=(board.option_password != ""))
-                game_c.send_packet(channel_name=channel_name, packet=packet)
+                game_c.send_lobby_packet(channel_name=channel_name,
+                                         packet=packet)
 
     def disconnect_player(self, player_token: str, channel_name: str):
 
