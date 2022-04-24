@@ -330,6 +330,7 @@ class GameEngineConsumer(SyncConsumer):
 
     def __init__(self):
         self.engine = Engine()
+        self.connect_debugger()
         log.info("Starting engine thread")
 
     def process_packets(self, content):
@@ -453,3 +454,6 @@ class GameEngineConsumer(SyncConsumer):
         # Send packet to game thread
         self.engine.send_packet(game_uid=game_token, packet=packet,
                                 channel_name=channel_name)
+
+    def connect_debugger(self):
+        pass

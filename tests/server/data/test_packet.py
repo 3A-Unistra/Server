@@ -46,7 +46,7 @@ class TestPacket(TestCase):
             '{"name": "AppletReady", ' \
             '"player_token": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d"}'
         self.json_GameStart = '{"game_name": "Test", "name": "GameStart", ' \
-                              '"options": {}, "players": []}'
+                              '"options": {}, "players": [], "timeouts": {}}'
         self.json_PlayerDisconnect = \
             '{"name": "PlayerDisconnect", ' \
             '"player_token": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d", ' \
