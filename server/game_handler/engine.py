@@ -12,7 +12,7 @@ from server.game_handler.data.exceptions import \
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
     CreateGame, CreateGameSucceed, UpdateReason, BroadcastUpdateLobby, \
     BroadcastUpdateRoom, LeaveRoom, BroadcastNewRoomToLobby, \
-    LeaveRoomSucceed, NewHost
+    LeaveRoomSucceed, NewHost, StatusRoom
 
 from django.conf import settings
 from server.game_handler.data.squares import Square, SquareUtils
@@ -283,14 +283,27 @@ class Engine:
         async_to_sync(new_game.channel_layer.group_discard)("lobby",
                                                             channel_name)
 
-        print("[engine.create_game()] remove player from lobby group")
-
         async_to_sync(new_game.channel_layer.group_add)(new_game.uid,
                                                         channel_name)
-        print("[engine.create_game()] added player to game group")
 
         new_game.send_packet_to_group(update, "lobby")
-        print("[engine.create_game()] sent BroadcastNewRoomToLobby")
+
+        new_game.send_packet_to_group(
+            group_name=new_game.uid,
+            packet=StatusRoom(
+                  game_token=new_game.uid,
+                  game_name=new_game.public_name,
+                  nb_players=len(new_game.
+                                 board.players),
+                  max_nb_players=new_game.board.players_nb,
+                  players=[packet.player_token],
+                  option_auction=False,
+                  option_double_on_start=False,
+                  option_max_time=new_game.board.option_max_time,
+                  option_max_rounds=new_game.board.option_max_rounds,
+                  option_first_round_buy=False,
+                  starting_balance=new_game.board.starting_balance
+              ))
 
     def send_all_lobby_status(self, channel_name: str):
         """
