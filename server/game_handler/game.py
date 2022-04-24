@@ -312,6 +312,8 @@ class Game(Thread):
                 self.board.set_option_max_rounds(packet.option_max_rounds)
                 self.board.set_option_start_balance(packet.starting_balance)
 
+                double_on_start = self.board.option_go_case_double_money
+                first_round_buy = self.board.option_first_round_buy
                 self.send_packet_to_group(
                     group_name=self.uid,
                     packet=StatusRoom(
@@ -322,12 +324,10 @@ class Game(Thread):
                         max_nb_players=self.board.players_nb,
                         players=[],
                         option_auction=self.board.option_auction_enabled,
-                        option_double_on_start=
-                        self.board.option_go_case_double_money,
+                        option_double_on_start=double_on_start,
                         option_max_time=self.board.option_max_time,
                         option_max_rounds=self.board.option_max_rounds,
-                        option_first_round_buy=
-                        self.board.option_first_round_buy,
+                        option_first_round_buy=first_round_buy,
                         starting_balance=self.board.starting_balance
                     ))
                 return
