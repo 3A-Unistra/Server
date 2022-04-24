@@ -273,8 +273,8 @@ class StatusRoom(LobbyPacket):
         self.players = obj['players'] if 'players' in obj else []
         self.option_auction = convert_to_bool(obj, 'option_auction')
         self.option_double_on_start = convert_to_bool(obj, 'double_on_start')
-        self.option_max_time = convert_to_bool(obj, 'option_max_time')
-        self.option_max_rounds = convert_to_bool(obj, 'option_max_rounds')
+        self.option_max_time = convert_to_int(obj, 'option_max_time')
+        self.option_max_rounds = convert_to_int(obj, 'option_max_rounds')
         self.option_first_round_buy = \
             convert_to_bool(obj, 'option_first_round_buy')
         self.starting_balance = convert_to_int(obj, 'starting_balance')
