@@ -1162,24 +1162,24 @@ class Game(Thread):
             return
 
         if isinstance(packet, ActionExchangeCancel):
-            if exchange is ExchangeState.STARTED:
+            if exchange.state is ExchangeState.STARTED:
                 if exchange.player != player:
                     return
-            elif exchange is ExchangeState.WAITING_SELECT:
+            elif exchange.state is ExchangeState.WAITING_SELECT:
                 # Both can cancel
                 if exchange.selected_player != player and \
                         exchange.player != player:
                     return
-            elif exchange is ExchangeState.WAITING_RESPONSE:
+            elif exchange.state is ExchangeState.WAITING_RESPONSE:
                 # Only player can cancel, selected_player can decline
                 if exchange.player != player:
                     return
-            elif exchange is ExchangeState.WAITING_COUNTER_SELECT:
+            elif exchange.state is ExchangeState.WAITING_COUNTER_SELECT:
                 # Both can cancel
                 if exchange.selected_player != player and \
                         exchange.player != player:
                     return
-            elif exchange is ExchangeState.WAITING_COUNTER_RESPONSE:
+            elif exchange.state is ExchangeState.WAITING_COUNTER_RESPONSE:
                 # Only selected_player can cancel, player can decline
                 if exchange.selected_player != player:
                     return
@@ -1350,8 +1350,8 @@ class Game(Thread):
                     or not exchange.can_send():
                 return
 
-            if exchange is ExchangeState.STARTED or \
-                    exchange is ExchangeState.WAITING_SELECT:
+            if exchange.state is ExchangeState.STARTED or \
+                    exchange.state is ExchangeState.WAITING_SELECT:
 
                 # Check if player is the current player
                 if exchange.player != player:
@@ -1359,7 +1359,7 @@ class Game(Thread):
 
                 exchange.state = ExchangeState.WAITING_RESPONSE
 
-            elif exchange is ExchangeState.WAITING_COUNTER_SELECT:
+            elif exchange.state is ExchangeState.WAITING_COUNTER_SELECT:
 
                 # Check if player is the selected_player
                 if exchange.selected_player != player:
@@ -1381,13 +1381,13 @@ class Game(Thread):
         if exchange is None or exchange.selected_player is None:
             return
 
-        if exchange is ExchangeState.WAITING_RESPONSE:
+        if exchange.state is ExchangeState.WAITING_RESPONSE:
 
             # Check if player is the selected player
             if exchange.selected_player != player:
                 return
 
-        elif exchange is ExchangeState.WAITING_COUNTER_RESPONSE:
+        elif exchange.state is ExchangeState.WAITING_COUNTER_RESPONSE:
 
             # Check if player is the current player
             if exchange.player != player:
@@ -1418,7 +1418,7 @@ class Game(Thread):
 
             if exchange.state is ExchangeState.WAITING_RESPONSE:
                 exchange.state = ExchangeState.WAITING_COUNTER_SELECT
-            elif exchange is ExchangeState.WAITING_COUNTER_RESPONSE:
+            elif exchange.state is ExchangeState.WAITING_COUNTER_RESPONSE:
                 exchange.state = ExchangeState.WAITING_SELECT
 
             self.broadcast_packet(ActionExchangeCounter(
