@@ -1543,6 +1543,7 @@ class Game(Thread):
                 self.broadcast_packet(PlayerExitPrison(
                     player_token=player.get_id()
                 ))
+                return
 
             if choice == RoundDiceChoiceResult.JAIL_CARD_COMMUNITY and \
                     player.jail_cards['community']:
@@ -1553,6 +1554,7 @@ class Game(Thread):
                 self.broadcast_packet(PlayerExitPrison(
                     player_token=player.get_id()
                 ))
+                return
 
             if choice == RoundDiceChoiceResult.JAIL_PAY:
                 player.exit_prison()
@@ -1566,6 +1568,7 @@ class Game(Thread):
                                         amount=self.CONFIG.get(
                                             'JAIL_LEAVE_PRICE'),
                                         reason="jail_leave_pay")
+                return
 
             if player.dices_are_double():
                 self.broadcast_packet(PlayerExitPrison(
@@ -1574,7 +1577,23 @@ class Game(Thread):
                 player.exit_prison()
                 return
 
+            # Add a jail turn
             player.jail_turns += 1
+
+            # Instantly pay if >= MAX_JAIL_TURNS
+            if player.jail_turns >= self.CONFIG.get('MAX_JAIL_TURNS'):
+                player.exit_prison()
+
+                self.broadcast_packet(PlayerExitPrison(
+                    player_token=player.get_id()
+                ))
+
+                self.player_balance_pay(player=player,
+                                        receiver=None,
+                                        amount=self.CONFIG.get(
+                                            'JAIL_LEAVE_PRICE'),
+                                        reason="jail_leave_pay")
+
             return
 
         if player.dices_are_double():
@@ -1866,6 +1885,54 @@ class Game(Thread):
                                         reason="card_receive_all_send",
                                         receiver_reason="card_receive_all"
                                                         "_receive")
+            return
+
+        if card.action_type is CardActionType.CLOSEST_STATION:
+            closest_company = self.board.find_closest_station_index(player)
+
+            # Not possible
+            if closest_company == -1:
+                return
+
+            passed_go = closest_company < player.position
+            player.position = closest_company
+
+            self.broadcast_packet(PlayerMove(
+                player_token=player.get_id(),
+                destination=closest_company,
+                instant=True
+            ))
+
+            # Move player actions
+            self.proceed_move_player_actions(player=player,
+                                             passed_go=passed_go)
+
+            return
+
+        if card.action_type is CardActionType.CLOSEST_COMPANY:
+            closest_company = self.board.find_closest_company_index(player)
+
+            # Not possible
+            if closest_company == -1:
+                return
+
+            passed_go = closest_company < player.position
+            player.position = closest_company
+
+            self.broadcast_packet(PlayerMove(
+                player_token=player.get_id(),
+                destination=closest_company,
+                instant=True
+            ))
+
+            # Move player actions
+            self.proceed_move_player_actions(player=player,
+                                             passed_go=passed_go)
+
+            return
+
+        if card.action_type is CardActionType.GIVE_BOARD_HOUSES:
+            return
 
     def process_exchange_transfers(self):
         """
