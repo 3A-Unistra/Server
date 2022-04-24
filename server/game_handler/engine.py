@@ -252,7 +252,7 @@ class Engine:
         board.add_player(player)
 
         new_game.host_player = player
-        board.players_nb = packet.max_nb_players
+        board.set_nb_players(packet.max_nb_players)
         board.option_password = packet.password
         board.option_is_private = packet.is_private
         new_game.public_name = packet.name

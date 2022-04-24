@@ -103,6 +103,19 @@ class Board:
         self.search_square_indexes()
         self.search_card_indexes()
 
+    def set_nb_players(self, nb_players):
+        """
+        this function set the nb of player if the nb_players is within the
+        [min, max] (else, default value is used
+        :param nb_players: a number of players
+        """
+        if nb_players < self.CONFIG.get('MIN_NB_PLAYERS') or \
+                nb_players > self.CONFIG.get('MAX_NB_PLAYERS'):
+            self.players_nb = self.CONFIG.get('DEFAULT_NB_PLAYERS')
+
+        else:
+            self.players_nb = nb_players
+
     def set_option_max_time(self, given_time):
         """
         this function set the max_time option if the max_time is within the
