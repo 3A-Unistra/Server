@@ -415,7 +415,7 @@ class GameEngineConsumer(SyncConsumer):
             return
 
         if isinstance(packet, InternalLobbyDisconnect):
-            self.engine.disconnect_player(packet.player_token,
+            self.engine.disconnect_player(player_token=packet.player_token,
                                           channel_name=channel_name)
             return
 

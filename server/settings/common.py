@@ -185,7 +185,11 @@ ENGINE_CONFIG = {
     'MONEY_GO': 200,
 
     # replace w number of pieces
-    'MAX_PIECE_NB': 15,
+    'MAX_PIECE_NB': 7,
+
+    'MIN_NB_PLAYERS': 2,
+    'MAX_NB_PLAYERS': 10,
+    'DEFAULT_NB_PLAYERS': 8,
 
     'MAX_DOUBLES_JAIL': 3,
     'MAX_JAIL_TURNS': 3,

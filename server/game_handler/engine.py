@@ -12,7 +12,7 @@ from server.game_handler.data.exceptions import \
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
     CreateGame, CreateGameSucceed, UpdateReason, BroadcastUpdateLobby, \
     BroadcastUpdateRoom, LeaveRoom, BroadcastNewRoomToLobby, \
-    LeaveRoomSucceed, NewHost
+    LeaveRoomSucceed, NewHost, StatusRoom
 
 from django.conf import settings
 from server.game_handler.data.squares import Square, SquareUtils
@@ -159,9 +159,6 @@ class Engine:
         async_to_sync(
             game.channel_layer.group_discard)(game.uid,
                                               channel_name)
-        # add player to the lobby group
-        async_to_sync(
-            game.channel_layer.group_add)("lobby", channel_name)
 
         if len(game.board.players) > 1 and \
                 packet.player_token == game.host_player:
@@ -208,6 +205,10 @@ class Engine:
         # because the player left, he has to get the status of all the rooms
         self.send_all_lobby_status(channel_name=channel_name)
 
+        # add player to the lobby group
+        async_to_sync(
+            game.channel_layer.group_add)("lobby", channel_name)
+
     def create_game(self, packet: Packet, channel_name: str):
         """
         creating a new game based on the CreateGame packet specification
@@ -251,7 +252,7 @@ class Engine:
         board.add_player(player)
 
         new_game.host_player = player
-        board.players_nb = packet.max_nb_players
+        board.set_nb_players(packet.max_nb_players)
         board.option_password = packet.password
         board.option_is_private = packet.is_private
         new_game.public_name = packet.name
@@ -282,14 +283,27 @@ class Engine:
         async_to_sync(new_game.channel_layer.group_discard)("lobby",
                                                             channel_name)
 
-        print("[engine.create_game()] remove player from lobby group")
-
         async_to_sync(new_game.channel_layer.group_add)(new_game.uid,
                                                         channel_name)
-        print("[engine.create_game()] added player to game group")
 
         new_game.send_packet_to_group(update, "lobby")
-        print("[engine.create_game()] sent BroadcastNewRoomToLobby")
+
+        new_game.send_packet_to_group(
+            group_name=new_game.uid,
+            packet=StatusRoom(
+                  game_token=new_game.uid,
+                  game_name=new_game.public_name,
+                  nb_players=len(new_game.
+                                 board.players),
+                  max_nb_players=new_game.board.players_nb,
+                  players=[packet.player_token],
+                  option_auction=False,
+                  option_double_on_start=False,
+                  option_max_time=new_game.board.option_max_time,
+                  option_max_rounds=new_game.board.option_max_rounds,
+                  option_first_round_buy=False,
+                  starting_balance=new_game.board.starting_balance
+              ))
 
     def send_all_lobby_status(self, channel_name: str):
         """
@@ -310,7 +324,8 @@ class Engine:
                     max_nb_players=board.players_nb,
                     is_private=board.option_is_private,
                     has_password=(board.option_password != ""))
-                game_c.send_packet(channel_name=channel_name, packet=packet)
+                game_c.send_lobby_packet(channel_name=channel_name,
+                                         packet=packet)
 
     def disconnect_player(self, player_token: str, channel_name: str):
 
