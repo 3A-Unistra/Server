@@ -80,8 +80,8 @@ class Engine:
         # set loaded cards
         game.board.load_data(
             squares=[copy.copy(square) for square in self.squares],
-            chance_deck=self.chance_deck.copy(),
-            community_deck=self.community_deck.copy()
+            chance_deck=[copy.copy(card) for card in self.chance_deck],
+            community_deck=[copy.copy(card) for card in self.community_deck],
         )
 
         # Reference to games dict (delete game)
