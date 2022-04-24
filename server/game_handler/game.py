@@ -651,7 +651,25 @@ class Game(Thread):
         for player in self.board.get_online_players():
             players.append(player.get_coherent_infos())
 
-        self.broadcast_packet(GameStart(players=players))
+        timeouts = {'WAITING_PLAYERS_TIMEOUT': self.CONFIG.get(
+            'WAITING_PLAYERS_TIMEOUT'),
+            'GAME_STARTING_TIMEOUT': self.CONFIG.get(
+                'GAME_STARTING_TIMEOUT'),
+            'START_DICE_WAIT': self.CONFIG.get('START_DICE_WAIT'),
+            'START_DICE_REROLL_WAIT': self.CONFIG.get(
+                'START_DICE_REROLL_WAIT'),
+            'ROUND_START_WAIT': self.CONFIG.get('ROUND_START_WAIT'),
+            'ROUND_DICE_CHOICE_WAIT': self.CONFIG.get(
+                'ROUND_DICE_CHOICE_WAIT'),
+            'ACTION_START_WAIT': self.CONFIG.get('ACTION_START_WAIT'),
+            'ACTION_TIMEOUT_WAIT': self.CONFIG.get(
+                'ACTION_TIMEOUT_WAIT'),
+            'AUCTION_TOUR_WAIT': self.CONFIG.get('AUCTION_TOUR_WAIT'),
+            'GAME_WIN_WAIT': self.CONFIG.get('GAME_WIN_WAIT'),
+            'GAME_END_WAIT': self.CONFIG.get('GAME_END_WAIT')
+        }
+
+        self.broadcast_packet(GameStart(players=players, timeouts=timeouts))
 
     def proceed_end_game(self):
         self.broadcast_packet(GameEnd())

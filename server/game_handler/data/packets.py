@@ -379,17 +379,21 @@ class GameStart(Packet):
     game_name: str
     options: {}
     players: []
+    timeouts: {}
 
-    def __init__(self, game_name: str = "", options=None, players: [] = None):
+    def __init__(self, game_name: str = "", options=None, players=None,
+                 timeouts=None):
         super().__init__(self.__class__.__name__)
         self.game_name = game_name
         self.options = {} if options is None else options
         self.players = [] if players is None else players
+        self.timeouts = {} if timeouts is None else timeouts
 
     def deserialize(self, obj: object):
         self.game_name = obj['game_name']
         self.options = obj['options']
         self.players = obj['players']
+        self.timeouts = obj['timeouts']
 
 
 class PlayerDisconnect(PlayerPacket):
@@ -690,7 +694,6 @@ class ActionExchangeTradeSelect(PlayerPacket):
 
         if not ExchangeTradeSelectType.has_value(self.exchange_type):
             self.exchange_type = 0
-
 
 
 class ActionExchangeSend(PlayerPacket):
