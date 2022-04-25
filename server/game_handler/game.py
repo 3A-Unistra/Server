@@ -233,10 +233,6 @@ class Game(Thread):
             async_to_sync(self.channel_layer.group_discard)(
                 "lobby", queue_packet.channel_name
             )
-            # add player to this specific game group
-            async_to_sync(self.channel_layer.group_add)(
-                self.uid, queue_packet.channel_name
-            )
 
             nb_players = len(self.board.players)
 
@@ -246,6 +242,20 @@ class Game(Thread):
                 channel_name=queue_packet.channel_name,
                 packet=EnterRoomSucceed(game_token=self.uid,
                                         piece=piece)
+            )
+
+            reason = UpdateReason.NEW_PLAYER.value
+
+            update = BroadcastUpdateRoom(game_token=self.uid,
+                                         nb_players=nb_players,
+                                         reason=reason,
+                                         player=packet.player_token)
+            # sending to the people in the game
+            self.send_packet_to_group(update, self.uid)
+
+            # add player to this specific game group
+            async_to_sync(self.channel_layer.group_add)(
+                self.uid, queue_packet.channel_name
             )
 
             # sending status of room
@@ -274,14 +284,7 @@ class Game(Thread):
             print("[game.py] sent packet statusRoom")
 
             # broadcast to lobby group
-            reason = UpdateReason.NEW_PLAYER.value
             # sent to lobby and to game group
-            update = BroadcastUpdateRoom(game_token=self.uid,
-                                         nb_players=nb_players,
-                                         reason=reason,
-                                         player=packet.player_token)
-            # sending to the people in the game
-            self.send_packet_to_group(update, self.uid)
             update = BroadcastUpdateLobby(game_token=self.uid,
                                           reason=reason)
             # sending to the lobby people
