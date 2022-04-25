@@ -290,8 +290,8 @@ class Engine:
 
         new_game.send_packet_to_group(update, "lobby")
 
-        new_game.send_packet_to_group(
-            group_name=new_game.uid,
+        new_game.send_lobby_packet(
+            channel_name=channel_name,
             packet=StatusRoom(
                   game_token=new_game.uid,
                   game_name=new_game.public_name,
