@@ -164,17 +164,17 @@ class Engine:
                                               channel_name)
 
         if len(game.board.players) > 1 and \
-                packet.player_token == game.host_player:
-            for i in range(len(game.board.players)):
-                # reassigning host
-                if game.board.players[i] != game.host_player:
-                    game.host_player = game.board.players[i]
+                packet.player_token == game.host_player.get_id():
 
-                    game.send_packet_to_group(NewHost(
-                        player_token=game.host_player.get_id()
-                    ), game.uid)
-                    game.host_channel = game.board.players[i].channel_name
-                    break
+            for player in game.board.players:
+                if not player.bot:
+                    if player.get_id() != game.host_player.get_id():
+                        game.host_player = player
+                        game.host_channel = player.channel_name
+                        game.send_packet_to_group(NewHost(
+                            player_token=game.host_player.get_id()
+                        ), game.uid)
+                        break
 
         # if checks passed, kick out player
         game.board.remove_player(
