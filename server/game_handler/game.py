@@ -37,7 +37,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
     ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot, \
-    GameWin, GameEnd
+    GameWin, GameEnd, AddBotSucceed, DeleteBotSucceed
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -397,6 +397,11 @@ class Game(Thread):
                 nb_players = len(self.board.players)
                 reason = UpdateReason.NEW_BOT.value
 
+                self.send_packet_to_group(
+                    packet=AddBotSucceed(bot_token=p.get_id()),
+                    group_name=self.uid
+                )
+
                 # this should be sent to lobby and to game group
                 update = BroadcastUpdateRoom(game_token=self.uid,
                                              nb_players=nb_players,
@@ -423,6 +428,11 @@ class Game(Thread):
                 self.board.remove_player(player=bot)
 
                 reason = UpdateReason.DELETE_BOT.value
+                
+                self.send_packet_to_group(
+                    packet=DeleteBotSucceed(bot_token=bot.get_id()),
+                    group_name=self.uid
+                )
 
                 # this should be sent to lobby and to game group
                 update = BroadcastUpdateRoom(game_token=self.uid,

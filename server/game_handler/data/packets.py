@@ -966,6 +966,17 @@ class AddBotSucceed(LobbyPacket):
         self.bot_token = obj['bot_token'] if 'bot_token' in obj else ""
 
 
+class DeleteBotSucceed(LobbyPacket):
+    bot_token: str
+
+    def __init__(self, bot_token: str = ""):
+        super().__init__("DeleteBotSucceed")
+        self.bot_token = bot_token
+
+    def deserialize(self, obj: object):
+        self.bot_token = obj['bot_token'] if 'bot_token' in obj else ""
+
+
 class InternalLobbyConnect(InternalPacket):
     player_token: str
 
