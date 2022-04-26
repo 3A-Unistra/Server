@@ -253,9 +253,11 @@ class StatusRoom(LobbyPacket):
     game_name: str
     nb_players: int
     max_nb_players: int
+    playerz: List[dict]
     players: List[str]  # list of players
     players_username: List[str]
     players_avatar_url: List[str]
+    players_piece: List[int]
     option_auction: bool
     option_double_on_start: bool
     option_max_time: int
@@ -267,6 +269,7 @@ class StatusRoom(LobbyPacket):
                  nb_players: int = 0, max_nb_players: int = 0,
                  players: List[str] = None, players_username: List[str] = None,
                  players_avatar_url: List[str] = None,
+                 players_piece: List[int] = None,
                  option_auction: bool = False,
                  option_double_on_start: bool = False,
                  option_max_time: int = 0, option_max_rounds: int = 0,
@@ -280,6 +283,7 @@ class StatusRoom(LobbyPacket):
         self.players = players
         self.players_username = players_username
         self.players_avatar_url = players_avatar_url
+        self.players_piece = players_piece
         self.option_auction = option_auction
         self.option_double_on_start = option_double_on_start
         self.option_max_time = option_max_time
@@ -297,6 +301,8 @@ class StatusRoom(LobbyPacket):
             in obj else []
         self.players_avatar_url = obj['players_avatar_url'] if \
             'players_avatar_url' in obj else []
+        self.players_piece = obj['players_piece'] if 'players_piece' in obj \
+            else []
         self.option_auction = convert_to_bool(obj, 'option_auction')
         self.option_double_on_start = convert_to_bool(obj, 'double_on_start')
         self.option_max_time = convert_to_int(obj, 'option_max_time')
