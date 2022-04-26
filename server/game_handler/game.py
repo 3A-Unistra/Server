@@ -272,13 +272,20 @@ class Game(Thread):
 
             # sending status of room
             player_uid = []
+            player_avatar = []
+            player_username = []
             for player in self.board.players:
                 player_uid.append(player.get_id())
+                player_avatar.append(get_player_avatar(player.get_id()))
+                player_username.append(get_player_username(player.get_id()))
+
             status = StatusRoom(game_token=self.uid,
                                 game_name=self.public_name,
                                 nb_players=nb_players,
                                 max_nb_players=self.board.players_nb,
                                 players=player_uid,
+                                players_username=player_username,
+                                players_avatar_url=player_avatar,
                                 option_auction=self.
                                 board.option_auction_enabled,
                                 option_double_on_start=self.
@@ -321,6 +328,8 @@ class Game(Thread):
                 # do necessary checks
                 self.board.set_nb_players(packet.max_nb_players)
                 self.public_name = packet.game_name
+                self.board.option_go_case_double_money = \
+                    packet.option_double_on_start
                 self.board.option_first_round_buy = \
                     packet.option_first_round_buy
                 self.board.option_auction_enabled = packet.option_auction
@@ -332,9 +341,15 @@ class Game(Thread):
                 first_round_buy = self.board.option_first_round_buy
 
                 # sending updated option to game group
-                players_uid = []
+                player_uid = []
+                player_avatar = []
+                player_username = []
                 for player in self.board.players:
-                    players_uid.append(player.get_id())
+                    player_uid.append(player.get_id())
+                    player_avatar.append(get_player_avatar(player.get_id()))
+                    player_username.append(
+                        get_player_username(player.get_id()))
+
                 self.send_packet_to_group(
                     group_name=self.uid,
                     packet=StatusRoom(
@@ -343,7 +358,9 @@ class Game(Thread):
                         nb_players=len(self.
                                        board.players),
                         max_nb_players=self.board.players_nb,
-                        players=players_uid,
+                        players=player_uid,
+                        players_username=player_username,
+                        players_avatar_url=player_avatar,
                         option_auction=self.board.option_auction_enabled,
                         option_double_on_start=double_on_start,
                         option_max_time=self.board.option_max_time,

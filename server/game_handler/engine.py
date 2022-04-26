@@ -316,6 +316,8 @@ class Engine:
                                  board.players),
                   max_nb_players=new_game.board.players_nb,
                   players=[packet.player_token],
+                  players_username=[get_player_username(packet.player_token)],
+                  players_avatar_url=[get_player_avatar(packet.player_token)],
                   option_auction=False,
                   option_double_on_start=False,
                   option_max_time=new_game.board.option_max_time,
