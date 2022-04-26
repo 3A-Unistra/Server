@@ -7,6 +7,28 @@ from typing import Optional, Tuple, List, Deque
 from server.game_handler.models import User
 
 
+def get_player_avatar(player_token: str):
+
+    try:  # get user from database
+        user = User.objects.get(id=player_token)
+    except User.DoesNotExist:
+        print("[get_player_username] user does not exists")
+        return
+
+    return user.avatar
+
+
+def get_player_username(player_token: str):
+
+    try:  # get user from database
+        user = User.objects.get(id=player_token)
+    except User.DoesNotExist:
+        print("[get_player_username] user does not exists")
+        return
+
+    return user.name
+
+
 class PlayerDebt:
     """
     When creditor is None, creditor is the bank
