@@ -329,6 +329,9 @@ class Engine:
                 game_c.send_lobby_packet(channel_name=channel_name,
                                          packet=packet)
 
+    def send_friend_notification(self, channel_name: str):
+        pass
+
     def disconnect_player(self, player_token: str, channel_name: str):
 
         # find out if the player is in a game and which one

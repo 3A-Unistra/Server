@@ -308,6 +308,17 @@ class BroadcastNewRoomToLobby(LobbyPacket):
         self.has_password = convert_to_bool(obj, 'has_password')
 
 
+class FriendConnected(LobbyPacket):
+    friend_token: str
+
+    def __int__(self, friend_token: str = ""):
+        super().__init__(self.__class__.__name__)
+        self.friend_token = friend_token
+
+    def deserialize(self, obj: object):
+        friend_token = obj['friend_token'] if 'friend_token' in obj else ""
+        
+
 class BroadcastUpdateLobby(LobbyPacket):
     game_token: str
     reason: int
