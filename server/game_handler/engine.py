@@ -180,7 +180,7 @@ class Engine:
         game.send_lobby_packet(channel_name=channel_name,
                                packet=LeaveRoomSucceed())
 
-        nb_players = len(game.board.players)
+        nb_players = game.board.get_online_real_players_count()
 
         if nb_players > 0:
             reason = UpdateReason.PLAYER_LEFT

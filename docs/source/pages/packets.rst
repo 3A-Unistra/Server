@@ -189,9 +189,25 @@ Paquet envoyé *par le client* (le host) lorsqu'il ajoute un bot à la partie
  * difficulté du bot (*bot_difficulty*)
 
 
+AddBotSucceed
+^^^^^^^^^^^^^
+
+Paquet envoyé pour confirmer qu'un bot a bien été ajouté
+
+**contenu du paquet :**
+ * id du bot (*bot_token*)
+
 DeleteBot
 ^^^^^^^^^
 Paquet envoyé *par le client* lorsque le host veut supprimer un bot.
+
+**contenu du paquet :**
+ * id du bot (*bot_token*)
+
+DeleteBotSucceed
+^^^^^^^^^^^^^^^^
+
+paquet envoyé pour confirmer qu'un bot est bien supprimé
 
 **contenu du paquet :**
  * id du bot (*bot_token*)
