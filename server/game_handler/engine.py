@@ -15,6 +15,9 @@ from server.game_handler.data.packets import Packet, ExceptionPacket, \
     LeaveRoomSucceed, NewHost, StatusRoom
 
 from django.conf import settings
+
+from server.game_handler.data.player import get_player_avatar, \
+    get_player_username
 from server.game_handler.data.squares import Square, SquareUtils
 from server.game_handler.game import Game, GameState, QueuePacket
 from server.game_handler.models import User
@@ -161,25 +164,31 @@ class Engine:
                                               channel_name)
 
         if len(game.board.players) > 1 and \
-                packet.player_token == game.host_player:
-            for i in range(len(game.board.players)):
-                # reassigning host
-                if game.board.players[i] != game.host_player:
-                    game.host_player = game.board.players[i]
+                packet.player_token == game.host_player.get_id():
 
-                    game.send_packet_to_group(NewHost(
-                        player_token=game.host_player.get_id()
-                    ), game.uid)
-                    break
+            for player in game.board.players:
+                if not player.bot:
+                    if player.get_id() != game.host_player.get_id():
+                        game.host_player = player
+                        game.host_channel = player.channel_name
+                        game.send_packet_to_group(NewHost(
+                            player_token=game.host_player.get_id()
+                        ), game.uid)
+                        break
 
         # if checks passed, kick out player
         game.board.remove_player(
             game.board.get_player(packet.player_token))
 
         game.send_lobby_packet(channel_name=channel_name,
-                               packet=LeaveRoomSucceed())
+                               packet=LeaveRoomSucceed(
+                                   avatar_url=get_player_avatar(
+                                       packet.player_token),
+                                   username=get_player_username(
+                                       packet.player_token)
+                               ))
 
-        nb_players = len(game.board.players)
+        nb_players = game.board.get_online_real_players_count()
 
         if nb_players > 0:
             reason = UpdateReason.PLAYER_LEFT
@@ -189,7 +198,15 @@ class Engine:
             update = BroadcastUpdateRoom(game_token=game.uid,
                                          nb_players=nb_players,
                                          reason=reason.value,
-                                         player=packet.player_token)
+                                         player=packet.player_token,
+                                         avatar_url=get_player_avatar(
+                                             packet.player_token),
+                                         username=get_player_username(
+                                             packet.player_token
+                                         ),
+                                         piece=game.board.get_player(
+                                             packet.player_token).piece
+                                         )
 
             game.send_packet_to_group(update, game.uid)
 
@@ -268,7 +285,11 @@ class Engine:
                                    packet=CreateGameSucceed(
                                        game_token=new_game.uid,
                                        player_token=packet.player_token,
-                                       piece=piece))
+                                       piece=piece,
+                                       avatar_url=get_player_avatar(
+                                           packet.player_token),
+                                       username=get_player_username(
+                                           packet.player_token)))
 
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastNewRoomToLobby(
@@ -288,22 +309,24 @@ class Engine:
 
         new_game.send_packet_to_group(update, "lobby")
 
-        new_game.send_packet_to_group(
-            group_name=new_game.uid,
+        new_game.send_lobby_packet(
+            channel_name=channel_name,
             packet=StatusRoom(
-                  game_token=new_game.uid,
-                  game_name=new_game.public_name,
-                  nb_players=len(new_game.
-                                 board.players),
-                  max_nb_players=new_game.board.players_nb,
-                  players=[packet.player_token],
-                  option_auction=False,
-                  option_double_on_start=False,
-                  option_max_time=new_game.board.option_max_time,
-                  option_max_rounds=new_game.board.option_max_rounds,
-                  option_first_round_buy=False,
-                  starting_balance=new_game.board.starting_balance
-              ))
+                game_token=new_game.uid,
+                game_name=new_game.public_name,
+                nb_players=len(new_game.
+                               board.players),
+                max_nb_players=new_game.board.players_nb,
+                players=[packet.player_token],
+                players_username=[get_player_username(packet.player_token)],
+                players_avatar_url=[get_player_avatar(packet.player_token)],
+                option_auction=False,
+                option_double_on_start=False,
+                option_max_time=new_game.board.option_max_time,
+                option_max_rounds=new_game.board.option_max_rounds,
+                option_first_round_buy=False,
+                starting_balance=new_game.board.starting_balance
+            ))
 
     def send_all_lobby_status(self, channel_name: str):
         """
