@@ -188,8 +188,8 @@ class EnterRoomSucceed(LobbyPacket):
     avatar_url: str
     username: str
 
-    def __init__(self, game_token: str = "", piece: int = 0, avatar_url: str = "",
-                 username: str = ""):
+    def __init__(self, game_token: str = "", piece: int = 0, 
+                 avatar_url: str = "", username: str = ""):
         super().__init__(self.__class__.__name__)
         self.piece = piece
         self.game_token = game_token
