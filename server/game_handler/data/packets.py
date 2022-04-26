@@ -317,7 +317,7 @@ class FriendConnected(LobbyPacket):
 
     def deserialize(self, obj: object):
         friend_token = obj['friend_token'] if 'friend_token' in obj else ""
-        
+
 
 class BroadcastUpdateLobby(LobbyPacket):
     game_token: str

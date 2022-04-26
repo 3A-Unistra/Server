@@ -330,6 +330,10 @@ class Engine:
                                          packet=packet)
 
     def send_friend_notification(self, channel_name: str):
+        # fetch les amis du joueur dans la base de données
+        # regarder si les joueurs sont connecté à un websocket
+        # leur envoyer à eux un paquet FriendConnected
+        # envoyer au channel un paquet FriendConnected par ami connecté
         pass
 
     def disconnect_player(self, player_token: str, channel_name: str):
