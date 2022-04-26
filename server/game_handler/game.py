@@ -426,9 +426,8 @@ class Game(Thread):
                 bot = self.board.get_player(token)
 
                 self.board.remove_player(player=bot)
-
                 reason = UpdateReason.DELETE_BOT.value
-                
+
                 self.send_packet_to_group(
                     packet=DeleteBotSucceed(bot_token=bot.get_id()),
                     group_name=self.uid
