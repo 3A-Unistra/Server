@@ -269,7 +269,6 @@ class Engine:
         board.add_player(player)
 
         new_game.host_player = player
-        new_game.host_channel = channel_name
         board.set_nb_players(packet.max_nb_players)
         board.option_password = packet.password
         board.option_is_private = packet.is_private
