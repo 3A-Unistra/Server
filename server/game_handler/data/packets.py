@@ -185,15 +185,22 @@ class ExceptionPacket(Packet):
 class EnterRoomSucceed(LobbyPacket):
     piece: int
     game_token: str
+    avatar_url: str
+    username: str
 
-    def __init__(self, game_token: str = "", piece: int = 0):
+    def __init__(self, game_token: str = "", piece: int = 0, avatar_url: str = "",
+                 username: str = ""):
         super().__init__(self.__class__.__name__)
         self.piece = piece
         self.game_token = game_token
+        self.avatar_url = avatar_url
+        self.username = username
 
     def deserialize(self, obj: object):
         self.piece = convert_to_int(obj, "piece")
         self.game_token = obj["game_token"] if "game_token" in obj else ""
+        self.avatar_url = obj['avatar_url'] if 'avatar_url' in obj else ""
+        self.username = obj['username'] if 'username' in obj else ""
 
 
 class LeaveRoom(LobbyPacket):
@@ -212,8 +219,17 @@ class LeaveRoom(LobbyPacket):
 
 
 class LeaveRoomSucceed(LobbyPacket):
-    def __init__(self):
+    avatar_url: str
+    username: str
+
+    def __init__(self, avatar_url: str = "", username: str = ""):
         super().__init__("LeaveRoomSucceed")
+        self.avatar_url = avatar_url
+        self.username = username
+
+    def deserialize(self, obj: object):
+        self.avatar_url = obj['avatar_url'] if 'avatar_url' in obj else ""
+        self.username = obj['username'] if 'username' in obj else ""
 
 
 class UpdateReason(Enum):
@@ -328,20 +344,27 @@ class BroadcastUpdateRoom(LobbyPacket):
     nb_players: int
     player: str
     reason: int
+    avatar_url: str
+    username: str
 
     def __init__(self, game_token: str = "", nb_players: int = 0,
-                 reason: int = 0, player: str = None):
+                 reason: int = 0, player: str = None, avatar_url: str = "",
+                 username: str = ""):
         super().__init__(self.__class__.__name__)
         self.game_token = game_token
         self.nb_players = nb_players
         self.player = "" if player is None else player
         self.reason = reason
+        self.avatar_url = avatar_url
+        self.username = username
 
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
         self.nb_players = convert_to_int(obj, 'nb_players')
         self.player = obj['player'] if 'player' in obj else 0
         self.reason = convert_to_int(obj, 'reason')
+        self.avatar_url = obj['avatar_url'] if 'avatar_url' in obj else ""
+        self.username = obj['username'] if 'username' in obj else ""
 
 
 class NewHost(LobbyPacket):
@@ -925,18 +948,24 @@ class CreateGameSucceed(LobbyPacket):
     player_token: str
     game_token: str
     piece: int
+    avatar_url: str
+    username: str
 
     def __init__(self, player_token: str = "", game_token: str = "",
-                 piece: int = 0):
+                 piece: int = 0, avatar_url: str = "", username: str = ""):
         super().__init__("CreateGameSucceed")
         self.player_token = player_token
         self.game_token = game_token
         self.piece = piece
+        self.avatar_url = avatar_url
+        self.username = username
 
     def deserialize(self, obj: object):
         self.player_token = obj['player_token'] if 'player_token' in obj else 0
         self.piece = convert_to_int(obj, 'piece')
         self.game_token = obj['game_token'] if 'game_token' in obj else ''
+        self.avatar_url = obj['avatar_url'] if 'avatar_url' in obj else ""
+        self.username = obj['username'] if 'username' in obj else ""
 
 
 class AddBot(PlayerLobbyPacket):
