@@ -38,6 +38,8 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
     ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot, \
     GameWin, GameEnd, AddBotSucceed, DeleteBotSucceed
+from server.game_handler.data.player import get_player_avatar, \
+    get_player_username
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -241,7 +243,12 @@ class Game(Thread):
             self.send_lobby_packet(
                 channel_name=queue_packet.channel_name,
                 packet=EnterRoomSucceed(game_token=self.uid,
-                                        piece=piece)
+                                        piece=piece,
+                                        avatar_url=get_player_avatar(
+                                            packet.player_token),
+                                        username=get_player_username(
+                                            packet.player_token)
+                                        )
             )
 
             reason = UpdateReason.NEW_PLAYER.value
@@ -249,7 +256,12 @@ class Game(Thread):
             update = BroadcastUpdateRoom(game_token=self.uid,
                                          nb_players=nb_players,
                                          reason=reason,
-                                         player=packet.player_token)
+                                         player=packet.player_token,
+                                         avatar_url=get_player_avatar(
+                                             packet.player_token),
+                                         username=get_player_username(
+                                             packet.player_token
+                                         ))
             # sending to the people in the game
             self.send_packet_to_group(update, self.uid)
 

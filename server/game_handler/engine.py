@@ -15,6 +15,9 @@ from server.game_handler.data.packets import Packet, ExceptionPacket, \
     LeaveRoomSucceed, NewHost, StatusRoom
 
 from django.conf import settings
+
+from server.game_handler.data.player import get_player_avatar, \
+    get_player_username
 from server.game_handler.data.squares import Square, SquareUtils
 from server.game_handler.game import Game, GameState, QueuePacket
 from server.game_handler.models import User
@@ -178,7 +181,12 @@ class Engine:
             game.board.get_player(packet.player_token))
 
         game.send_lobby_packet(channel_name=channel_name,
-                               packet=LeaveRoomSucceed())
+                               packet=LeaveRoomSucceed(
+                                   avatar_url=get_player_avatar(
+                                       packet.player_token),
+                                   username=get_player_username(
+                                       packet.player_token)
+                               ))
 
         nb_players = game.board.get_online_real_players_count()
 
@@ -190,7 +198,12 @@ class Engine:
             update = BroadcastUpdateRoom(game_token=game.uid,
                                          nb_players=nb_players,
                                          reason=reason.value,
-                                         player=packet.player_token)
+                                         player=packet.player_token,
+                                         avatar_url=get_player_avatar(
+                                             packet.player_token),
+                                         username=get_player_username(
+                                             packet.player_token
+                                         ))
 
             game.send_packet_to_group(update, game.uid)
 
@@ -270,7 +283,11 @@ class Engine:
                                    packet=CreateGameSucceed(
                                        game_token=new_game.uid,
                                        player_token=packet.player_token,
-                                       piece=piece))
+                                       piece=piece,
+                                       avatar_url=get_player_avatar(
+                                           packet.player_token),
+                                       username=get_player_username(
+                                           packet.player_token)))
 
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastNewRoomToLobby(
