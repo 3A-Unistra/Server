@@ -57,7 +57,6 @@ class AuthMiddleware:
         self.app = app
         self.offline = getattr(settings, "SERVER_OFFLINE", True)
         self.key = getattr(settings, "JWT_KEY", None)
-        print("MIDDLEWARE JWT: %s" % self.key)
 
     async def __call__(self, scope, receive, send):
         close_old_connections()
@@ -86,7 +85,7 @@ class AuthMiddleware:
                     # decode jwt and get jti
                     encoded = jwt.decode(jwt_token, self.key,
                                          algorithms=["HS256"])
-                    token = encoded.get('jti')
+                    token = encoded.get('userId')
 
                 # get user from db
                 scope['user'] = await self.get_user(token)
