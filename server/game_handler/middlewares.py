@@ -57,6 +57,7 @@ class AuthMiddleware:
         self.app = app
         self.offline = getattr(settings, "SERVER_OFFLINE", True)
         self.key = getattr(settings, "JWT_KEY", None)
+        print("MIDDLEWARE JWT: %s" % self.key)
 
     async def __call__(self, scope, receive, send):
         close_old_connections()
