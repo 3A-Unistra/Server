@@ -179,6 +179,7 @@ Ce paquet est envoyé lorsqu'un joueur rejoint une salle. Ce paquet comporte tou
  * la liste des joueurs (*players*)
  * la liste des username (*players_username*)
  * la liste des url des avatars (*players_avatar_url*)
+ * la liste des pions (*players_piece*)
  * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
  * option enchère activé ou désactivé (*option_auction*)
  * option double on start (*option_double_on_start*)

@@ -356,10 +356,11 @@ class BroadcastUpdateRoom(LobbyPacket):
     reason: int
     avatar_url: str
     username: str
+    piece: int
 
     def __init__(self, game_token: str = "", nb_players: int = 0,
                  reason: int = 0, player: str = None, avatar_url: str = "",
-                 username: str = ""):
+                 username: str = "", piece: int = 0):
         super().__init__(self.__class__.__name__)
         self.game_token = game_token
         self.nb_players = nb_players
@@ -367,6 +368,7 @@ class BroadcastUpdateRoom(LobbyPacket):
         self.reason = reason
         self.avatar_url = avatar_url
         self.username = username
+        self.piece = piece
 
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else ""
@@ -375,6 +377,7 @@ class BroadcastUpdateRoom(LobbyPacket):
         self.reason = convert_to_int(obj, 'reason')
         self.avatar_url = obj['avatar_url'] if 'avatar_url' in obj else ""
         self.username = obj['username'] if 'username' in obj else ""
+        self.piece = convert_to_int(obj, 'piece')
 
 
 class NewHost(LobbyPacket):

@@ -203,7 +203,10 @@ class Engine:
                                              packet.player_token),
                                          username=get_player_username(
                                              packet.player_token
-                                         ))
+                                         ),
+                                         piece=game.board.get_player(
+                                             packet.player_token).piece
+                                         )
 
             game.send_packet_to_group(update, game.uid)
 
@@ -310,21 +313,21 @@ class Engine:
         new_game.send_lobby_packet(
             channel_name=channel_name,
             packet=StatusRoom(
-                  game_token=new_game.uid,
-                  game_name=new_game.public_name,
-                  nb_players=len(new_game.
-                                 board.players),
-                  max_nb_players=new_game.board.players_nb,
-                  players=[packet.player_token],
-                  players_username=[get_player_username(packet.player_token)],
-                  players_avatar_url=[get_player_avatar(packet.player_token)],
-                  option_auction=False,
-                  option_double_on_start=False,
-                  option_max_time=new_game.board.option_max_time,
-                  option_max_rounds=new_game.board.option_max_rounds,
-                  option_first_round_buy=False,
-                  starting_balance=new_game.board.starting_balance
-              ))
+                game_token=new_game.uid,
+                game_name=new_game.public_name,
+                nb_players=len(new_game.
+                               board.players),
+                max_nb_players=new_game.board.players_nb,
+                players=[packet.player_token],
+                players_username=[get_player_username(packet.player_token)],
+                players_avatar_url=[get_player_avatar(packet.player_token)],
+                option_auction=False,
+                option_double_on_start=False,
+                option_max_time=new_game.board.option_max_time,
+                option_max_rounds=new_game.board.option_max_rounds,
+                option_first_round_buy=False,
+                starting_balance=new_game.board.starting_balance
+            ))
 
     def send_all_lobby_status(self, channel_name: str):
         """

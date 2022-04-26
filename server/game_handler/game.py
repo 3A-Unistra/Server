@@ -260,8 +260,10 @@ class Game(Thread):
                                          avatar_url=get_player_avatar(
                                              packet.player_token),
                                          username=get_player_username(
-                                             packet.player_token
-                                         ))
+                                             packet.player_token),
+                                         piece=self.board.
+                                         get_player(packet.player_token).piece
+                                         )
             # sending to the people in the game
             self.send_packet_to_group(update, self.uid)
 
@@ -274,10 +276,12 @@ class Game(Thread):
             player_uid = []
             player_avatar = []
             player_username = []
+            player_piece = []
             for player in self.board.players:
                 player_uid.append(player.get_id())
                 player_avatar.append(get_player_avatar(player.get_id()))
                 player_username.append(get_player_username(player.get_id()))
+                player_piece.append(player.piece)
 
             status = StatusRoom(game_token=self.uid,
                                 game_name=self.public_name,
@@ -286,6 +290,7 @@ class Game(Thread):
                                 players=player_uid,
                                 players_username=player_username,
                                 players_avatar_url=player_avatar,
+                                players_piece=player_piece,
                                 option_auction=self.
                                 board.option_auction_enabled,
                                 option_double_on_start=self.
@@ -344,11 +349,13 @@ class Game(Thread):
                 player_uid = []
                 player_avatar = []
                 player_username = []
+                player_piece = []
                 for player in self.board.players:
                     player_uid.append(player.get_id())
                     player_avatar.append(get_player_avatar(player.get_id()))
                     player_username.append(
                         get_player_username(player.get_id()))
+                    player_piece.append(player.piece)
 
                 self.send_packet_to_group(
                     group_name=self.uid,
@@ -361,6 +368,7 @@ class Game(Thread):
                         players=player_uid,
                         players_username=player_username,
                         players_avatar_url=player_avatar,
+                        players_piece=player_piece,
                         option_auction=self.board.option_auction_enabled,
                         option_double_on_start=double_on_start,
                         option_max_time=self.board.option_max_time,
