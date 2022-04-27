@@ -1394,17 +1394,19 @@ class Game(Thread):
 
             elif exchange_type is ExchangeTradeSelectType.MONEY:
 
-                if not owner.has_enough_money(packet.value):
+                money = abs(packet.value)
+
+                if not owner.has_enough_money(money):
                     return
 
                 if packet.update_affects_recipient:
-                    exchange.selected_player_money = packet.value
+                    exchange.selected_player_money = money
                 else:
-                    exchange.player_money = packet.value
+                    exchange.player_money = money
 
                 self.broadcast_packet(ActionExchangeTradeSelect(
                     player_token=owner.get_id(),
-                    value=packet.value,
+                    value=money,
                     exchange_type=ExchangeTradeSelectType.MONEY,
                     update_affects_recipient=packet.update_affects_recipient
                 ))
