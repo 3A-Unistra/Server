@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Optional
 
 from server.game_handler.data import Player
 from server.game_handler.data.squares import OwnableSquare
@@ -15,12 +16,13 @@ class Auction:
     tour_remaining_seconds: int
 
     def __init__(self, player: Player, tour_duration: int = 0,
-                 highest_bet: int = 0):
+                 highest_bet: int = 0, square: Optional[OwnableSquare] = None):
         self.highest_bid = highest_bet
         self.highest_bidder = player
         self.tour_duration = tour_duration
         self.tour_remaining_seconds = 0
         self.highest_bid = 0
+        self.square = square
 
     def set_timeout(self, seconds: int):
         self.timeout = datetime.now() + timedelta(seconds=seconds)

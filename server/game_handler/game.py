@@ -1181,7 +1181,8 @@ class Game(Thread):
 
             auction = Auction(player=player,
                               tour_duration=auction_tour_wait,
-                              highest_bet=packet.min_bid)
+                              highest_bet=packet.min_bid,
+                              square=current_square)
 
             self.state = GameState.ACTION_AUCTION
 
