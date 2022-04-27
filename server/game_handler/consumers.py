@@ -411,7 +411,9 @@ class GameEngineConsumer(SyncConsumer):
         if isinstance(packet, InternalLobbyConnect):
             # sending infos about all the lobbies
             print("InternalLobbyConnect channel_name: %s" % channel_name)
-            self.engine.send_friend_notification(channel_name=channel_name)
+            self.engine.send_friend_notification(channel_name=channel_name,
+                                                 player_token=packet.
+                                                 player_token)
             self.engine.send_all_lobby_status(channel_name=channel_name)
             return
 

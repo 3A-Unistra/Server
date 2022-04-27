@@ -4,6 +4,7 @@ import os
 from typing import List, Dict
 
 from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from server.game_handler.data import Player
 from server.game_handler.data.cards import ChanceCard, CommunityCard, CardUtils
@@ -12,7 +13,7 @@ from server.game_handler.data.exceptions import \
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
     CreateGame, CreateGameSucceed, UpdateReason, BroadcastUpdateLobby, \
     BroadcastUpdateRoom, LeaveRoom, BroadcastNewRoomToLobby, \
-    LeaveRoomSucceed, NewHost, StatusRoom
+    LeaveRoomSucceed, NewHost, StatusRoom, FriendConnected
 
 from django.conf import settings
 
@@ -20,7 +21,7 @@ from server.game_handler.data.player import get_player_avatar, \
     get_player_username
 from server.game_handler.data.squares import Square, SquareUtils
 from server.game_handler.game import Game, GameState, QueuePacket
-from server.game_handler.models import User
+from server.game_handler.models import User, UserFriend
 
 
 class Engine:
@@ -351,12 +352,26 @@ class Engine:
                 game_c.send_lobby_packet(channel_name=channel_name,
                                          packet=packet)
 
-    def send_friend_notification(self, channel_name: str):
+    def send_friend_notification(self, channel_name: str, player_token: str):
         # fetch les amis du joueur dans la base de données
         # regarder si les joueurs sont connecté à un websocket
         # leur envoyer à eux un paquet FriendConnected
         # envoyer au channel un paquet FriendConnected par ami connecté
-        pass
+
+        # getting friends from database
+        try:
+            friends = UserFriend.objects.filter(user_id=player_token)
+        except UserFriend.DoesNotExist:
+            return
+
+        for friend in friends:
+            friend_token = friend.id
+            # sending to player that his friend is connected
+            packet = FriendConnected(friend_token=friend_token,
+                                     username=get_player_username(
+                                         friend_token),
+                                     avatar_url=get_player_avatar(friend_token)
+                                     )
 
     def disconnect_player(self, player_token: str, channel_name: str):
 

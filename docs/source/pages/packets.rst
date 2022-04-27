@@ -239,7 +239,21 @@ Lors de la connexion d'un joueur, tout ses amis connectés sont notifiés, et il
 un paquet FriendConnected par ami connecté qu'il a.
 
 **contenu du paquet :**
- * id de l'ami connecté : *friend_token*  
+ * id de l'ami connecté : *friend_token*
+ * username de l'ami connecté *username*
+ * avatar de l'ami connecté *avatar_url*
+
+FriendDisconnected
+^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé à un joueur pour le notifier qu'un de ses amis n'est plus connecté.
+
+**contenu du paquet :**
+ * id de l'ami connecté : *friend_token*
+ * username de l'ami connecté *username*
+ * avatar de l'ami connecté *avatar_url*
+
+
 
 Paquets demarrage
 -----------------
