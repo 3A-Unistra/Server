@@ -36,6 +36,8 @@ Paquet envoyé au client pour signifier le succès de son entrée dans une parti
 
 **contenu du paquet :**
  * id du pion que le joueur aura (*piece*)
+ * username du joueur (*username*)
+ * url de l'avatar du joueur (*avatar_url*)
 
 
 LeaveRoom
@@ -51,7 +53,9 @@ LeaveRoomSucceed
 ^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour confirmer le succès de la sortie du lobby de partie
 
-*ce paquet ne contient pas d'informations*
+**contenu du paquet :**
+ * username du joueur (*username*)
+ * avatar du joueur (*avatar_url*)
 
 
 CreateGame
@@ -80,6 +84,8 @@ Paquet envoyé par le serveur pour confirmer la création d'une partie
 **contenu du packet :**
  * id du player (*player_token*)
  * id du pion que le joueur aura (*piece*)
+ * username du joueur (*username*)
+ * lien de l'avatar du joueur (*avatar_url*)
 
 AppletPrepare
 ^^^^^^^^^^^^^
@@ -125,6 +131,8 @@ Ce paquet est envoyé au joueur connecté à une salle lorsque le statut de ladi
  * id du lobby (*game_token*)
  * le nombre de joueur (*nb_players*)
  * le joueur ajouté ou supprimé (peut-être un champ vide) (*player*)
+ * username du joueur (*username*)
+ * url de l'avatar du joueur (*avatar_url*)
  * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
 
 .. code-block:: python
@@ -169,6 +177,9 @@ Ce paquet est envoyé lorsqu'un joueur rejoint une salle. Ce paquet comporte tou
  * le nombre de joueur (*nb_players*)
  * le nombre de joueurs max (*max_nb_players*)
  * la liste des joueurs (*players*)
+ * la liste des username (*players_username*)
+ * la liste des url des avatars (*players_avatar_url*)
+ * la liste des pions (*players_piece*)
  * raison de l'update (nv joueur, joueur supprimé, etc) (*reason* (integer!))
  * option enchère activé ou désactivé (*option_auction*)
  * option double on start (*option_double_on_start*)
@@ -189,9 +200,25 @@ Paquet envoyé *par le client* (le host) lorsqu'il ajoute un bot à la partie
  * difficulté du bot (*bot_difficulty*)
 
 
+AddBotSucceed
+^^^^^^^^^^^^^
+
+Paquet envoyé pour confirmer qu'un bot a bien été ajouté
+
+**contenu du paquet :**
+ * id du bot (*bot_token*)
+
 DeleteBot
 ^^^^^^^^^
 Paquet envoyé *par le client* lorsque le host veut supprimer un bot.
+
+**contenu du paquet :**
+ * id du bot (*bot_token*)
+
+DeleteBotSucceed
+^^^^^^^^^^^^^^^^
+
+paquet envoyé pour confirmer qu'un bot est bien supprimé
 
 **contenu du paquet :**
  * id du bot (*bot_token*)
