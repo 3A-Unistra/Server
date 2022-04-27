@@ -29,12 +29,15 @@ class Engine:
     squares: List[Square]
     chance_deck: List[ChanceCard]
     community_deck: List[CommunityCard]
+    # dictionary of id and channel_name for player in Lobby
+    connected_players: Dict
 
     def __init__(self):
         self.games = {}
         self.squares = []
         self.chance_deck = []
         self.community_deck = []
+        self.connected_players = {}
         self.__load_json()
 
     def __load_json(self):
@@ -366,12 +369,34 @@ class Engine:
 
         for friend in friends:
             friend_token = friend.id
-            # sending to player that his friend is connected
-            packet = FriendConnected(friend_token=friend_token,
-                                     username=get_player_username(
-                                         friend_token),
-                                     avatar_url=get_player_avatar(friend_token)
-                                     )
+            # if friend is connected
+            if friend_token in self.connected_players[friend_token].keys():
+                # sending to player that his friend is connected
+                packet = FriendConnected(friend_token=friend_token,
+                                         username=get_player_username(
+                                             friend_token),
+                                         avatar_url=get_player_avatar(
+                                             friend_token)
+                                         )
+
+                async_to_sync(get_channel_layer().send)(
+                    channel_name, {
+                        'type': 'lobby.callback',
+                        'packet': packet.serialize()
+                    })
+
+                # sending to friend that the player is connected
+                packet = FriendConnected(friend_token=player_token,
+                                         username=get_player_username(
+                                             player_token),
+                                         avatar_url=get_player_avatar(
+                                             player_token)
+                                         )
+                async_to_sync(get_channel_layer().send)(
+                    self.connected_players[friend_token], {
+                        'type': 'lobby.callback',
+                        'packet': packet.serialize()
+                    })
 
     def disconnect_player(self, player_token: str, channel_name: str):
 
