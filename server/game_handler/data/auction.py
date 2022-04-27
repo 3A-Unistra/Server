@@ -20,6 +20,7 @@ class Auction:
         self.highest_bidder = player
         self.tour_duration = tour_duration
         self.tour_remaining_seconds = 0
+        self.highest_bid = 0
 
     def set_timeout(self, seconds: int):
         self.timeout = datetime.now() + timedelta(seconds=seconds)
