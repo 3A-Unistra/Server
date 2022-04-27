@@ -1180,7 +1180,7 @@ class Game(Thread):
 
             # Get remaining timeout seconds to pause main timeout
             auction.tour_remaining_seconds \
-                = self.get_remaining_timeout_seconds()
+                = int(self.get_remaining_timeout_seconds())
             auction.set_timeout(seconds=auction_tour_wait)
 
             # setup new auction
@@ -1233,7 +1233,7 @@ class Game(Thread):
         self.broadcast_packet(AuctionEnd(
             player_token=auction.highest_bidder.get_id(),
             highest_bid=highest_bid,
-            remaining_time=auction.tour_action_remaining_seconds
+            remaining_time=auction.tour_remaining_seconds
         ))
 
         self.board.current_auction = None
@@ -1244,7 +1244,7 @@ class Game(Thread):
             return
 
         # Recover old timeout
-        self.set_timeout(seconds=auction.tour_action_remaining_seconds)
+        self.set_timeout(seconds=auction.tour_remaining_seconds)
         self.state = GameState.ACTION_TIMEOUT_WAIT
 
     def proceed_exchange(self, packet: PlayerPacket):
