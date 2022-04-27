@@ -12,7 +12,7 @@ class Auction:
 
     timeout: datetime
     tour_duration: int
-    tour_remaining_seconds: float
+    tour_remaining_seconds: int
 
     def __init__(self, player: Player, tour_duration: int = 0,
                  highest_bet: int = 0):
