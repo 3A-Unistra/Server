@@ -13,7 +13,7 @@ from server.game_handler.data.exceptions import \
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
     CreateGame, CreateGameSucceed, UpdateReason, BroadcastUpdateLobby, \
     BroadcastUpdateRoom, LeaveRoom, BroadcastNewRoomToLobby, \
-    LeaveRoomSucceed, NewHost, StatusRoom, FriendConnected
+    LeaveRoomSucceed, NewHost, StatusRoom, FriendConnected, FriendDisconnected
 
 from django.conf import settings
 
@@ -399,6 +399,30 @@ class Engine:
                     })
 
     def disconnect_player(self, player_token: str, channel_name: str):
+
+        try:
+            friends = UserFriend.objects.filter(user_id=player_token)
+        except UserFriend.DoesNotExist:
+            return
+
+        for friend in friends:
+            friend_token = friend.id
+            # if friend is connected
+            if friend_token in self.connected_players[friend_token].keys():
+                # sending to friends that the player is gonna disconnect
+
+                packet = FriendDisconnected(friend_token=player_token,
+                                            username=get_player_username(
+                                             player_token),
+                                            avatar_url=get_player_avatar(
+                                             player_token)
+                                            )
+
+                async_to_sync(get_channel_layer().send)(
+                    self.connected_players[friend_token], {
+                        'type': 'lobby.callback',
+                        'packet': packet.serialize()
+                    })
 
         # find out if the player is in a game and which one
         in_game = False
