@@ -797,7 +797,6 @@ class ActionAuctionProperty(PlayerPacket):
     def __init__(self, player_token: str = "", min_bid: int = 0):
         super().__init__(self.__class__.__name__,
                          player_token=player_token)
-        self.id_player = player_token
         self.min_bid = min_bid
 
     def deserialize(self, obj: object):
