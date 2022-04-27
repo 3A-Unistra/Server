@@ -634,6 +634,13 @@ class Game(Thread):
 
             return
 
+        if self.state is GameState.ACTION_AUCTION:
+
+            if self.board.current_auction is None:
+                return
+
+            self.proceed_auction(packet)
+
     def process_logic(self):
         # TODO: Check #34 in comments
 
