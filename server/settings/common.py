@@ -126,7 +126,8 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # JWT Private KEy
-JWT_KEY = '@xxw!3fx@wjfi+%t-#m5^m4n&r#(-gz$nz2o24tij%9a&w'
+JWT_KEY = config('JWT_TOKEN',
+                 default='@xxw!3fx@wjfi+%t-#m5^m4n&r#(-gz$nz2o24tij%9a&w')
 
 # django channels layers
 

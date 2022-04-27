@@ -85,7 +85,7 @@ class AuthMiddleware:
                     # decode jwt and get jti
                     encoded = jwt.decode(jwt_token, self.key,
                                          algorithms=["HS256"])
-                    token = encoded.get('jti')
+                    token = encoded.get('userId')
 
                 # get user from db
                 scope['user'] = await self.get_user(token)
