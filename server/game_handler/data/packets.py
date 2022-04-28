@@ -808,7 +808,7 @@ class ExchangeTransferType(Enum):
 class ActionExchangeTransfer(PlayerPacket):
     player_to: str
     value: int
-    transfer_type: ExchangeTransferType
+    transfer_type: int
 
     def __init__(self, player_token: str = "", player_to: str = "",
                  value: int = 0, transfer_type: ExchangeTransferType
@@ -817,15 +817,16 @@ class ActionExchangeTransfer(PlayerPacket):
                          player_token=player_token)
         self.player_to = player_to
         self.value = value
-        self.transfer_type = transfer_type
+        self.transfer_type = transfer_type.value
 
     def deserialize(self, obj: object):
         self.player_to = obj['player_to']
         self.value = convert_to_int(obj, 'value')
 
-        transfer_type = convert_to_int(obj, 'transfer_type')
-        if 0 <= transfer_type <= 1:
-            self.transfer_type = ExchangeTransferType(transfer_type)
+        self.transfer_type = convert_to_int(obj, 'transfer_type')
+
+        if self.transfer_type != 0 and self.transfer_type != 1:
+            self.transfer_type = 0
 
 
 class ActionAuctionProperty(PlayerPacket):
@@ -834,7 +835,6 @@ class ActionAuctionProperty(PlayerPacket):
     def __init__(self, player_token: str = "", min_bid: int = 0):
         super().__init__(self.__class__.__name__,
                          player_token=player_token)
-        self.id_player = player_token
         self.min_bid = min_bid
 
     def deserialize(self, obj: object):

@@ -634,6 +634,13 @@ class Game(Thread):
 
             return
 
+        if self.state is GameState.ACTION_AUCTION:
+
+            if self.board.current_auction is None:
+                return
+
+            self.proceed_auction(packet)
+
     def process_logic(self):
         # TODO: Check #34 in comments
 
@@ -692,7 +699,7 @@ class Game(Thread):
             elif self.state is GameState.ACTION_START_WAIT:
                 # Action start wait
                 self.state = GameState.ACTION_TIMEOUT_WAIT
-                self.set_timeout(self.CONFIG.get('ACTION_TIMEOUT_WAIT'))
+                self.set_timeout(seconds=self.board.option_max_time)
                 self.broadcast_packet(ActionStart())
 
             elif self.state is GameState.ACTION_TIMEOUT_WAIT:
@@ -757,8 +764,7 @@ class Game(Thread):
             'ROUND_DICE_CHOICE_WAIT': self.CONFIG.get(
                 'ROUND_DICE_CHOICE_WAIT'),
             'ACTION_START_WAIT': self.CONFIG.get('ACTION_START_WAIT'),
-            'ACTION_TIMEOUT_WAIT': self.CONFIG.get(
-                'ACTION_TIMEOUT_WAIT'),
+            'ACTION_TIMEOUT_WAIT': self.board.option_max_time,
             'AUCTION_TOUR_WAIT': self.CONFIG.get('AUCTION_TOUR_WAIT'),
             'GAME_WIN_WAIT': self.CONFIG.get('GAME_WIN_WAIT'),
             'GAME_END_WAIT': self.CONFIG.get('GAME_END_WAIT')
@@ -929,6 +935,11 @@ class Game(Thread):
         :param packet: Packet received
         """
         print("proceed_tour_actions(%s)" % packet.serialize())
+        # No buy before 2nd round
+        if not self.board.option_first_round_buy and \
+                self.board.current_round == 0:
+            return
+
         if not isinstance(packet, PlayerPropertyPacket):
             print("PAcket not playerPropertyPacket")
             return
@@ -1145,6 +1156,9 @@ class Game(Thread):
             )
 
     def proceed_auction(self, packet: PlayerPacket):
+        if not self.board.option_auction_enabled:
+            return
+
         player = self.board.get_player(packet.player_token)
         auction: Optional[Auction] = self.board.current_auction
 
@@ -1174,13 +1188,14 @@ class Game(Thread):
 
             auction = Auction(player=player,
                               tour_duration=auction_tour_wait,
-                              highest_bet=packet.min_bid)
+                              highest_bet=packet.min_bid,
+                              square=current_square)
 
             self.state = GameState.ACTION_AUCTION
 
             # Get remaining timeout seconds to pause main timeout
             auction.tour_remaining_seconds \
-                = self.get_remaining_timeout_seconds()
+                = int(self.get_remaining_timeout_seconds())
             auction.set_timeout(seconds=auction_tour_wait)
 
             # setup new auction
@@ -1233,7 +1248,7 @@ class Game(Thread):
         self.broadcast_packet(AuctionEnd(
             player_token=auction.highest_bidder.get_id(),
             highest_bid=highest_bid,
-            remaining_time=auction.tour_action_remaining_seconds
+            remaining_time=auction.tour_remaining_seconds
         ))
 
         self.board.current_auction = None
@@ -1244,7 +1259,7 @@ class Game(Thread):
             return
 
         # Recover old timeout
-        self.set_timeout(seconds=auction.tour_action_remaining_seconds)
+        self.set_timeout(seconds=auction.tour_remaining_seconds)
         self.state = GameState.ACTION_TIMEOUT_WAIT
 
     def proceed_exchange(self, packet: PlayerPacket):
@@ -1394,17 +1409,19 @@ class Game(Thread):
 
             elif exchange_type is ExchangeTradeSelectType.MONEY:
 
-                if not owner.has_enough_money(packet.value):
+                money = abs(packet.value)
+
+                if not owner.has_enough_money(money):
                     return
 
                 if packet.update_affects_recipient:
-                    exchange.selected_player_money = packet.value
+                    exchange.selected_player_money = money
                 else:
-                    exchange.player_money = packet.value
+                    exchange.player_money = money
 
                 self.broadcast_packet(ActionExchangeTradeSelect(
                     player_token=owner.get_id(),
-                    value=packet.value,
+                    value=money,
                     exchange_type=ExchangeTradeSelectType.MONEY,
                     update_affects_recipient=packet.update_affects_recipient
                 ))
