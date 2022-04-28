@@ -185,8 +185,7 @@ class Engine:
         piece = game.board.get_player(packet.player_token).piece
         avatar = get_player_avatar(packet.player_token)
         username = get_player_username(packet.player_token)
-        game.board.remove_player(
-        game.board.get_player(packet.player_token))
+        game.board.remove_player(game.board.get_player(packet.player_token))
 
         game.send_lobby_packet(channel_name=channel_name,
                                packet=LeaveRoomSucceed(
@@ -404,7 +403,7 @@ class Engine:
             return
 
         for friend in friends:
-            friend_token = friend.id
+            friend_token = friend.friend_id
             # if friend is connected
             if friend_token in self.connected_players:
                 # sending to friends that the player is gonna disconnect
