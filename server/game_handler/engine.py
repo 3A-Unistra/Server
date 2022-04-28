@@ -182,15 +182,16 @@ class Engine:
                         break
 
         # if checks passed, kick out player
+        piece = game.board.get_player(packet.player_token).piece
+        avatar = get_player_avatar(packet.player_token)
+        username = get_player_username(packet.player_token)
         game.board.remove_player(
-            game.board.get_player(packet.player_token))
+        game.board.get_player(packet.player_token))
 
         game.send_lobby_packet(channel_name=channel_name,
                                packet=LeaveRoomSucceed(
-                                   avatar_url=get_player_avatar(
-                                       packet.player_token),
-                                   username=get_player_username(
-                                       packet.player_token)
+                                   avatar_url=avatar,
+                                   username=username
                                ))
 
         nb_players = game.board.get_online_real_players_count()
@@ -204,13 +205,9 @@ class Engine:
                                          nb_players=nb_players,
                                          reason=reason.value,
                                          player=packet.player_token,
-                                         avatar_url=get_player_avatar(
-                                             packet.player_token),
-                                         username=get_player_username(
-                                             packet.player_token
-                                         ),
-                                         piece=game.board.get_player(
-                                             packet.player_token).piece
+                                         avatar_url=avatar,
+                                         username=username,
+                                         piece=piece
                                          )
 
             game.send_packet_to_group(update, game.uid)
