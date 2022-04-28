@@ -304,7 +304,6 @@ class Game(Thread):
                                 board.starting_balance)
             self.send_lobby_packet(channel_name=queue_packet.channel_name,
                                    packet=status)
-            print("[game.py] sent packet statusRoom")
 
             # broadcast to lobby group
             # sent to lobby and to game group
@@ -511,11 +510,6 @@ class Game(Thread):
                 player.ping = True
                 player.ping_timeout = datetime.now() + timedelta(
                     seconds=self.CONFIG.get('PING_HEARTBEAT_TIMEOUT'))
-
-                print("add player=%s to group %s (%s)"
-                      % (player.get_id(),
-                         self.uid,
-                         player.channel_name))
 
                 # Add player to game group
                 async_to_sync(self.channel_layer.group_add)(
@@ -941,7 +935,6 @@ class Game(Thread):
             return
 
         if not isinstance(packet, PlayerPropertyPacket):
-            print("PAcket not playerPropertyPacket")
             return
 
         # Get player
@@ -949,24 +942,19 @@ class Game(Thread):
 
         # Check if player is current player, else ignore
         if player != self.board.get_current_player():
-            print("player != self.board.current_player")
             return
 
         # Its impossible to be bankrupted and be the current_player...
         if player.bankrupt:
-            print("player is bankrupt")
             return
 
         square = self.board.get_property(packet.property_id)
 
         if square is None:
-            print("square is none")
             # Ignore packet.
             return
 
         if isinstance(packet, ActionBuyProperty):
-            print("ActionBuyProperty")
-
             # Check if player is on this property
             if player.position != packet.property_id:
                 return
@@ -1812,15 +1800,11 @@ class Game(Thread):
             ))
         elif isinstance(case, TaxSquare):
             # Receiver=None is bank
-            print("TaxSquare ! player should pay: %d, current_balance: %d"
-                  % (case.tax_price, player.money))
             self.player_balance_pay(player=player,
                                     receiver=None,
                                     amount=case.tax_price,
                                     reason="tax_square")
 
-            print("TaxSquare ! player new balance: %d (board money): %d"
-                  % (player.money, self.board.board_money))
         elif isinstance(case, FreeParkingSquare):
 
             # change all debts targeting the bank (None) to this player
@@ -1865,7 +1849,6 @@ class Game(Thread):
 
         elif isinstance(case, CommunitySquare) and not backward:
             card = self.board.draw_random_community_card()
-            print("Moved on CommunitySquare!")
 
             if card is None:
                 # TODO: Send exception packet
@@ -1939,8 +1922,6 @@ class Game(Thread):
 
         # Receive new injected money
         if card.action_type is CardActionType.RECEIVE_BANK:
-            print("card.action_type => receive bank val: %d"
-                  % card.action_value)
             self.player_balance_receive(player=player,
                                         amount=card.action_value,
                                         reason="card_receive_bank")
@@ -1948,7 +1929,6 @@ class Game(Thread):
 
         # Give to bank = give money to board
         if card.action_type is CardActionType.GIVE_BOARD:
-            print("card.action_type => give board val: %d" % card.action_value)
             self.player_balance_pay(player=player,
                                     receiver=None,
                                     amount=card.action_value,
@@ -2234,8 +2214,6 @@ class Game(Thread):
 
             if receiver is None:
                 self.board.board_money += amount
-                print("player.money >= amount ; board_money updated: %d"
-                      % self.board.board_money)
             else:
                 self.player_balance_receive(player=receiver,
                                             amount=amount,

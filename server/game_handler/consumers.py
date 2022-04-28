@@ -27,8 +27,6 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
 
     async def connect(self):
         # User is anonymous
-        print("PlayerConsumer: connect")
-
         if self.scope["user"] is None:
             # Reject the connection
             return await self.close(code=4000)
@@ -170,11 +168,7 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         # Send validity token
         if isinstance(packet, InternalCheckPlayerValidity):
             self.valid = packet.valid
-            print("Get InternalCheckPlayerValidity packet is %s (%s)"
-                  % ("valid" if self.valid else "not valid",
-                     packet.serialize()))
 
-            # TODO : check
             if packet.valid:
                 packet = PlayerValid()
             else:
@@ -212,7 +206,6 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             return await self.close(code=4000)
 
         self.player_token = str(self.scope['user'].id)
-        print("User %s connected to lobby" % self.player_token)
 
         # sending the internal packet to the EngineConsumer
         packet = InternalLobbyConnect(
@@ -236,12 +229,10 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         await self.accept()
 
     async def receive_json(self, content, **kwargs):
-        print("[consumer.LobbyConsumer.receive_json()] got in function")
         try:
             packet = PacketUtils.deserialize_packet(content)
         except PacketException:
             # send error packet (or ignore)
-            print("[consumer.LobbyConsumer.receive_json] PacketException")
             return
 
         if isinstance(packet, InternalPacket):
@@ -265,7 +256,6 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
                 self.game_token
             }
         )
-        print("[consumer.LobbyConsumer.receive_json] sent to game engine")
 
     async def disconnect(self, code):
         # if the player is in the lobby group, he is not in a waiting room
@@ -400,8 +390,6 @@ class GameEngineConsumer(SyncConsumer):
             packet = PacketUtils.deserialize_packet(packet_content)
         except PacketException:
             # send error packet (or ignore)
-            print("[consumer.EngineConsumer.process_lobby_packets] "
-                  "PacketException")
             return
 
         # Check if packet was successfully deserialized
@@ -411,7 +399,6 @@ class GameEngineConsumer(SyncConsumer):
         if isinstance(packet, InternalLobbyConnect):
             self.engine.connected_players[packet.player_token] = channel_name
             # sending infos about all the lobbies
-            print("InternalLobbyConnect channel_name: %s" % channel_name)
             self.engine.send_friend_notification(channel_name=channel_name,
                                                  player_token=packet.
                                                  player_token)
@@ -428,11 +415,7 @@ class GameEngineConsumer(SyncConsumer):
             # not supposed to happen
             return
 
-        print("[%s] real lobbyPacket shit" % packet.name)
-
         if isinstance(packet, CreateGame):
-            print("[consumer.EngineConsumer.process_lobby_packets] "
-                  "sending to engine.create_game")
             self.engine.create_game(packet, channel_name)
             return
 
