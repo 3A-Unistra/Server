@@ -936,7 +936,8 @@ class Game(Thread):
         """
         print("proceed_tour_actions(%s)" % packet.serialize())
         # No buy before 2nd round
-        if not self.board.option_first_round_buy and self.board.current_round == 0:
+        if not self.board.option_first_round_buy and \
+                self.board.current_round == 0:
             return
 
         if not isinstance(packet, PlayerPropertyPacket):
