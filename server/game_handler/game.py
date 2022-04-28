@@ -699,7 +699,7 @@ class Game(Thread):
             elif self.state is GameState.ACTION_START_WAIT:
                 # Action start wait
                 self.state = GameState.ACTION_TIMEOUT_WAIT
-                self.set_timeout(self.CONFIG.get('ACTION_TIMEOUT_WAIT'))
+                self.set_timeout(seconds=self.board.option_max_time)
                 self.broadcast_packet(ActionStart())
 
             elif self.state is GameState.ACTION_TIMEOUT_WAIT:
@@ -764,8 +764,7 @@ class Game(Thread):
             'ROUND_DICE_CHOICE_WAIT': self.CONFIG.get(
                 'ROUND_DICE_CHOICE_WAIT'),
             'ACTION_START_WAIT': self.CONFIG.get('ACTION_START_WAIT'),
-            'ACTION_TIMEOUT_WAIT': self.CONFIG.get(
-                'ACTION_TIMEOUT_WAIT'),
+            'ACTION_TIMEOUT_WAIT': self.board.option_max_time,
             'AUCTION_TOUR_WAIT': self.CONFIG.get('AUCTION_TOUR_WAIT'),
             'GAME_WIN_WAIT': self.CONFIG.get('GAME_WIN_WAIT'),
             'GAME_END_WAIT': self.CONFIG.get('GAME_END_WAIT')
@@ -936,6 +935,10 @@ class Game(Thread):
         :param packet: Packet received
         """
         print("proceed_tour_actions(%s)" % packet.serialize())
+        # No buy before 2nd round
+        if not self.board.option_first_round_buy and self.board.current_round == 0:
+            return
+
         if not isinstance(packet, PlayerPropertyPacket):
             print("PAcket not playerPropertyPacket")
             return
@@ -1152,6 +1155,9 @@ class Game(Thread):
             )
 
     def proceed_auction(self, packet: PlayerPacket):
+        if not self.board.option_auction_enabled:
+            return
+
         player = self.board.get_player(packet.player_token)
         auction: Optional[Auction] = self.board.current_auction
 

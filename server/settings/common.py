@@ -179,9 +179,10 @@ ENGINE_CONFIG = {
     'NB_ROUNDS_DEFAULT': 13,
     'NB_ROUNDS_MAX': 1000,
 
-    'TIME_ROUNDS_MIN': 10,
-    'TIME_ROUNDS_DEFAULT': 20,
-    'TIME_ROUNDS_MAX': 30,
+    # Min 30 secs, Max 2min for action_timeout
+    'TIME_ROUNDS_MIN': 30,
+    'TIME_ROUNDS_DEFAULT': 90,
+    'TIME_ROUNDS_MAX': 120,
 
     'MONEY_GO': 200,
 
