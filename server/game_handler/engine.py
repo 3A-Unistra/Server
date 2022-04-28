@@ -38,6 +38,7 @@ class Engine:
         self.chance_deck = []
         self.community_deck = []
         self.connected_players = {}
+        self.channel_layer = get_channel_layer()
         self.__load_json()
 
     def __load_json(self):
@@ -370,7 +371,7 @@ class Engine:
         for friend in friends:
             friend_token = friend.id
             # if friend is connected
-            if friend_token in self.connected_players[friend_token].keys():
+            if friend_token in self.connected_players:
                 # sending to player that his friend is connected
                 packet = FriendConnected(friend_token=friend_token,
                                          username=get_player_username(
@@ -379,7 +380,7 @@ class Engine:
                                              friend_token)
                                          )
 
-                async_to_sync(get_channel_layer().send)(
+                async_to_sync(self.channel_layer.send)(
                     channel_name, {
                         'type': 'lobby.callback',
                         'packet': packet.serialize()
@@ -392,7 +393,7 @@ class Engine:
                                          avatar_url=get_player_avatar(
                                              player_token)
                                          )
-                async_to_sync(get_channel_layer().send)(
+                async_to_sync(self.channel_layer.send)(
                     self.connected_players[friend_token], {
                         'type': 'lobby.callback',
                         'packet': packet.serialize()
@@ -408,7 +409,7 @@ class Engine:
         for friend in friends:
             friend_token = friend.id
             # if friend is connected
-            if friend_token in self.connected_players[friend_token].keys():
+            if friend_token in self.connected_players:
                 # sending to friends that the player is gonna disconnect
 
                 packet = FriendDisconnected(friend_token=player_token,
@@ -418,7 +419,7 @@ class Engine:
                                              player_token)
                                             )
 
-                async_to_sync(get_channel_layer().send)(
+                async_to_sync(self.channel_layer.send)(
                     self.connected_players[friend_token], {
                         'type': 'lobby.callback',
                         'packet': packet.serialize()
