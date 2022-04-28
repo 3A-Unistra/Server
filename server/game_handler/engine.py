@@ -4,6 +4,7 @@ import os
 from typing import List, Dict
 
 from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from server.game_handler.data import Player
 from server.game_handler.data.cards import ChanceCard, CommunityCard, CardUtils
@@ -12,7 +13,7 @@ from server.game_handler.data.exceptions import \
 from server.game_handler.data.packets import Packet, ExceptionPacket, \
     CreateGame, CreateGameSucceed, UpdateReason, BroadcastUpdateLobby, \
     BroadcastUpdateRoom, LeaveRoom, BroadcastNewRoomToLobby, \
-    LeaveRoomSucceed, NewHost, StatusRoom
+    LeaveRoomSucceed, NewHost, StatusRoom, FriendConnected, FriendDisconnected
 
 from django.conf import settings
 
@@ -20,7 +21,7 @@ from server.game_handler.data.player import get_player_avatar, \
     get_player_username
 from server.game_handler.data.squares import Square, SquareUtils
 from server.game_handler.game import Game, GameState, QueuePacket
-from server.game_handler.models import User
+from server.game_handler.models import User, UserFriend
 
 
 class Engine:
@@ -28,12 +29,16 @@ class Engine:
     squares: List[Square]
     chance_deck: List[ChanceCard]
     community_deck: List[CommunityCard]
+    # dictionary of id and channel_name for player in Lobby
+    connected_players: Dict
 
     def __init__(self):
         self.games = {}
         self.squares = []
         self.chance_deck = []
         self.community_deck = []
+        self.connected_players = {}
+        self.channel_layer = get_channel_layer()
         self.__load_json()
 
     def __load_json(self):
@@ -177,15 +182,15 @@ class Engine:
                         break
 
         # if checks passed, kick out player
-        game.board.remove_player(
-            game.board.get_player(packet.player_token))
+        piece = game.board.get_player(packet.player_token).piece
+        avatar = get_player_avatar(packet.player_token)
+        username = get_player_username(packet.player_token)
+        game.board.remove_player(game.board.get_player(packet.player_token))
 
         game.send_lobby_packet(channel_name=channel_name,
                                packet=LeaveRoomSucceed(
-                                   avatar_url=get_player_avatar(
-                                       packet.player_token),
-                                   username=get_player_username(
-                                       packet.player_token)
+                                   avatar_url=avatar,
+                                   username=username
                                ))
 
         nb_players = game.board.get_online_real_players_count()
@@ -199,13 +204,9 @@ class Engine:
                                          nb_players=nb_players,
                                          reason=reason.value,
                                          player=packet.player_token,
-                                         avatar_url=get_player_avatar(
-                                             packet.player_token),
-                                         username=get_player_username(
-                                             packet.player_token
-                                         ),
-                                         piece=game.board.get_player(
-                                             packet.player_token).piece
+                                         avatar_url=avatar,
+                                         username=username,
+                                         piece=piece
                                          )
 
             game.send_packet_to_group(update, game.uid)
@@ -350,7 +351,74 @@ class Engine:
                 game_c.send_lobby_packet(channel_name=channel_name,
                                          packet=packet)
 
+    def send_friend_notification(self, channel_name: str, player_token: str):
+        # fetch les amis du joueur dans la base de données
+        # regarder si les joueurs sont connecté à un websocket
+        # leur envoyer à eux un paquet FriendConnected
+        # envoyer au channel un paquet FriendConnected par ami connecté
+
+        # getting friends from database
+        try:
+            friends = UserFriend.objects.filter(user_id=player_token)
+        except UserFriend.DoesNotExist:
+            return
+
+        for friend in friends:
+            friend_token = friend.id
+            # if friend is connected
+            if friend_token in self.connected_players:
+                # sending to player that his friend is connected
+                packet = FriendConnected(friend_token=friend_token,
+                                         username=get_player_username(
+                                             friend_token),
+                                         avatar_url=get_player_avatar(
+                                             friend_token)
+                                         )
+
+                async_to_sync(self.channel_layer.send)(
+                    channel_name, {
+                        'type': 'lobby.callback',
+                        'packet': packet.serialize()
+                    })
+
+                # sending to friend that the player is connected
+                packet = FriendConnected(friend_token=player_token,
+                                         username=get_player_username(
+                                             player_token),
+                                         avatar_url=get_player_avatar(
+                                             player_token)
+                                         )
+                async_to_sync(self.channel_layer.send)(
+                    self.connected_players[friend_token], {
+                        'type': 'lobby.callback',
+                        'packet': packet.serialize()
+                    })
+
     def disconnect_player(self, player_token: str, channel_name: str):
+
+        try:
+            friends = UserFriend.objects.filter(user_id=player_token)
+        except UserFriend.DoesNotExist:
+            return
+
+        for friend in friends:
+            friend_token = friend.friend_id
+            # if friend is connected
+            if friend_token in self.connected_players:
+                # sending to friends that the player is gonna disconnect
+
+                packet = FriendDisconnected(friend_token=player_token,
+                                            username=get_player_username(
+                                             player_token),
+                                            avatar_url=get_player_avatar(
+                                             player_token)
+                                            )
+
+                async_to_sync(self.channel_layer.send)(
+                    self.connected_players[friend_token], {
+                        'type': 'lobby.callback',
+                        'packet': packet.serialize()
+                    })
 
         # find out if the player is in a game and which one
         in_game = False

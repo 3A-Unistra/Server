@@ -230,6 +230,31 @@ Paquet envoyé à un joueur de la salle d'attente lorsque le host de la partie d
 
 *ce paquet ne contient pas d'informations*
 
+
+FriendConnected
+^^^^^^^^^^^^^^^
+
+Paquet envoyé à un joueur pour le notifier qu'un de ses amis est connecté.
+Lors de la connexion d'un joueur, tout ses amis connectés sont notifiés, et il reçoit également
+un paquet FriendConnected par ami connecté qu'il a.
+
+**contenu du paquet :**
+ * id de l'ami connecté : *friend_token*
+ * username de l'ami connecté *username*
+ * avatar de l'ami connecté *avatar_url*
+
+FriendDisconnected
+^^^^^^^^^^^^^^^^^^
+
+Paquet envoyé à un joueur pour le notifier qu'un de ses amis n'est plus connecté.
+
+**contenu du paquet :**
+ * id de l'ami connecté : *friend_token*
+ * username de l'ami connecté *username*
+ * avatar de l'ami connecté *avatar_url*
+
+
+
 Paquets demarrage
 -----------------
 
