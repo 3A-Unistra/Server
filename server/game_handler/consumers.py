@@ -407,15 +407,19 @@ class GameEngineConsumer(SyncConsumer):
         # Check if packet was successfully deserialized
         if packet is None:
             return
-
         # if internal packet:
         if isinstance(packet, InternalLobbyConnect):
+            self.engine.connected_players[packet.player_token] = channel_name
             # sending infos about all the lobbies
             print("InternalLobbyConnect channel_name: %s" % channel_name)
+            self.engine.send_friend_notification(channel_name=channel_name,
+                                                 player_token=packet.
+                                                 player_token)
             self.engine.send_all_lobby_status(channel_name=channel_name)
             return
 
         if isinstance(packet, InternalLobbyDisconnect):
+            self.engine.connected_players.pop(packet.player_token)
             self.engine.disconnect_player(player_token=packet.player_token,
                                           channel_name=channel_name)
             return

@@ -340,6 +340,44 @@ class BroadcastNewRoomToLobby(LobbyPacket):
         self.has_password = convert_to_bool(obj, 'has_password')
 
 
+class FriendDisconnected(LobbyPacket):
+    friend_token: str
+    username: str
+    avatar_url: str
+
+    def __init__(self, friend_token: str = "", username: str = "",
+                 avatar_url: str = ""):
+        super().__init__(self.__class__.__name__)
+        self.friend_token = friend_token
+        self.username = username
+        self.avatar_url = avatar_url
+
+    def deserialize(self, obj: object):
+        self.friend_token = obj['friend_token'] if 'friend_token' in obj \
+            else ""
+        self.username = obj['username'] if 'username' in obj else ""
+        self.avatar_url = obj['avatar_url'] if 'avatar_url' in obj else ""
+
+
+class FriendConnected(LobbyPacket):
+    friend_token: str
+    username: str
+    avatar_url: str
+
+    def __init__(self, friend_token: str = "", username: str = "",
+                 avatar_url: str = ""):
+        super().__init__(self.__class__.__name__)
+        self.friend_token = friend_token
+        self.username = username
+        self.avatar_url = avatar_url
+
+    def deserialize(self, obj: object):
+        self.friend_token = obj['friend_token'] if 'friend_token' in obj \
+            else ""
+        self.username = obj['username'] if 'username' in obj else ""
+        self.avatar_url = obj['avatar_url'] if 'avatar_url' in obj else ""
+
+
 class BroadcastUpdateLobby(LobbyPacket):
     game_token: str
     reason: int
@@ -1125,6 +1163,8 @@ class PacketUtils:
         "StatusRoom": StatusRoom,
         "NewHost": NewHost,
         "DeleteBot": DeleteBot,
+        "FriendConnected": FriendConnected,
+        "FriendDisconnected": FriendDisconnected,
         # Internal packets
         "InternalCheckPlayerValidity": InternalCheckPlayerValidity,
         "InternalPlayerDisconnect": InternalPlayerDisconnect,
