@@ -1203,6 +1203,7 @@ class Game(Thread):
 
             self.broadcast_packet(ActionAuctionProperty(
                 player_token=player.get_id(),
+                property_id=current_square.id_,
                 min_bid=auction.highest_bid
             ))
             return
