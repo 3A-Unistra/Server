@@ -455,9 +455,13 @@ class GameEngineConsumer(SyncConsumer):
         print("Processing packet=%s => (%s)" %
               (packet.name, packet.serialize()))
 
-        # Send packet to game thread
-        self.engine.send_packet(game_uid=game_token, packet=packet,
-                                channel_name=channel_name)
+        try:
+            # Send packet to game thread
+            self.engine.send_packet(game_uid=game_token, packet=packet,
+                                    channel_name=channel_name)
+        except GameNotExistsException:
+            # TODO: Maybe send error?
+            return
 
     def connect_debugger(self):
         pass
