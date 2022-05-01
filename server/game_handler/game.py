@@ -646,7 +646,8 @@ class Game(Thread):
 
         # State is waiting that players connecting and send AppletReady
         if self.state is GameState.WAITING_PLAYERS:
-            if self.board.get_online_players_count() == self.board.players_nb:
+            if self.board.get_online_players_count() == len(
+                    self.board.players):
                 # We can start the game
                 self.start_game()
             elif self.timeout_expired():  # Check timeout
