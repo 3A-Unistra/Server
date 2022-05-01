@@ -177,14 +177,13 @@ class Board:
             return favorite_piece
 
         if taken:
-            taken_new_piece = False
             # iterating on all the pieces to get a free one
-            for i in range(self.CONFIG.get('MAX_PIECE_NB')):
+            for i in range(0, self.CONFIG.get('MAX_PIECE_NB')+1):
                 taken_new_piece = False
                 for player in self.players:
                     if player.piece == i:
                         taken_new_piece = True
-                        break
+
                 if not taken_new_piece:
                     player.piece = i
                     return i
