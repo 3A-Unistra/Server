@@ -326,7 +326,6 @@ class Game(Thread):
                 if queue_packet.channel_name != self.host_player.channel_name:
                     return
 
-                # do necessary checks
                 self.board.set_nb_players(packet.max_nb_players)
                 self.public_name = packet.game_name
                 self.board.option_go_case_double_money = \

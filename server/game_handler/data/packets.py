@@ -304,7 +304,8 @@ class StatusRoom(LobbyPacket):
         self.players_piece = obj['players_piece'] if 'players_piece' in obj \
             else []
         self.option_auction = convert_to_bool(obj, 'option_auction')
-        self.option_double_on_start = convert_to_bool(obj, 'double_on_start')
+        self.option_double_on_start = convert_to_bool(obj,
+                                                      'option_double_on_start')
         self.option_max_time = convert_to_int(obj, 'option_max_time')
         self.option_max_rounds = convert_to_int(obj, 'option_max_rounds')
         self.option_first_round_buy = \
