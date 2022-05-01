@@ -209,8 +209,6 @@ class Game(Thread):
             except User.DoesNotExist:
                 return
 
-            print("Lobby user.name=%s" % user.name)
-
             if packet.password != "":
                 if packet.password != self.board.option_password:
                     self.send_lobby_packet(channel_name=queue_packet.
@@ -642,8 +640,6 @@ class Game(Thread):
             self.proceed_auction(packet)
 
     def process_logic(self):
-        # TODO: Check #34 in comments
-
         # Check pings
         if self.state.value > GameState.LOBBY.value:
             self.proceed_heartbeat()
@@ -722,7 +718,6 @@ class Game(Thread):
         del self.games[self.uid]
 
     def set_timeout(self, seconds: int):
-        print("Setting timeout to %d seconds." % seconds)
         self.timeout = datetime.now() + timedelta(seconds=seconds)
 
     def timeout_expired(self) -> bool:
@@ -951,7 +946,6 @@ class Game(Thread):
             return
 
         if not isinstance(packet, PlayerPropertyPacket):
-            print("PAcket not playerPropertyPacket")
             return
 
         # No tour actions for ActionAuctionProperty packet
@@ -963,24 +957,19 @@ class Game(Thread):
 
         # Check if player is current player, else ignore
         if player != self.board.get_current_player():
-            print("player != self.board.current_player")
             return
 
         # Its impossible to be bankrupted and be the current_player...
         if player.bankrupt:
-            print("player is bankrupt")
             return
 
         square = self.board.get_property(packet.property_id)
 
         if square is None:
-            print("square is none")
             # Ignore packet.
             return
 
         if isinstance(packet, ActionBuyProperty):
-            print("ActionBuyProperty")
-
             # Check if player is on this property
             if player.position != packet.property_id:
                 return
@@ -1827,15 +1816,11 @@ class Game(Thread):
             ))
         elif isinstance(case, TaxSquare):
             # Receiver=None is bank
-            print("TaxSquare ! player should pay: %d, current_balance: %d"
-                  % (case.tax_price, player.money))
             self.player_balance_pay(player=player,
                                     receiver=None,
                                     amount=case.tax_price,
                                     reason="tax_square")
 
-            print("TaxSquare ! player new balance: %d (board money): %d"
-                  % (player.money, self.board.board_money))
         elif isinstance(case, FreeParkingSquare):
 
             # change all debts targeting the bank (None) to this player
@@ -1880,7 +1865,6 @@ class Game(Thread):
 
         elif isinstance(case, CommunitySquare) and not backward:
             card = self.board.draw_random_community_card()
-            print("Moved on CommunitySquare!")
 
             if card is None:
                 # TODO: Send exception packet
