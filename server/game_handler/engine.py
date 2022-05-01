@@ -153,11 +153,6 @@ class Engine:
         if not isinstance(packet, LeaveRoom):
             return
 
-        # check if player is part of a room
-        if not self.player_exists(packet.player_token):
-            # ignore
-            return
-
         game = self.games[game_token]
 
         if self.games[game_token].state == GameState.WAITING_PLAYERS:
@@ -292,31 +287,12 @@ class Engine:
                                        username=get_player_username(
                                            packet.player_token)))
 
-        # this is sent to lobby no need to send it to game group, host is alone
-        update = BroadcastNewRoomToLobby(
-            game_token=new_game.uid,
-            game_name=new_game.public_name,
-            nb_players=len(board.players),
-            max_nb_players=board.players_nb,
-            is_private=board.option_is_private,
-            has_password=(board.option_password != ""))
-
-        # adding host to the game group
-        async_to_sync(new_game.channel_layer.group_discard)("lobby",
-                                                            channel_name)
-
-        async_to_sync(new_game.channel_layer.group_add)(new_game.uid,
-                                                        channel_name)
-
-        new_game.send_packet_to_group(update, "lobby")
-
         new_game.send_lobby_packet(
             channel_name=channel_name,
             packet=StatusRoom(
                 game_token=new_game.uid,
                 game_name=new_game.public_name,
-                nb_players=len(new_game.
-                               board.players),
+                nb_players=1,
                 max_nb_players=new_game.board.players_nb,
                 players=[packet.player_token],
                 players_username=[get_player_username(packet.player_token)],
@@ -328,6 +304,25 @@ class Engine:
                 option_first_round_buy=False,
                 starting_balance=new_game.board.starting_balance
             ))
+
+        # adding host to the game group
+        async_to_sync(new_game.channel_layer.group_discard)(group="lobby",
+                                                            channel=
+                                                            channel_name)
+
+        async_to_sync(new_game.channel_layer.group_add)(group=new_game.uid,
+                                                        channel=channel_name)
+
+        # this is sent to lobby no need to send it to game group, host is alone
+        update = BroadcastNewRoomToLobby(
+            game_token=new_game.uid,
+            game_name=new_game.public_name,
+            nb_players=len(board.players),
+            max_nb_players=board.players_nb,
+            is_private=board.option_is_private,
+            has_password=(board.option_password != ""))
+
+        new_game.send_packet_to_group(update, "lobby")
 
     def send_all_lobby_status(self, channel_name: str):
         """

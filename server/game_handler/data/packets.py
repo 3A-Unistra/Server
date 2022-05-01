@@ -254,7 +254,6 @@ class StatusRoom(LobbyPacket):
     game_name: str
     nb_players: int
     max_nb_players: int
-    playerz: List[dict]
     players: List[str]  # list of players
     players_username: List[str]
     players_avatar_url: List[str]
