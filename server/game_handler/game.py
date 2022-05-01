@@ -209,8 +209,6 @@ class Game(Thread):
             except User.DoesNotExist:
                 return
 
-            print("Lobby user.name=%s" % user.name)
-
             if packet.password != "":
                 if packet.password != self.board.option_password:
                     self.send_lobby_packet(channel_name=queue_packet.
@@ -636,8 +634,6 @@ class Game(Thread):
             self.proceed_auction(packet)
 
     def process_logic(self):
-        # TODO: Check #34 in comments
-
         # Check pings
         if self.state.value > GameState.LOBBY.value:
             self.proceed_heartbeat()
@@ -716,7 +712,6 @@ class Game(Thread):
         del self.games[self.uid]
 
     def set_timeout(self, seconds: int):
-        print("Setting timeout to %d seconds." % seconds)
         self.timeout = datetime.now() + timedelta(seconds=seconds)
 
     def timeout_expired(self) -> bool:
