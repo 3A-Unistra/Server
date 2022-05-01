@@ -285,15 +285,13 @@ class Engine:
                                        game_token=new_game.uid,
                                        player_token=packet.player_token,
                                        piece=piece,
-                                       avatar_url=get_player_avatar(
-                                           packet.player_token),
-                                       username=get_player_username(
-                                           packet.player_token)))
+                                       avatar_url=player.user.avatar,
+                                       username=player.user.name))
 
         player_data = {
             "player_token": packet.player_token,
-            "username": get_player_username(packet.player_token),
-            "avatar_url": get_player_avatar(packet.player_token),
+            "username": player.user.name,
+            "avatar_url": player.user.avatar,
             "piece": piece
         }
 
@@ -371,10 +369,8 @@ class Engine:
             if friend_token in self.connected_players:
                 # sending to player that his friend is connected
                 packet = FriendConnected(friend_token=friend_token,
-                                         username=get_player_username(
-                                             friend_token),
-                                         avatar_url=get_player_avatar(
-                                             friend_token)
+                                         username=friend.name,
+                                         avatar_url=friend.avatar
                                          )
 
                 async_to_sync(self.channel_layer.send)(
