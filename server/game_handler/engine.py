@@ -153,15 +153,25 @@ class Engine:
         if not isinstance(packet, LeaveRoom):
             return
 
-        # check if player is part of a room
-        if not self.player_exists(packet.player_token):
-            # ignore
-            return
-
         game = self.games[game_token]
 
         if self.games[game_token].state == GameState.WAITING_PLAYERS:
             return
+
+        # if checks passed, kick out player
+
+        piece = game.board.get_player(packet.player_token).piece
+        avatar = get_player_avatar(packet.player_token)
+        username = get_player_username(packet.player_token)
+
+        game.send_lobby_packet(channel_name=channel_name,
+                               packet=LeaveRoomSucceed(
+                                   avatar_url=avatar,
+                                   username=username
+                               ))
+
+        game.board.remove_player(
+            game.board.get_player(packet.player_token))
 
         # player leaves game group
         async_to_sync(
@@ -180,18 +190,6 @@ class Engine:
                             player_token=game.host_player.get_id()
                         ), game.uid)
                         break
-
-        # if checks passed, kick out player
-        piece = game.board.get_player(packet.player_token).piece
-        avatar = get_player_avatar(packet.player_token)
-        username = get_player_username(packet.player_token)
-        game.board.remove_player(game.board.get_player(packet.player_token))
-
-        game.send_lobby_packet(channel_name=channel_name,
-                               packet=LeaveRoomSucceed(
-                                   avatar_url=avatar,
-                                   username=username
-                               ))
 
         nb_players = game.board.get_online_real_players_count()
 
@@ -292,6 +290,36 @@ class Engine:
                                        username=get_player_username(
                                            packet.player_token)))
 
+        player_data = {
+            "player_token": packet.player_token,
+            "username": get_player_username(packet.player_token),
+            "avatar_url": get_player_avatar(packet.player_token),
+            "piece": piece
+        }
+
+        new_game.send_lobby_packet(
+            channel_name=channel_name,
+            packet=StatusRoom(
+                game_token=new_game.uid,
+                game_name=new_game.public_name,
+                nb_players=1,
+                max_nb_players=new_game.board.players_nb,
+                players_data=[player_data],
+                option_auction=False,
+                option_double_on_start=False,
+                option_max_time=new_game.board.option_max_time,
+                option_max_rounds=new_game.board.option_max_rounds,
+                option_first_round_buy=False,
+                starting_balance=new_game.board.starting_balance
+            ))
+
+        # adding host to the game group
+        async_to_sync(new_game.channel_layer.group_discard)("lobby",
+                                                            channel_name)
+
+        async_to_sync(new_game.channel_layer.group_add)(group=new_game.uid,
+                                                        channel=channel_name)
+
         # this is sent to lobby no need to send it to game group, host is alone
         update = BroadcastNewRoomToLobby(
             game_token=new_game.uid,
@@ -301,33 +329,7 @@ class Engine:
             is_private=board.option_is_private,
             has_password=(board.option_password != ""))
 
-        # adding host to the game group
-        async_to_sync(new_game.channel_layer.group_discard)("lobby",
-                                                            channel_name)
-
-        async_to_sync(new_game.channel_layer.group_add)(new_game.uid,
-                                                        channel_name)
-
         new_game.send_packet_to_group(update, "lobby")
-
-        new_game.send_lobby_packet(
-            channel_name=channel_name,
-            packet=StatusRoom(
-                game_token=new_game.uid,
-                game_name=new_game.public_name,
-                nb_players=len(new_game.
-                               board.players),
-                max_nb_players=new_game.board.players_nb,
-                players=[packet.player_token],
-                players_username=[get_player_username(packet.player_token)],
-                players_avatar_url=[get_player_avatar(packet.player_token)],
-                option_auction=False,
-                option_double_on_start=False,
-                option_max_time=new_game.board.option_max_time,
-                option_max_rounds=new_game.board.option_max_rounds,
-                option_first_round_buy=False,
-                starting_balance=new_game.board.starting_balance
-            ))
 
     def send_all_lobby_status(self, channel_name: str):
         """
