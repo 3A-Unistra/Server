@@ -254,10 +254,7 @@ class StatusRoom(LobbyPacket):
     game_name: str
     nb_players: int
     max_nb_players: int
-    players: List[str]  # list of players
-    players_username: List[str]
-    players_avatar_url: List[str]
-    players_piece: List[int]
+    players_data: List[dict]
     option_auction: bool
     option_double_on_start: bool
     option_max_time: int
@@ -267,9 +264,7 @@ class StatusRoom(LobbyPacket):
 
     def __init__(self, game_token: str = "", game_name: str = "",
                  nb_players: int = 0, max_nb_players: int = 0,
-                 players: List[str] = None, players_username: List[str] = None,
-                 players_avatar_url: List[str] = None,
-                 players_piece: List[int] = None,
+                 players_data: List[dict] = None,
                  option_auction: bool = False,
                  option_double_on_start: bool = False,
                  option_max_time: int = 0, option_max_rounds: int = 0,
@@ -280,10 +275,7 @@ class StatusRoom(LobbyPacket):
         self.game_name = game_name
         self.nb_players = nb_players
         self.max_nb_players = max_nb_players
-        self.players = players
-        self.players_username = players_username
-        self.players_avatar_url = players_avatar_url
-        self.players_piece = players_piece
+        self.players_data = players_data
         self.option_auction = option_auction
         self.option_double_on_start = option_double_on_start
         self.option_max_time = option_max_time
@@ -296,12 +288,7 @@ class StatusRoom(LobbyPacket):
         self.game_name = obj['game_name'] if 'game_name' in obj else ""
         self.nb_players = convert_to_int(obj, 'nb_players')
         self.max_nb_players = convert_to_int(obj, 'max_nb_players')
-        self.players = obj['players'] if 'players' in obj else []
-        self.players_username = obj['players_username'] if 'players_username' \
-            in obj else []
-        self.players_avatar_url = obj['players_avatar_url'] if \
-            'players_avatar_url' in obj else []
-        self.players_piece = obj['players_piece'] if 'players_piece' in obj \
+        self.players_data = obj['players_data'] if 'players_data' in obj \
             else []
         self.option_auction = convert_to_bool(obj, 'option_auction')
         self.option_double_on_start = convert_to_bool(obj,

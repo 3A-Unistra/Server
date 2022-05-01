@@ -290,6 +290,13 @@ class Engine:
                                        username=get_player_username(
                                            packet.player_token)))
 
+        player_data = {
+            "player_token": packet.player_token,
+            "username": get_player_username(packet.player_token),
+            "avatar_url": get_player_avatar(packet.player_token),
+            "piece": piece
+        }
+
         new_game.send_lobby_packet(
             channel_name=channel_name,
             packet=StatusRoom(
@@ -297,9 +304,7 @@ class Engine:
                 game_name=new_game.public_name,
                 nb_players=1,
                 max_nb_players=new_game.board.players_nb,
-                players=[packet.player_token],
-                players_username=[get_player_username(packet.player_token)],
-                players_avatar_url=[get_player_avatar(packet.player_token)],
+                players_data=[player_data],
                 option_auction=False,
                 option_double_on_start=False,
                 option_max_time=new_game.board.option_max_time,
