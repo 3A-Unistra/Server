@@ -25,6 +25,7 @@ def get_player_username(player_token: str):
     except User.DoesNotExist:
         print("[get_player_username] user does not exists")
         return
+    return user.name
 
 
 class PlayerDebt:
