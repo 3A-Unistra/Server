@@ -242,6 +242,7 @@ class UpdateReason(Enum):
     LAUNCHING_GAME = 6
     NEW_BOT = 7
     DELETE_BOT = 8
+    NEW_GAME_NAME = 9
 
     @staticmethod
     def has_value(value):
@@ -382,16 +383,19 @@ class FriendConnected(LobbyPacket):
 class BroadcastUpdateLobby(LobbyPacket):
     game_token: str
     reason: int
+    value: str
 
     def __init__(self, game_token: str = "",
-                 reason: int = 0):
+                 reason: int = 0, value: str = ""):
         super().__init__(self.__class__.__name__)
         self.game_token = game_token
         self.reason = reason
+        self.value = value
 
     def deserialize(self, obj: object):
         self.game_token = obj['game_token'] if 'game_token' in obj else 0
         self.reason = convert_to_int(obj, 'reason')
+        self.value = obj['value'] if 'value' in obj else ""
 
 
 class BroadcastUpdateRoom(LobbyPacket):
