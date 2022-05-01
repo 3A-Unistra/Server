@@ -72,10 +72,7 @@ class Player:
     money: int = 0
     jail_turns: int = 0
     doubles: int = 0
-    jail_cards = {
-        'chance': False,
-        'community': False
-    }
+    jail_cards = {}
     in_jail: bool = False
     bankrupt: bool = False  # True when player defeated
     bankrupt_date: Optional[datetime]
@@ -108,6 +105,10 @@ class Player:
         self.start_dice_throw_received = False
         self.debts = collections.deque()
         self.bankrupt_date = None
+        self.jail_cards = {
+            'chance': False,
+            'community': False
+        }
 
         if bot is True:
             self.online = True
