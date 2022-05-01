@@ -58,13 +58,34 @@ Schema des paquets au démarrage
   :alt: Schema
 
 Schema des paquets début jeu
--------------------------------
+----------------------------
 
 .. image:: ../images/debut_jeu_schema.png
-  :alt: Schema
+  :alt: Schema du début de jeu
 
 Schema des paquets début tour
--------------------------------
+-----------------------------
 
 .. image:: ../images/debut_tour_schema.png
-  :alt: Schema
+  :alt: Schema du début d'un tour
+
+Schema des paquets actions de tour
+----------------------------------
+
+.. image:: ../images/actions_tour_schema.png
+  :alt: Schema des actions de tour
+
+
+Schema des paquets de défaite
+-----------------------------
+
+.. image:: ../images/defaite_schema.png
+  :alt: Schema de la défaite
+
+
+Schema des paquets de connexion
+-------------------------------
+
+.. image:: ../images/connexion_schema.png
+  :alt: Schema de la connexion/déconnexion/reconnexion
+
