@@ -640,7 +640,8 @@ class Game(Thread):
 
         # State is waiting that players connecting and send AppletReady
         if self.state is GameState.WAITING_PLAYERS:
-            if self.board.get_online_players_count() == self.board.players_nb:
+            if self.board.get_online_players_count() == len(
+                    self.board.players):
                 # We can start the game
                 self.start_game()
             elif self.timeout_expired():  # Check timeout
@@ -1243,8 +1244,10 @@ class Game(Thread):
                     reason="auction_pay"
                 )
 
+        bidder = auction.highest_bidder.get_id() if highest_bid > 0 else ""
+
         self.broadcast_packet(AuctionEnd(
-            player_token=auction.highest_bidder.get_id(),
+            player_token=bidder,
             highest_bid=highest_bid,
             remaining_time=auction.tour_remaining_seconds
         ))
