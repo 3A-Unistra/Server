@@ -1250,7 +1250,8 @@ class Game(Thread):
                 )
 
         self.broadcast_packet(AuctionEnd(
-            player_token=auction.highest_bidder.get_id() if highest_bid > 0 else "",
+            player_token=
+            auction.highest_bidder.get_id() if highest_bid > 0 else "",
             highest_bid=highest_bid,
             remaining_time=auction.tour_remaining_seconds
         ))
