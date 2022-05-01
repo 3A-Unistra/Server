@@ -158,6 +158,21 @@ class Engine:
         if self.games[game_token].state == GameState.WAITING_PLAYERS:
             return
 
+        # if checks passed, kick out player
+
+        piece = game.board.get_player(packet.player_token).piece
+        avatar = get_player_avatar(packet.player_token)
+        username = get_player_username(packet.player_token)
+
+        game.send_lobby_packet(channel_name=channel_name,
+                               packet=LeaveRoomSucceed(
+                                   avatar_url=avatar,
+                                   username=username
+                               ))
+
+        game.board.remove_player(
+            game.board.get_player(packet.player_token))
+
         # player leaves game group
         async_to_sync(
             game.channel_layer.group_discard)(game.uid,
@@ -175,18 +190,6 @@ class Engine:
                             player_token=game.host_player.get_id()
                         ), game.uid)
                         break
-
-        # if checks passed, kick out player
-        piece = game.board.get_player(packet.player_token).piece
-        avatar = get_player_avatar(packet.player_token)
-        username = get_player_username(packet.player_token)
-        game.board.remove_player(game.board.get_player(packet.player_token))
-
-        game.send_lobby_packet(channel_name=channel_name,
-                               packet=LeaveRoomSucceed(
-                                   avatar_url=avatar,
-                                   username=username
-                               ))
 
         nb_players = game.board.get_online_real_players_count()
 
@@ -306,8 +309,7 @@ class Engine:
             ))
 
         # adding host to the game group
-        async_to_sync(new_game.channel_layer.group_discard)(group="lobby",
-                                                            channel=
+        async_to_sync(new_game.channel_layer.group_discard)("lobby",
                                                             channel_name)
 
         async_to_sync(new_game.channel_layer.group_add)(group=new_game.uid,
