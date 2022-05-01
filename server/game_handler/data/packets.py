@@ -829,12 +829,14 @@ class ActionExchangeTransfer(PlayerPacket):
             self.transfer_type = 0
 
 
-class ActionAuctionProperty(PlayerPacket):
+class ActionAuctionProperty(PlayerPropertyPacket):
     min_bid: int
 
-    def __init__(self, player_token: str = "", min_bid: int = 0):
+    def __init__(self, player_token: str = "", property_id: int = 0,
+                 min_bid: int = 0):
         super().__init__(self.__class__.__name__,
-                         player_token=player_token)
+                         player_token=player_token,
+                         property_id=property_id)
         self.min_bid = min_bid
 
     def deserialize(self, obj: object):

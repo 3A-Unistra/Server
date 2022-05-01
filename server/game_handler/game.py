@@ -738,6 +738,15 @@ class Game(Thread):
         self.state = GameState.STARTING
         self.set_timeout(seconds=self.CONFIG.get('GAME_STARTING_TIMEOUT'))
 
+        options = {
+            'go_case_double_money': self.board.option_go_case_double_money,
+            'auction_enabled': self.board.option_auction_enabled,
+            'is_private': self.board.option_is_private,
+            'max_rounds': self.board.option_max_rounds,
+            'max_time': self.board.option_max_time,
+            'first_round_buy': self.board.option_first_round_buy
+        }
+
         # set money
         for player in self.board.players:
             player.money = self.board.starting_balance
@@ -764,7 +773,8 @@ class Game(Thread):
             'GAME_END_WAIT': self.CONFIG.get('GAME_END_WAIT')
         }
 
-        self.broadcast_packet(GameStart(players=players, timeouts=timeouts))
+        self.broadcast_packet(
+            GameStart(players=players, options=options, timeouts=timeouts))
 
     def proceed_end_game(self):
         self.broadcast_packet(GameEnd())
@@ -935,6 +945,10 @@ class Game(Thread):
             return
 
         if not isinstance(packet, PlayerPropertyPacket):
+            return
+
+        # No tour actions for ActionAuctionProperty packet
+        if isinstance(packet, ActionAuctionProperty):
             return
 
         # Get player
@@ -1191,6 +1205,7 @@ class Game(Thread):
 
             self.broadcast_packet(ActionAuctionProperty(
                 player_token=player.get_id(),
+                property_id=current_square.id_,
                 min_bid=auction.highest_bid
             ))
             return

@@ -587,7 +587,7 @@ Paquet envoyé *par le client* lorsqu'un joueur souhaite vendre une propriété 
 
 **contenu du paquet :**
  * id du joueur (*player_token*)
- * nature de la propriétés (*property*)
+ * Seulement envoyé par le serveur, id de la propriété mis en enchère (*property_id*)
  * enchère de base (*min_bid*)
 
 Paquet AuctionBid
