@@ -2059,7 +2059,15 @@ class Game(Thread):
             return
 
         if card.action_type is CardActionType.GIVE_BOARD_HOUSES:
-            return
+            houses, hotels = self.board.get_player_buildings_count(player)
+            total = houses * card.action_value + hotels * card.alt
+
+            self.player_balance_pay(player=player,
+                                    receiver=None,
+                                    amount=total,
+                                    reason="card_give_board_houses_send",
+                                    receiver_reason="card_give_board_houses"
+                                                    "_receive")
 
     def process_exchange_transfers(self):
         """
