@@ -153,16 +153,31 @@ class Engine:
         if not isinstance(packet, LeaveRoom):
             return
 
+        # check if player is part of a room
+        if game_token not in self.games:
+            return
+
         game = self.games[game_token]
+
+        if not game.board.player_exists(packet.player_token):
+            return
 
         if self.games[game_token].state == GameState.WAITING_PLAYERS:
             return
 
-        # if checks passed, kick out player
+        # player leaves game group
+        async_to_sync(
+            game.channel_layer.group_discard)(game.uid,
+                                              channel_name)
 
+        # if checks passed, kick out player
         piece = game.board.get_player(packet.player_token).piece
         avatar = get_player_avatar(packet.player_token)
         username = get_player_username(packet.player_token)
+        id_cur_host = game.host_player.get_id()
+        game.board.remove_player(
+            game.board.get_player(packet.player_token)
+        )
 
         game.send_lobby_packet(channel_name=channel_name,
                                packet=LeaveRoomSucceed(
@@ -170,46 +185,36 @@ class Engine:
                                    username=username
                                ))
 
-        game.board.remove_player(
-            game.board.get_player(packet.player_token))
+        nb_players = game.board.get_online_real_players_count()
 
-        # player leaves game group
-        async_to_sync(
-            game.channel_layer.group_discard)(game.uid,
-                                              channel_name)
-
-        if len(game.board.players) > 1 and \
-                packet.player_token == game.host_player.get_id():
+        if nb_players > 0 and packet.player_token == id_cur_host:
 
             for player in game.board.players:
                 if not player.bot:
-                    if player.get_id() != game.host_player.get_id():
+                    if player.get_id() != id_cur_host:
                         game.host_player = player
                         game.host_channel = player.channel_name
                         game.send_packet_to_group(NewHost(
-                            player_token=game.host_player.get_id()
+                            player_token=player.get_id()
                         ), game.uid)
                         break
 
-        nb_players = game.board.get_online_real_players_count()
+        reason = UpdateReason.PLAYER_LEFT
 
-        if nb_players > 0:
-            reason = UpdateReason.PLAYER_LEFT
+        # broadcast updated room status
+        # this should be sent to lobby and to game group
+        update = BroadcastUpdateRoom(game_token=game.uid,
+                                     nb_players=nb_players,
+                                     reason=reason.value,
+                                     player=packet.player_token,
+                                     avatar_url=avatar,
+                                     username=username,
+                                     piece=piece
+                                     )
 
-            # broadcast updated room status
-            # this should be sent to lobby and to game group
-            update = BroadcastUpdateRoom(game_token=game.uid,
-                                         nb_players=nb_players,
-                                         reason=reason.value,
-                                         player=packet.player_token,
-                                         avatar_url=avatar,
-                                         username=username,
-                                         piece=piece
-                                         )
+        game.send_packet_to_group(update, game.uid)
 
-            game.send_packet_to_group(update, game.uid)
-
-        else:
+        if nb_players == 0:
             # Delete room
             self.remove_game(game_token)
             reason = UpdateReason.ROOM_DELETED
@@ -218,12 +223,12 @@ class Engine:
                                       reason=reason.value)
         game.send_packet_to_group(update, "lobby")
 
-        # because the player left, he has to get the status of all the rooms
-        self.send_all_lobby_status(channel_name=channel_name)
-
         # add player to the lobby group
         async_to_sync(
             game.channel_layer.group_add)("lobby", channel_name)
+
+        # because the player left, he has to get the status of all the rooms
+        self.send_all_lobby_status(channel_name=channel_name)
 
     def create_game(self, packet: Packet, channel_name: str):
         """
@@ -285,15 +290,13 @@ class Engine:
                                        game_token=new_game.uid,
                                        player_token=packet.player_token,
                                        piece=piece,
-                                       avatar_url=get_player_avatar(
-                                           packet.player_token),
-                                       username=get_player_username(
-                                           packet.player_token)))
+                                       avatar_url=player.user.avatar,
+                                       username=player.user.name))
 
         player_data = {
             "player_token": packet.player_token,
-            "username": get_player_username(packet.player_token),
-            "avatar_url": get_player_avatar(packet.player_token),
+            "username": player.user.name,
+            "avatar_url": player.user.avatar,
             "piece": piece
         }
 
@@ -371,10 +374,8 @@ class Engine:
             if friend_token in self.connected_players:
                 # sending to player that his friend is connected
                 packet = FriendConnected(friend_token=friend_token,
-                                         username=get_player_username(
-                                             friend_token),
-                                         avatar_url=get_player_avatar(
-                                             friend_token)
+                                         username=friend.name,
+                                         avatar_url=friend.avatar
                                          )
 
                 async_to_sync(self.channel_layer.send)(
