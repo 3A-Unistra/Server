@@ -225,6 +225,7 @@ class Game(Thread):
             # all the checks are fine, add the player to the game
             p = Player(user=user, channel_name=queue_packet.channel_name,
                        bot=False)
+            p.online = True
             self.board.add_player(p)
 
             # player leaves lobby group
