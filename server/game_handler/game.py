@@ -1,4 +1,5 @@
 import math
+import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import time
@@ -889,10 +890,18 @@ class Game(Thread):
         current_player = self.board.get_current_player()
         current_player.roll_dices()
 
+        # Accept new auction
+        self.board.round_auction_done = False
+
         # TODO : AI should randomly do some actions
         # Check if player is in prison -> random between :
         # -> buy if he can or trie to dice
         # maybe execute AI random timeouts.
+        round_dice_choice_wait = self.CONFIG.get('ROUND_DICE_CHOICE_WAIT')
+
+        # Bot only waits 5 to 15 seconds
+        if current_player.bot:
+            round_dice_choice_wait = random.randint(5, 15)
 
         # broadcast packet to all players
         packet = RoundStart(current_player=current_player.get_id())
@@ -900,7 +909,7 @@ class Game(Thread):
 
         # set timeout for dice choice wait
         self.state = GameState.ROUND_DICE_CHOICE_WAIT
-        self.set_timeout(seconds=self.CONFIG.get('ROUND_DICE_CHOICE_WAIT'))
+        self.set_timeout(seconds=round_dice_choice_wait)
 
     def proceed_action_tour_end(self):
         """
@@ -1150,6 +1159,10 @@ class Game(Thread):
         if not self.board.option_auction_enabled:
             return
 
+        # Player has already started one action this round
+        if self.board.round_auction_done:
+            return
+
         player = self.board.get_player(packet.player_token)
         auction: Optional[Auction] = self.board.current_auction
 
@@ -1245,6 +1258,8 @@ class Game(Thread):
             remaining_time=auction.tour_remaining_seconds
         ))
 
+        # Only accept a new auction next round!
+        self.board.round_auction_done = True
         self.board.current_auction = None
 
         # If current_player is disconnected, end tour
