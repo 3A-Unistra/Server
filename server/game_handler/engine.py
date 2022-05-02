@@ -154,11 +154,13 @@ class Engine:
             return
 
         # check if player is part of a room
-        if not self.player_exists(packet.player_token):
-            # ignore
+        if game_token not in self.games:
             return
 
         game = self.games[game_token]
+
+        if not game.board.player_exists(packet.player_token):
+            return
 
         if self.games[game_token].state == GameState.WAITING_PLAYERS:
             return
@@ -186,7 +188,8 @@ class Engine:
         avatar = get_player_avatar(packet.player_token)
         username = get_player_username(packet.player_token)
         game.board.remove_player(
-        game.board.get_player(packet.player_token))
+            game.board.get_player(packet.player_token)
+        )
 
         game.send_lobby_packet(channel_name=channel_name,
                                packet=LeaveRoomSucceed(
