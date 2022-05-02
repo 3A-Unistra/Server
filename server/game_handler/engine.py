@@ -186,7 +186,8 @@ class Engine:
         avatar = get_player_avatar(packet.player_token)
         username = get_player_username(packet.player_token)
         game.board.remove_player(
-        game.board.get_player(packet.player_token))
+            game.board.get_player(packet.player_token)
+        )
 
         game.send_lobby_packet(channel_name=channel_name,
                                packet=LeaveRoomSucceed(
