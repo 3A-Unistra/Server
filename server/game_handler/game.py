@@ -38,8 +38,6 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
     ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot, \
     GameWin, GameEnd, AddBotSucceed, DeleteBotSucceed
-from server.game_handler.data.player import get_player_avatar, \
-    get_player_username
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -224,9 +222,9 @@ class Game(Thread):
                 return
 
             # all the checks are fine, add the player to the game
-            self.board.add_player(
-                Player(user=user, channel_name=queue_packet.channel_name,
-                       bot=False))
+            p = Player(user=user, channel_name=queue_packet.channel_name,
+                       bot=False)
+            self.board.add_player(p)
 
             # player leaves lobby group
             async_to_sync(self.channel_layer.group_discard)(
@@ -241,10 +239,8 @@ class Game(Thread):
                 channel_name=queue_packet.channel_name,
                 packet=EnterRoomSucceed(game_token=self.uid,
                                         piece=piece,
-                                        avatar_url=get_player_avatar(
-                                            packet.player_token),
-                                        username=get_player_username(
-                                            packet.player_token)
+                                        avatar_url=p.user.avatar,
+                                        username=p.user.name
                                         )
             )
 
@@ -254,10 +250,8 @@ class Game(Thread):
                                          nb_players=nb_players,
                                          reason=reason,
                                          player=packet.player_token,
-                                         avatar_url=get_player_avatar(
-                                             packet.player_token),
-                                         username=get_player_username(
-                                             packet.player_token),
+                                         avatar_url=p.user.avatar,
+                                         username=p.user.name,
                                          piece=self.board.
                                          get_player(packet.player_token).piece
                                          )
@@ -274,8 +268,8 @@ class Game(Thread):
             for player in self.board.players:
                 players_data.append({
                     "player_token": player.get_id(),
-                    "username": get_player_username(player.get_id()),
-                    "avatar_url": get_player_avatar(player.get_id()),
+                    "username": player.user.name,
+                    "avatar_url": player.user.avatar,
                     "piece": player.piece
                 })
 
@@ -350,8 +344,8 @@ class Game(Thread):
                 for player in self.board.players:
                     players_data.append({
                         "player_token": player.get_id(),
-                        "username": get_player_username(player.get_id()),
-                        "avatar_url": get_player_avatar(player.get_id()),
+                        "username": player.user.name,
+                        "avatar_url": player.user.avatar,
                         "piece": player.piece
                     })
 
