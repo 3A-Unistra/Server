@@ -890,6 +890,9 @@ class Game(Thread):
         current_player = self.board.get_current_player()
         current_player.roll_dices()
 
+        # Accept new auction
+        self.board.round_auction_done = False
+
         # TODO : AI should randomly do some actions
         # Check if player is in prison -> random between :
         # -> buy if he can or trie to dice
@@ -1156,6 +1159,10 @@ class Game(Thread):
         if not self.board.option_auction_enabled:
             return
 
+        # Player has already started one action this round
+        if self.board.round_auction_done:
+            return
+
         player = self.board.get_player(packet.player_token)
         auction: Optional[Auction] = self.board.current_auction
 
@@ -1251,6 +1258,8 @@ class Game(Thread):
             remaining_time=auction.tour_remaining_seconds
         ))
 
+        # Only accept a new auction next round!
+        self.board.round_auction_done = True
         self.board.current_auction = None
 
         # If current_player is disconnected, end tour

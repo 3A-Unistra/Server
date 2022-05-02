@@ -32,6 +32,7 @@ class Board:
     starting_balance: int
     current_exchange: Optional[Exchange]
     current_auction: Optional[Auction]
+    round_auction_done: bool
 
     # Options
     option_go_case_double_money: bool
@@ -90,6 +91,7 @@ class Board:
             nb_house=self.CONFIG.get('BANK_HOUSES_COUNT'),
             nb_hotel=self.CONFIG.get('BANK_HOTELS_COUNT')
         )
+        self.round_auction_done = False
         self.search_square_indexes()
         self.search_card_indexes()
 
