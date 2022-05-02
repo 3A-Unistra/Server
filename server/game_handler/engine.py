@@ -187,8 +187,7 @@ class Engine:
 
         nb_players = game.board.get_online_real_players_count()
 
-        if nb_players > 0 and packet.player_token == id_cur_host:
-
+        if packet.player_token == id_cur_host:
             for player in game.board.players:
                 if not player.bot:
                     if player.get_id() != id_cur_host:
@@ -222,6 +221,7 @@ class Engine:
         update = BroadcastUpdateLobby(game_token=game.uid,
                                       reason=reason.value)
         game.send_packet_to_group(update, "lobby")
+        print("[leave_game] sent updatelobby")
 
         # add player to the lobby group
         async_to_sync(
