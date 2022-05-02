@@ -385,6 +385,7 @@ Notifie les clients qu'une nouvelle manche démarre.
 
 **contenu du paquet :**
  * identifiant du joueur qui joue. (*current_player*)
+ * si possible d'acheter une propriété (*can_buy_property*)
 
 RoundDiceResults
 ^^^^^^^^^^^^^^^^

@@ -59,7 +59,8 @@ class TestPacket(TestCase):
             '{"name": "GameStartDiceThrow", ' \
             '"player_token": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d"}'
         self.json_RoundStart = \
-            '{"current_player": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d", ' \
+            '{"can_buy_property": true, ' \
+            '"current_player": "23b3a6c7-6990-44b1-b466-8f8c3da5ec7d", ' \
             '"name": "RoundStart"}'
         self.json_RoundDiceChoice = \
             '{"choice": 0, "name": "RoundDiceChoice", ' \
@@ -316,6 +317,7 @@ class TestPacket(TestCase):
         assert isinstance(packet, RoundStart)
         assert packet.name == 'RoundStart'
         assert packet.current_player == '23b3a6c7-6990-44b1-b466-8f8c3da5ec7d'
+        assert packet.can_buy_property
 
     def test_serialize_RoundDiceChoice(self):
         packet = RoundDiceChoice(
