@@ -187,8 +187,7 @@ class Engine:
 
         nb_players = game.board.get_online_real_players_count()
 
-        if nb_players > 0 and packet.player_token == id_cur_host:
-
+        if packet.player_token == id_cur_host:
             for player in game.board.players:
                 if not player.bot:
                     if player.get_id() != id_cur_host:
