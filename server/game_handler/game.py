@@ -1110,7 +1110,7 @@ class Game(Thread):
                 return
 
             # Cannot sell a house if square has no houses
-            if square.nb_house > 0:
+            if square.nb_house == 0:
                 return
 
             # True = hotel, False = house

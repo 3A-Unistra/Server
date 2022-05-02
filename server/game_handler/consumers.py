@@ -84,10 +84,13 @@ class PlayerConsumer(AsyncJsonWebsocketConsumer):
         if not self.valid:
             return
 
+        print("Received: %s" % content)
+
         try:
             packet = PacketUtils.deserialize_packet(content)
         except PacketException:
             # send error packet (or ignore)
+            print("packet %s could not be deserialized" % content)
             return
 
         # Internal packets are not accepted
