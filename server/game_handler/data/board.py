@@ -240,9 +240,10 @@ class Board:
 
         # update remaining round players
         self.remaining_round_players -= 1
+        players_size = len(self.players)
 
-        while i < self.players_nb:
-            curr_idx = (curr_idx + 1) % self.players_nb
+        while i < players_size:
+            curr_idx = (curr_idx + 1) % players_size
 
             if not self.players[curr_idx].bankrupt:
                 self.current_player_index = curr_idx
