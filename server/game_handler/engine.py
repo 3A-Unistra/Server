@@ -199,21 +199,20 @@ class Engine:
                         ), game.uid)
                         break
 
-        if nb_players > 0:
-            reason = UpdateReason.PLAYER_LEFT
+        reason = UpdateReason.PLAYER_LEFT
 
-            # broadcast updated room status
-            # this should be sent to lobby and to game group
-            update = BroadcastUpdateRoom(game_token=game.uid,
-                                         nb_players=nb_players,
-                                         reason=reason.value,
-                                         player=packet.player_token,
-                                         avatar_url=avatar,
-                                         username=username,
-                                         piece=piece
-                                         )
+        # broadcast updated room status
+        # this should be sent to lobby and to game group
+        update = BroadcastUpdateRoom(game_token=game.uid,
+                                     nb_players=nb_players,
+                                     reason=reason.value,
+                                     player=packet.player_token,
+                                     avatar_url=avatar,
+                                     username=username,
+                                     piece=piece
+                                     )
 
-            game.send_packet_to_group(update, game.uid)
+        game.send_packet_to_group(update, game.uid)
 
         else:
             # Delete room
