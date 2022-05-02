@@ -170,23 +170,11 @@ class Engine:
             game.channel_layer.group_discard)(game.uid,
                                               channel_name)
 
-        if len(game.board.players) > 1 and \
-                packet.player_token == game.host_player.get_id():
-
-            for player in game.board.players:
-                if not player.bot:
-                    if player.get_id() != game.host_player.get_id():
-                        game.host_player = player
-                        game.host_channel = player.channel_name
-                        game.send_packet_to_group(NewHost(
-                            player_token=game.host_player.get_id()
-                        ), game.uid)
-                        break
-
         # if checks passed, kick out player
         piece = game.board.get_player(packet.player_token).piece
         avatar = get_player_avatar(packet.player_token)
         username = get_player_username(packet.player_token)
+        id_cur_host = game.host_player.get_id()
         game.board.remove_player(
             game.board.get_player(packet.player_token)
         )
@@ -199,23 +187,34 @@ class Engine:
 
         nb_players = game.board.get_online_real_players_count()
 
-        if nb_players > 0:
-            reason = UpdateReason.PLAYER_LEFT
+        if nb_players > 0 and packet.player_token == id_cur_host:
 
-            # broadcast updated room status
-            # this should be sent to lobby and to game group
-            update = BroadcastUpdateRoom(game_token=game.uid,
-                                         nb_players=nb_players,
-                                         reason=reason.value,
-                                         player=packet.player_token,
-                                         avatar_url=avatar,
-                                         username=username,
-                                         piece=piece
-                                         )
+            for player in game.board.players:
+                if not player.bot:
+                    if player.get_id() != id_cur_host:
+                        game.host_player = player
+                        game.host_channel = player.channel_name
+                        game.send_packet_to_group(NewHost(
+                            player_token=player.get_id()
+                        ), game.uid)
+                        break
 
-            game.send_packet_to_group(update, game.uid)
+        reason = UpdateReason.PLAYER_LEFT
 
-        else:
+        # broadcast updated room status
+        # this should be sent to lobby and to game group
+        update = BroadcastUpdateRoom(game_token=game.uid,
+                                     nb_players=nb_players,
+                                     reason=reason.value,
+                                     player=packet.player_token,
+                                     avatar_url=avatar,
+                                     username=username,
+                                     piece=piece
+                                     )
+
+        game.send_packet_to_group(update, game.uid)
+
+        if nb_players == 0:
             # Delete room
             self.remove_game(game_token)
             reason = UpdateReason.ROOM_DELETED
@@ -224,12 +223,12 @@ class Engine:
                                       reason=reason.value)
         game.send_packet_to_group(update, "lobby")
 
-        # because the player left, he has to get the status of all the rooms
-        self.send_all_lobby_status(channel_name=channel_name)
-
         # add player to the lobby group
         async_to_sync(
             game.channel_layer.group_add)("lobby", channel_name)
+
+        # because the player left, he has to get the status of all the rooms
+        self.send_all_lobby_status(channel_name=channel_name)
 
     def create_game(self, packet: Packet, channel_name: str):
         """
