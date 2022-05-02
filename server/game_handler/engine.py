@@ -154,8 +154,7 @@ class Engine:
             return
 
         # check if player is part of a room
-        if not self.player_exists(packet.player_token):
-            # ignore
+        if not game_token in self.games:
             return
 
         game = self.games[game_token]
