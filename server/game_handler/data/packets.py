@@ -541,14 +541,18 @@ class GameStartDiceResults(Packet):
 
 class RoundStart(Packet):
     current_player: str
+    can_buy_property: bool
 
-    def __init__(self, current_player: str = ""):
+    def __init__(self, current_player: str = "",
+                 can_buy_property: bool = True):
         super().__init__(self.__class__.__name__)
         self.current_player = current_player
+        self.can_buy_property = can_buy_property
 
     def deserialize(self, obj: object):
         self.current_player = obj["current_player"] \
             if "current_player" in obj else ""
+        self.can_buy_property = convert_to_bool(obj, "can_buy_property")
 
 
 class RoundDiceChoiceResult(Enum):

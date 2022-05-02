@@ -903,9 +903,14 @@ class Game(Thread):
         if current_player.bot:
             round_dice_choice_wait = random.randint(5, 15)
 
+        can_buy = \
+            self.board.option_first_round_buy or self.board.current_round != 0
+
         # broadcast packet to all players
-        packet = RoundStart(current_player=current_player.get_id())
-        self.broadcast_packet(packet)
+        self.broadcast_packet(RoundStart(
+            current_player=current_player.get_id(),
+            can_buy_property=can_buy
+        ))
 
         # set timeout for dice choice wait
         self.state = GameState.ROUND_DICE_CHOICE_WAIT
