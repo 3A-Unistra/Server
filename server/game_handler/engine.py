@@ -214,7 +214,7 @@ class Engine:
 
         game.send_packet_to_group(update, game.uid)
 
-        else:
+        if nb_players == 0:
             # Delete room
             self.remove_game(game_token)
             reason = UpdateReason.ROOM_DELETED
