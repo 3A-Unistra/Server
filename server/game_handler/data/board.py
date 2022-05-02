@@ -426,11 +426,15 @@ class Board:
         return self.draw_random_card(self.community_deck)
 
     def use_chance_jail_card(self, player: Player):
+        if not player.jail_cards['chance']:
+            return
         player.jail_cards['chance'] = False
         self.chance_deck[
             self.chance_card_indexes['leave_jail']].available = True
 
     def use_community_jail_card(self, player: Player):
+        if not player.jail_cards['community']:
+            return
         player.jail_cards['community'] = False
         self.community_deck[
             self.community_card_indexes['leave_jail']].available = True

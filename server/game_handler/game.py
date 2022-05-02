@@ -1578,6 +1578,14 @@ class Game(Thread):
 
         current_player.bankrupt = True
 
+        # Reset all owned squares
+        for square in self.board.get_owned_squares(current_player):
+            square.owner = None
+
+        # Reset cards
+        self.board.use_chance_jail_card(current_player)
+        self.board.use_community_jail_card(current_player)
+
         # Send PlayerDefeat
         self.broadcast_packet(PlayerDefeat(
             player_token=current_player.get_id()
