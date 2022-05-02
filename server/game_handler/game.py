@@ -1990,7 +1990,7 @@ class Game(Thread):
         if card.action_type is CardActionType.GIVE_ALL:
             # Give money to all players
             for receiver in self.board.players:
-                if receiver == player:
+                if receiver == player or receiver.bankrupt:
                     continue
                 self.player_balance_pay(player=player,
                                         receiver=receiver,
@@ -2003,7 +2003,7 @@ class Game(Thread):
         if card.action_type is CardActionType.RECEIVE_ALL:
             # Receive money from all players
             for sender in self.board.players:
-                if sender == player:
+                if sender == player or sender.bankrupt:
                     continue
 
                 self.player_balance_pay(player=sender,
