@@ -160,6 +160,9 @@ class Engine:
 
         game = self.games[game_token]
 
+        if not game.board.player_exists(packet.player_token):
+            return
+
         if self.games[game_token].state == GameState.WAITING_PLAYERS:
             return
 
