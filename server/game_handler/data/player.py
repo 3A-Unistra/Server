@@ -108,6 +108,7 @@ class Player:
             'chance': False,
             'community': False
         }
+        self.online = True
 
         if bot is True:
             self.online = True

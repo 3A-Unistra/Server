@@ -232,11 +232,14 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
         await self.accept()
 
     async def receive_json(self, content, **kwargs):
+
         try:
             packet = PacketUtils.deserialize_packet(content)
         except PacketException:
             # send error packet (or ignore)
             return
+
+        print("[ CONSUMER : RECEIVED ] : " + packet.serialize())
 
         if isinstance(packet, InternalPacket):
             return
@@ -304,6 +307,8 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
 
         # Send packet to front/cli
         await self.send(packet.serialize())
+
+        print("[ CONSUMER : SENT ] : " + packet.serialize())
 
     async def send_lobby_packet(self, content):
         packet = content.get('packet', None)

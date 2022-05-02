@@ -221,6 +221,7 @@ class Engine:
         update = BroadcastUpdateLobby(game_token=game.uid,
                                       reason=reason.value)
         game.send_packet_to_group(update, "lobby")
+        print("[leave_game] sent updatelobby")
 
         # add player to the lobby group
         async_to_sync(
