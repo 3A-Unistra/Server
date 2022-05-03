@@ -225,7 +225,6 @@ class Game(Thread):
             # all the checks are fine, add the player to the game
             p = Player(user=user, channel_name=queue_packet.channel_name,
                        bot=False)
-            p.online = True
             self.board.add_player(p)
 
             # player leaves lobby group
@@ -2251,6 +2250,11 @@ class Game(Thread):
 
         # Player has enough money, no debt must be created
         if player.money >= amount:
+            print("player_balance_pay(%s) to (%s) player.money (%d) >= amount"
+                  " (%d)"
+                  % (player.get_name(),
+                     receiver.get_name() if receiver is not None else "Bank",
+                     player.money, amount))
             self.player_balance_update(player=player,
                                        new_balance=player.money - amount,
                                        reason=reason)
@@ -2268,6 +2272,9 @@ class Game(Thread):
         temp_amount = 0
 
         if receiver is not None and receiver.has_debts():
+            print("player_balance_pay(%s) to (%s) receiver.has_debts()"
+                  % (player.get_name(),
+                     receiver.get_name() if receiver is not None else "Bank"))
             for debt in receiver.debts.copy():
                 if amount == 0:
                     break
