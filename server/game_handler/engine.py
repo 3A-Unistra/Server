@@ -165,8 +165,6 @@ class Engine:
         player = game.board.get_player(packet.player_token)
 
         if game.state == GameState.WAITING_PLAYERS:
-            # GameState is WaitingPlayers, so set them offline
-            # TODO: player.online = False
             return
 
         # player leaves game group
