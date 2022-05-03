@@ -9,7 +9,6 @@ from server.game_handler.engine import Game
 # overwrite broadcast_packet method
 from server.game_handler.models import User
 
-
 def new_broadcast_packet(self, packet: Packet):
     pass
 
@@ -20,6 +19,18 @@ def game_instance_overwrited() -> Game:
     game.broadcast_packet = new_broadcast_packet.__get__(game, Game)
 
     return game
+
+
+# Debt system variables
+debt_game = Game()
+packets = []
+
+
+def new_debt_broadcast_packet(self, packet: Packet):
+    packets.append(packet)
+
+
+debt_game.broadcast_packet = new_debt_broadcast_packet.__get__(debt_game, Game)
 
 
 class TestPacket(TestCase):
@@ -235,3 +246,26 @@ class TestPacket(TestCase):
 
         assert player1.jail_cards['community']
         assert not card.available
+
+    def test_debt_system(self):
+        maxime = Player(bot=False,
+                        user=User(id="183e1f5e-3411-44c5-9bc5-037358c47100",
+                                  name="maxime"))
+        finn = Player(bot=False,
+                      user=User(id="523e1f5e-3411-44c5-9bc5-037358c47100",
+                                name="finn"))
+        rayan = Player(bot=False,
+                       user=User(id="612e1f5e-3411-44c5-9bc5-037358c47100",
+                                 name="rayan"))
+
+        debt_game.board.add_player(maxime)
+        debt_game.board.add_player(finn)
+        debt_game.board.add_player(rayan)
+
+        # Clear packets to check
+        packets.clear()
+
+        # Player 1 is Maxime's case
+        # 350€ debt
+        # maxime.add_debt(player2)
+        pass

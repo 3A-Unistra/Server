@@ -2353,6 +2353,9 @@ class Game(Thread):
         if amount == 0:
             return
 
+        # Old balance (with debts)
+        old_balance = player.get_money()
+
         # Check if player has some debts.
         if player.has_debts():
             updates = []
@@ -2403,6 +2406,17 @@ class Game(Thread):
                     amount=send_amount,
                     reason="debt_payment"
                 )
+
+            new_balance = player.get_money()
+
+            if old_balance != new_balance:
+                # Send update balance to client
+                self.broadcast_packet(PlayerUpdateBalance(
+                    player_token=player.get_id(),
+                    old_balance=old_balance,
+                    new_balance=new_balance,
+                    reason="debt_"
+                ))
 
         if amount == 0:
             # if amount is 0, then all debts that the player, were bigger than

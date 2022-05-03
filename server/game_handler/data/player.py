@@ -222,6 +222,12 @@ class Player:
 
         return score
 
+    def get_money(self) -> int:
+        """
+        :return: Get Money (with debts)
+        """
+        return -self.get_total_debts() if self.has_debts() else self.money
+
     def get_id(self) -> str:
         """
         :return: Public_id if bot is a "real" bot, otherwise user.id
