@@ -1164,6 +1164,11 @@ class Game(Thread):
         if not self.board.option_auction_enabled:
             return
 
+        # No auction before 2nd round
+        if not self.board.option_first_round_buy and \
+                self.board.current_round == 0:
+            return
+
         # Player has already started one action this round
         if self.board.round_auction_done:
             return
