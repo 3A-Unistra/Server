@@ -154,7 +154,7 @@ class EnterRoom(PlayerLobbyPacket):
     password: str
     username: str
 
-    def __init__(self, game_token: str = "",
+    def __init__(self, player_token: str = "", game_token: str = "",
                  password: str = "", username: str = ""):
         super().__init__(self.__class__.__name__, player_token=player_token)
         self.game_token = game_token
@@ -165,7 +165,7 @@ class EnterRoom(PlayerLobbyPacket):
         super().deserialize(obj)
         self.game_token = obj["game_token"] if "game_token" in obj else ""
         self.password = obj["password"] if "password" in obj else ""
-        self.username = obj['username'] if 'username' in obj else ""
+        self.username = obj["username"] if "username" in obj else ""
 
 
 class LaunchGame(PlayerLobbyPacket):
@@ -208,7 +208,7 @@ class EnterRoomSucceed(LobbyPacket):
         self.game_token = obj["game_token"] if "game_token" in obj else ""
         self.avatar_url = obj["avatar_url"] if "avatar_url" in obj else ""
         self.username = obj["username"] if "username" in obj else ""
-        self.host_token = obj['host_token'] if 'host_token' in obj else ""
+        self.host_token = obj["host_token"] if "host_token" in obj else ""
 
 
 class LeaveRoom(LobbyPacket):
@@ -1006,7 +1006,7 @@ class CreateGame(LobbyPacket):
         self.option_max_rounds = convert_to_int(obj, "option_max_rounds")
         self.option_first_round_buy = \
             convert_to_bool(obj, "option_first_round_buy")
-        self.username = obj['username'] if 'username' in obj else ""
+        self.username = obj["username"] if "username" in obj else ""
 
 
 class CreateGameSucceed(LobbyPacket):
