@@ -307,6 +307,12 @@ class Board:
         return sum(1 for player in self.players if (
                 player.online and not player.bot))
 
+    def get_real_players_count(self) -> int:
+        """
+        Counts real players, bots are excluded
+        """
+        return sum(1 for player in self.players if not player.bot)
+
     def get_offline_players(self) -> List[Player]:
         """
         :return: Offline players (bots that are not connected)

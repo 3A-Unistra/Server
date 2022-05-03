@@ -162,7 +162,9 @@ class Engine:
         if not game.board.player_exists(packet.player_token):
             return
 
-        if self.games[game_token].state == GameState.WAITING_PLAYERS:
+        player = game.board.get_player(packet.player_token)
+
+        if game.state == GameState.WAITING_PLAYERS:
             return
 
         # player leaves game group
@@ -171,37 +173,32 @@ class Engine:
                                               channel_name)
 
         # if checks passed, kick out player
-        piece = game.board.get_player(packet.player_token).piece
-        avatar = get_player_avatar(packet.player_token)
-        username = get_player_username(packet.player_token)
-        id_cur_host = game.host_player.get_id()
-        game.board.remove_player(
-            game.board.get_player(packet.player_token)
-        )
+        piece = player.piece
+        avatar = player.user.avatar
+        username = player.user.name
+        game.board.remove_player(player)
 
         game.send_lobby_packet(channel_name=channel_name,
-                               packet=LeaveRoomSucceed(
-                                   avatar_url=avatar,
-                                   username=username
-                               ))
+                               packet=LeaveRoomSucceed())
 
-        nb_players = game.board.get_online_real_players_count()
+        nb_players = game.board.get_real_players_count()
 
-        if packet.player_token == id_cur_host:
-            for player in game.board.players:
-                if not player.bot:
-                    if player.get_id() != id_cur_host:
-                        game.host_player = player
-                        game.host_channel = player.channel_name
-                        game.send_packet_to_group(NewHost(
-                            player_token=player.get_id()
-                        ), game.uid)
-                        break
+        if player == game.host_player:
+            for _player in game.board.players:
+                if _player.bot:
+                    continue
+                game.host_player = _player
+                game.send_packet_to_group(NewHost(_player.get_id()), game.uid)
+                break
 
         reason = UpdateReason.PLAYER_LEFT
 
         # broadcast updated room status
         # this should be sent to lobby and to game group
+
+        # TODO: beaucoup de valeurs inutiles ici ?
+        # Genre ca sert a rien d'envoyer la plus part des données
+        # on peut les laisser par defaut
         update = BroadcastUpdateRoom(game_token=game.uid,
                                      nb_players=nb_players,
                                      reason=reason.value,

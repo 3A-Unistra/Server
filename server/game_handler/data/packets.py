@@ -220,17 +220,8 @@ class LeaveRoom(LobbyPacket):
 
 
 class LeaveRoomSucceed(LobbyPacket):
-    avatar_url: str
-    username: str
-
-    def __init__(self, avatar_url: str = "", username: str = ""):
+    def __init__(self):
         super().__init__("LeaveRoomSucceed")
-        self.avatar_url = avatar_url
-        self.username = username
-
-    def deserialize(self, obj: object):
-        self.avatar_url = obj["avatar_url"] if "avatar_url" in obj else ""
-        self.username = obj["username"] if "username" in obj else ""
 
 
 class UpdateReason(Enum):
