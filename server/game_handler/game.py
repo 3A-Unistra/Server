@@ -2409,13 +2409,13 @@ class Game(Thread):
 
             new_balance = player.get_money()
 
-            if old_balance != new_balance:
+            if old_balance != new_balance and new_balance < 0:
                 # Send update balance to client
                 self.broadcast_packet(PlayerUpdateBalance(
                     player_token=player.get_id(),
                     old_balance=old_balance,
                     new_balance=new_balance,
-                    reason="debt_"
+                    reason="debt_pay"
                 ))
 
         if amount == 0:
