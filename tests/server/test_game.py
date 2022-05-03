@@ -11,6 +11,7 @@ from server.game_handler.engine import Game
 # overwrite broadcast_packet method
 from server.game_handler.models import User
 
+
 def new_broadcast_packet(self, packet: Packet):
     pass
 

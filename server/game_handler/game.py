@@ -38,7 +38,7 @@ from server.game_handler.data.packets import PlayerPacket, Packet, \
     ExchangeTradeSelectType, ActionExchangeTransfer, ExchangeTransferType, \
     ActionExchangeCancel, ActionAuctionProperty, AuctionBid, AuctionEnd, \
     ActionStart, PlayerDefeat, ChatPacket, PlayerReconnect, DeleteBot, \
-    GameWin, GameEnd, AddBotSucceed, DeleteBotSucceed
+    GameWin, GameEnd, AddBotSucceed, DeleteBotSucceed, PlayerUpdateProperty
 
 from server.game_handler.models import User
 from django.conf import settings
@@ -535,6 +535,22 @@ class Game(Thread):
                 # if the message is too long
                 if len(packet.message) <= 128:
                     self.broadcast_packet(packet)
+                return
+
+            if isinstance(packet, PlayerUpdateProperty):
+
+                if packet.property_id < 0 or packet.property_id > 2:
+                    return
+
+                if packet.property_id in self.board.property_list:
+                    return
+
+                self.board.property_list.append(packet.property_id)
+
+                self.broadcast_packet(PlayerUpdateProperty(
+                    player_token=packet.player_token,
+                    property_id=packet.property_id
+                ))
                 return
 
         if self.state is GameState.START_DICE:
