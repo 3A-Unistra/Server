@@ -297,6 +297,8 @@ class Engine:
             "piece": piece
         }
 
+        double_on_start = new_game.board.option_go_case_double_money
+
         new_game.send_lobby_packet(
             channel_name=channel_name,
             packet=StatusRoom(
@@ -305,11 +307,11 @@ class Engine:
                 nb_players=1,
                 max_nb_players=new_game.board.players_nb,
                 players_data=[player_data],
-                option_auction=False,
-                option_double_on_start=False,
+                option_auction=new_game.board.option_auction_enabled,
+                option_double_on_start=double_on_start,
                 option_max_time=new_game.board.option_max_time,
                 option_max_rounds=new_game.board.option_max_rounds,
-                option_first_round_buy=False,
+                option_first_round_buy=new_game.board.option_first_round_buy,
                 starting_balance=new_game.board.starting_balance
             ))
 
