@@ -1164,6 +1164,11 @@ class Game(Thread):
         if not self.board.option_auction_enabled:
             return
 
+        # No auction before 2nd round
+        if not self.board.option_first_round_buy and \
+                self.board.current_round == 0:
+            return
+
         # Player has already started one action this round
         if self.board.round_auction_done:
             return
@@ -2453,11 +2458,10 @@ class Game(Thread):
 
     def send_lobby_packet(self, channel_name: str, packet: Packet):
         """
-                Send packet to lobby channel layer
-
-                :param channel_name: Channel to send packet to
-                :param packet: Packet to send
-                """
+        Send packet to lobby channel layer
+        :param channel_name: Channel to send packet to
+        :param packet: Packet to send
+        """
         if channel_name is None:
             return
 
