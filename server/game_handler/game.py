@@ -1359,6 +1359,10 @@ class Game(Thread):
             if selected is None:
                 return
 
+            # Not working with bankrupted players
+            if selected.bankrupt:
+                return
+
             exchange.selected_player = selected
 
             self.broadcast_packet(ActionExchangePlayerSelect(
