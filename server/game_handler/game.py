@@ -112,6 +112,8 @@ class Game(Thread):
     games: {}
     host_player: Player
 
+    offline: bool
+
     def __init__(self, **kwargs):
         self.uid = str(uuid.uuid4())
         super().__init__(daemon=True, name="Game_%s" % self.uid, **kwargs)
@@ -122,6 +124,7 @@ class Game(Thread):
         self.tick_duration = 1.0 / self.CONFIG.get('TICK_RATE')
         self.board = Board()
         self.timeout = datetime.now()
+        self.offline = getattr(settings, "SERVER_OFFLINE", True)
 
     def run(self) -> None:
         # Starting game thread
@@ -225,6 +228,11 @@ class Game(Thread):
             # all the checks are fine, add the player to the game
             p = Player(user=user, channel_name=queue_packet.channel_name,
                        bot=False)
+
+            if self.offline:
+                if packet.username != "" and len(packet.username) < 32:
+                    p.user.name = packet.username
+
             self.board.add_player(p)
 
             # player leaves lobby group

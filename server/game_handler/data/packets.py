@@ -152,17 +152,20 @@ class PlayerLobbyPacket(PlayerPacket, LobbyPacket):
 class EnterRoom(PlayerLobbyPacket):
     game_token: str
     password: str
+    username: str
 
     def __init__(self, player_token: str = "", game_token: str = "",
-                 password: str = ""):
+                 password: str = "", username: str = ""):
         super().__init__(self.__class__.__name__, player_token=player_token)
         self.game_token = game_token
         self.password = password
+        self.username = username
 
     def deserialize(self, obj: object):
         super().deserialize(obj)
         self.game_token = obj["game_token"] if "game_token" in obj else ""
         self.password = obj["password"] if "password" in obj else ""
+        self.username = obj["username"] if "username" in obj else ""
 
 
 class LaunchGame(PlayerLobbyPacket):
@@ -205,7 +208,7 @@ class EnterRoomSucceed(LobbyPacket):
         self.game_token = obj["game_token"] if "game_token" in obj else ""
         self.avatar_url = obj["avatar_url"] if "avatar_url" in obj else ""
         self.username = obj["username"] if "username" in obj else ""
-        self.host_token = obj['host_token'] if 'host_token' in obj else ""
+        self.host_token = obj["host_token"] if "host_token" in obj else ""
 
 
 class LeaveRoom(LobbyPacket):
@@ -956,6 +959,7 @@ class CreateGame(LobbyPacket):
     player_token: str
     password: str
     game_name: str
+    username: str
     max_nb_players: int
     starting_balance: int
     is_private: bool
@@ -969,6 +973,7 @@ class CreateGame(LobbyPacket):
                  game_name: str = "", max_nb_players: int = 0,
                  is_private: bool = False, starting_balance: int = 0,
                  option_auction: bool = False,
+                 username: str = "",
                  option_double_on_start: bool = False,
                  option_max_time: int = 0,
                  option_max_rounds: int = 0,
@@ -985,6 +990,7 @@ class CreateGame(LobbyPacket):
         self.option_max_time = option_max_time
         self.option_max_rounds = option_max_rounds
         self.option_first_round_buy = option_first_round_buy
+        self.username = username
 
     def deserialize(self, obj: object):
         self.player_token = obj["player_token"] if "player_token" in \
@@ -1000,6 +1006,7 @@ class CreateGame(LobbyPacket):
         self.option_max_rounds = convert_to_int(obj, "option_max_rounds")
         self.option_first_round_buy = \
             convert_to_bool(obj, "option_first_round_buy")
+        self.username = obj["username"] if "username" in obj else ""
 
 
 class CreateGameSucceed(LobbyPacket):
