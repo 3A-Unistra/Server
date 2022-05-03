@@ -31,6 +31,7 @@ class Engine:
     community_deck: List[CommunityCard]
     # dictionary of id and channel_name for player in Lobby
     connected_players: Dict
+    offline: bool
 
     def __init__(self):
         self.games = {}
@@ -40,6 +41,7 @@ class Engine:
         self.connected_players = {}
         self.channel_layer = get_channel_layer()
         self.__load_json()
+        self.offline = getattr(settings, "SERVER_OFFLINE", True)
 
     def __load_json(self):
         squares_path = os.path.join(settings.STATIC_ROOT, 'data/squares.json')
@@ -267,6 +269,11 @@ class Engine:
         player = Player(user=user,
                         channel_name=channel_name,
                         bot=False)
+
+        if self.offline:
+            if packet.username != "" and len(packet.username) < 32:
+                player.user.name = packet.username
+
         board.add_player(player)
 
         new_game.host_player = player
