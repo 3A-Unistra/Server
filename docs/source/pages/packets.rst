@@ -53,10 +53,7 @@ LeaveRoomSucceed
 ^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour confirmer le succès de la sortie du lobby de partie
 
-**contenu du paquet :**
- * username du joueur (*username*)
- * avatar du joueur (*avatar_url*)
-
+*ce paquet ne contient pas d'informations*
 
 CreateGame
 ^^^^^^^^^^
@@ -608,7 +605,7 @@ Paquet envoyé à tout le monde si personne n'enchérit pendant un tour d'enchè
 
 **contenu du paquet :**
  * id du gagnant (*player_token*)
- * montant que le joueur a enchérit (*bid*)
+ * montant que le joueur a enchérit (*highest_bid*)
  * temps restant pour le round action (*remaining_time*)
 
 Paquet ActionBuyProperty
