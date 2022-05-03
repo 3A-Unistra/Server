@@ -1,9 +1,11 @@
+from typing import List
 from unittest import TestCase
 
 from server.game_handler.data import Player, Card
 from server.game_handler.data.cards import CardActionType, ChanceCard, \
     CommunityCard
-from server.game_handler.data.packets import Packet
+from server.game_handler.data.packets import Packet, PlayerPayDebt, \
+    PlayerUpdateBalance
 from server.game_handler.engine import Game
 
 # overwrite broadcast_packet method
@@ -20,6 +22,18 @@ def game_instance_overwrited() -> Game:
     game.broadcast_packet = new_broadcast_packet.__get__(game, Game)
 
     return game
+
+
+# Debt system variables
+debt_game = Game()
+packets: List[Packet] = []
+
+
+def new_debt_broadcast_packet(self, packet: Packet):
+    packets.append(packet)
+
+
+debt_game.broadcast_packet = new_debt_broadcast_packet.__get__(debt_game, Game)
 
 
 class TestPacket(TestCase):
@@ -235,3 +249,86 @@ class TestPacket(TestCase):
 
         assert player1.jail_cards['community']
         assert not card.available
+
+    def test_debt_system(self):
+        maxime = Player(bot=False,
+                        user=User(id="183e1f5e-3411-44c5-9bc5-037358c47100",
+                                  name="maxime"))
+        finn = Player(bot=False,
+                      user=User(id="523e1f5e-3411-44c5-9bc5-037358c47100",
+                                name="finn"))
+        rayan = Player(bot=False,
+                       user=User(id="612e1f5e-3411-44c5-9bc5-037358c47100",
+                                 name="rayan"))
+
+        debt_game.board.add_player(maxime)
+        debt_game.board.add_player(finn)
+        debt_game.board.add_player(rayan)
+
+        # Clear packets to check
+        packets.clear()
+
+        # Maxime's case : 350€ debt
+        maxime.add_debt(rayan, 350, "pay_property_rent")
+
+        assert maxime.get_money() == -350
+        assert finn.get_money() == 0
+        assert rayan.get_money() == 0
+
+        # Maxime mortgaged one property
+        debt_game.player_balance_receive(maxime, 60, "mortgaged_property")
+
+        assert len(packets) == 3
+        # Maxime pays debt to rayan
+        debt_packet = packets[0]
+        assert isinstance(debt_packet, PlayerPayDebt)
+        assert debt_packet.player_token == maxime.get_id()
+        assert debt_packet.player_to == rayan.get_id()
+        assert debt_packet.amount == 60
+
+        # Rayan's balance updated
+        update_balance1 = packets[1]
+        assert isinstance(update_balance1, PlayerUpdateBalance)
+        assert update_balance1.player_token == rayan.get_id()
+        assert update_balance1.old_balance == 0
+        assert update_balance1.new_balance == 60
+
+        # Maxime balance updated
+        update_balance2 = packets[2]
+        assert isinstance(update_balance2, PlayerUpdateBalance)
+        assert update_balance2.player_token == maxime.get_id()
+        assert update_balance2.old_balance == -350
+        assert update_balance2.new_balance == -290
+
+        assert maxime.get_money() == -290
+        assert rayan.get_money() == 60
+
+        packets.clear()
+
+        # Maxime mortgaged a lot of properties
+        debt_game.player_balance_receive(maxime, 300, "mortgaged_property")
+
+        assert len(packets) == 3
+        # Maxime pays debt to rayan
+        debt_packet = packets[0]
+        assert isinstance(debt_packet, PlayerPayDebt)
+        assert debt_packet.player_token == maxime.get_id()
+        assert debt_packet.player_to == rayan.get_id()
+        assert debt_packet.amount == 290
+
+        # Rayan's balance updated
+        update_balance1 = packets[1]
+        assert isinstance(update_balance1, PlayerUpdateBalance)
+        assert update_balance1.player_token == rayan.get_id()
+        assert update_balance1.old_balance == 60
+        assert update_balance1.new_balance == 350
+
+        # Maxime balance updated
+        update_balance2 = packets[2]
+        assert isinstance(update_balance2, PlayerUpdateBalance)
+        assert update_balance2.player_token == maxime.get_id()
+        assert update_balance2.old_balance == 0
+        assert update_balance2.new_balance == 10
+
+        assert maxime.get_money() == 10
+        assert rayan.get_money() == 350
