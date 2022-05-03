@@ -111,9 +111,14 @@ class Board:
         [min, max] (else, default value is used
         :param nb_players: a number of players
         """
-        if nb_players < self.CONFIG.get('MIN_NB_PLAYERS') or \
-                nb_players > self.CONFIG.get('MAX_NB_PLAYERS'):
+        if nb_players < 0:
             self.players_nb = self.CONFIG.get('DEFAULT_NB_PLAYERS')
+
+        elif nb_players < self.CONFIG.get('MIN_NB_PLAYERS'):
+            self.players_nb = self.CONFIG.get('MIN_NB_PLAYERS')
+
+        elif nb_players > self.CONFIG.get('MAX_NB_PLAYERS'):
+            self.players_nb = self.CONFIG.get('MAX_NB_PLAYERS')
 
         else:
             self.players_nb = nb_players
@@ -124,9 +129,14 @@ class Board:
         [min, max] (else, default value is used
         :param given_time: a time
         """
-        if given_time < self.CONFIG.get('TIME_ROUNDS_MIN') or \
-                given_time > self.CONFIG.get('TIME_ROUNDS_MAX'):
+        if given_time < 0:
             self.option_max_time = self.CONFIG.get('TIME_ROUNDS_DEFAULT')
+
+        elif given_time < self.CONFIG.get('TIME_ROUNDS_MIN'):
+            self.option_max_time = self.CONFIG.get('TIME_ROUNDS_MIN')
+
+        elif given_time > self.CONFIG.get('TIME_ROUNDS_MAX'):
+            self.option_max_time = self.CONFIG.get('TIME_ROUNDS_MAX')
 
         else:
             self.option_max_time = given_time
@@ -137,9 +147,14 @@ class Board:
         the [min, max] (else, default value is used)
         :param nb_rounds: a number of rounds
         """
-        if nb_rounds < self.CONFIG.get('NB_ROUNDS_MIN') or \
-                nb_rounds > self.CONFIG.get('NB_ROUNDS_MAX'):
+        if nb_rounds < 0:
             self.option_max_rounds = self.CONFIG.get('NB_ROUNDS_DEFAULT')
+
+        elif nb_rounds < self.CONFIG.get('NB_ROUNDS_MIN'):
+            self.option_max_rounds = self.CONFIG.get('NB_ROUNDS_MIN')
+
+        elif nb_rounds > self.CONFIG.get('NB_ROUNDS_MAX'):
+            self.option_max_rounds = self.CONFIG.get('NB_ROUNDS_MAX')
 
         else:
             self.option_max_rounds = nb_rounds
@@ -150,9 +165,14 @@ class Board:
         the [min, max] (else, default value is used)
         :param balance: balance
         """
-        if balance < self.CONFIG.get('MONEY_START_MIN') or \
-                balance > self.CONFIG.get('MONEY_START_MAX'):
+        if balance < 0:
             self.starting_balance = self.CONFIG.get('MONEY_START_DEFAULT')
+
+        elif balance < self.CONFIG.get('MONEY_START_MIN'):
+            self.starting_balance = self.CONFIG.get('MONEY_START_MIN')
+
+        elif balance > self.CONFIG.get('MONEY_START_MAX'):
+            self.starting_balance = self.CONFIG.get('MONEY_START_MAX')
 
         else:
             self.starting_balance = balance
