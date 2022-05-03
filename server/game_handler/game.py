@@ -802,11 +802,11 @@ class Game(Thread):
 
         sorted_players = []
 
-        for player in self.board.get_online_players():
+        for player in self.board.players:
             sorted_players.append((self.board.get_score(player),
                                    player))
 
-        sorted_players.sort(key=lambda x: x[0])
+        sorted_players.sort(key=lambda x: x[0], reverse=True)
         rank = 1
 
         for score, player in sorted_players:
