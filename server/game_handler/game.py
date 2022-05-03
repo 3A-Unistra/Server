@@ -1635,7 +1635,6 @@ class Game(Thread):
         # Win
         if len(self.board.get_non_bankrupt_players()) == 1:
             # One player remaining! Easy win!
-            # TODO: proceed to win
             self.proceed_win()
             return True
 
@@ -1644,7 +1643,6 @@ class Game(Thread):
             # Check if current_round is greater than option
             if self.board.compute_current_round() >= \
                     self.board.option_max_rounds:
-                # TODO: proceed to check win.
                 self.proceed_win(forced=True)
                 return True
 
