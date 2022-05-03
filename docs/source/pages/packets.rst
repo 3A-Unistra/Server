@@ -38,6 +38,7 @@ Paquet envoyé au client pour signifier le succès de son entrée dans une parti
  * id du pion que le joueur aura (*piece*)
  * username du joueur (*username*)
  * url de l'avatar du joueur (*avatar_url*)
+ * id du host (*host_token*)
 
 
 LeaveRoom

@@ -188,20 +188,24 @@ class EnterRoomSucceed(LobbyPacket):
     game_token: str
     avatar_url: str
     username: str
+    host_token: str
 
     def __init__(self, game_token: str = "", piece: int = 0,
-                 avatar_url: str = "", username: str = ""):
+                 avatar_url: str = "", username: str = "",
+                 host_token: str = ""):
         super().__init__(self.__class__.__name__)
         self.piece = piece
         self.game_token = game_token
         self.avatar_url = avatar_url
         self.username = username
+        self.host_token = host_token
 
     def deserialize(self, obj: object):
         self.piece = convert_to_int(obj, "piece")
         self.game_token = obj["game_token"] if "game_token" in obj else ""
         self.avatar_url = obj["avatar_url"] if "avatar_url" in obj else ""
         self.username = obj["username"] if "username" in obj else ""
+        self.host_token = obj['host_token'] if 'host_token' in obj else ""
 
 
 class LeaveRoom(LobbyPacket):
