@@ -241,7 +241,8 @@ class Game(Thread):
                 packet=EnterRoomSucceed(game_token=self.uid,
                                         piece=piece,
                                         avatar_url=p.user.avatar,
-                                        username=p.user.name
+                                        username=p.user.name,
+                                        host_token=self.host_player.get_id()
                                         )
             )
 
