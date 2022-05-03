@@ -53,10 +53,7 @@ LeaveRoomSucceed
 ^^^^^^^^^^^^^^^^
 Paquet envoyé au client pour confirmer le succès de la sortie du lobby de partie
 
-**contenu du paquet :**
- * username du joueur (*username*)
- * avatar du joueur (*avatar_url*)
-
+*ce paquet ne contient pas d'informations*
 
 CreateGame
 ^^^^^^^^^^

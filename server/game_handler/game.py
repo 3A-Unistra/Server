@@ -2453,11 +2453,10 @@ class Game(Thread):
 
     def send_lobby_packet(self, channel_name: str, packet: Packet):
         """
-                Send packet to lobby channel layer
-
-                :param channel_name: Channel to send packet to
-                :param packet: Packet to send
-                """
+        Send packet to lobby channel layer
+        :param channel_name: Channel to send packet to
+        :param packet: Packet to send
+        """
         if channel_name is None:
             return
 
