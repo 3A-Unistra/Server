@@ -943,6 +943,13 @@ class GameEnd(Packet):
         super().__init__(self.__class__.__name__)
 
 
+class PlayerUpdateProperty(PlayerPropertyPacket):
+
+    def __init__(self, player_token: str = "", property_id: int = 0):
+        super().__init__(self.__class__.__name__,
+                         player_token, property_id)
+
+
 # Lobby packets
 
 class CreateGame(LobbyPacket):
@@ -1146,6 +1153,7 @@ class PacketUtils:
         "Chat": ChatPacket,
         "GameWin": GameWin,
         "GameEnd": GameEnd,
+        "PlayerUpdateProperty": PlayerUpdateProperty,
         # Lobby packets
         "EnterRoom": EnterRoom,
         "EnterRoomSucceed": EnterRoomSucceed,

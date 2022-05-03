@@ -43,6 +43,8 @@ class Board:
     option_max_time: int  # max time per rounds
     option_first_round_buy: bool
 
+    property_list: List[int]
+
     CONFIG = {}
 
     # Card indexes
@@ -92,6 +94,7 @@ class Board:
             nb_hotel=self.CONFIG.get('BANK_HOTELS_COUNT')
         )
         self.round_auction_done = False
+        self.property_list = []
         self.search_square_indexes()
         self.search_card_indexes()
 
