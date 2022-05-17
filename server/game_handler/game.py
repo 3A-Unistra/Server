@@ -1006,6 +1006,21 @@ class Game(Thread):
                 # Ignore packet.
                 return
 
+            # TODO: Only here for BETA TEST
+            props = [5, 7, 8]
+            for prop_id in props:
+                prop = self.board.get_property(prop_id)
+
+                if prop is None or prop.owner is not None:
+                    break
+
+                prop.owner = player
+
+                self.broadcast_packet(ActionBuyPropertySucceed(
+                    player_token=player.get_id(),
+                    property_id=prop.id_
+                ))
+
             # Set new owner
             square.owner = player
 
