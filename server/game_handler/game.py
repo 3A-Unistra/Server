@@ -1007,7 +1007,7 @@ class Game(Thread):
                 return
 
             # TODO: Only here for BETA TEST
-            props = [5, 7, 8]
+            props = [6, 8, 9]
             for prop_id in props:
                 prop = self.board.get_property(prop_id)
 

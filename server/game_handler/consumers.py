@@ -245,7 +245,8 @@ class LobbyConsumer(AsyncJsonWebsocketConsumer):
             return
 
         if isinstance(packet, PlayerLobbyPacket) or \
-                isinstance(packet, CreateGame):
+                isinstance(packet, CreateGame) or \
+                isinstance(packet, LeaveRoom):
             packet.player_token = self.player_token
 
         # send to game engine consumer

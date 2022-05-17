@@ -155,6 +155,10 @@ class Engine:
         if not isinstance(packet, LeaveRoom):
             return
 
+        print("def leave_game(%s)" % game_token)
+
+        print(self.games)
+
         # check if player is part of a room
         if game_token not in self.games:
             return
@@ -220,7 +224,6 @@ class Engine:
         update = BroadcastUpdateLobby(game_token=game.uid,
                                       reason=reason.value)
         game.send_packet_to_group(update, "lobby")
-        print("[leave_game] sent updatelobby")
 
         # add player to the lobby group
         async_to_sync(
