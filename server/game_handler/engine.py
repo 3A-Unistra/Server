@@ -170,12 +170,8 @@ class Engine:
 
         player = game.board.get_player(packet.player_token)
 
-        print("def leave_game(%s)" % player.get_name())
-
         if game.state == GameState.WAITING_PLAYERS:
             return
-
-        print("def leave_game(%s) game_group leave" % player.get_name())
 
         # player leaves game group
         async_to_sync(
@@ -187,9 +183,6 @@ class Engine:
         avatar = player.user.avatar
         username = player.user.name
         game.board.remove_player(player)
-
-        print("def leave_game(%s) send packet LeaveRoomSucceed() to %s" %
-              (player.get_name(), channel_name))
 
         game.send_lobby_packet(channel_name=channel_name,
                                packet=LeaveRoomSucceed())
@@ -231,7 +224,6 @@ class Engine:
         update = BroadcastUpdateLobby(game_token=game.uid,
                                       reason=reason.value)
         game.send_packet_to_group(update, "lobby")
-        print("[leave_game] sent updatelobby")
 
         # add player to the lobby group
         async_to_sync(
