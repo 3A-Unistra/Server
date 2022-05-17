@@ -155,7 +155,7 @@ class Engine:
         if not isinstance(packet, LeaveRoom):
             return
 
-        print("def leave_game()")
+        print("def leave_game(%s)" % game_token)
 
         # check if player is part of a room
         if game_token not in self.games:
