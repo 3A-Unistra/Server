@@ -157,6 +157,8 @@ class Engine:
 
         print("def leave_game(%s)" % game_token)
 
+        print(self.games)
+
         # check if player is part of a room
         if game_token not in self.games:
             return
