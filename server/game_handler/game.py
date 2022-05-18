@@ -199,6 +199,8 @@ class Game(Thread):
             if not valid:
                 return
 
+            print("Player %s is VALID" % player.get_name())
+
             # Change channel_name
             player.channel_name = queue_packet.channel_name
             return
@@ -504,6 +506,8 @@ class Game(Thread):
             if isinstance(packet, AppletReady):
                 player = self.board.get_player(packet.player_token)
 
+                print("Got AppletReady from %s" % player.get_name())
+
                 # Set player to connected (bot disabled)
                 player.connect()
 
@@ -787,6 +791,9 @@ class Game(Thread):
             'GAME_WIN_WAIT': self.CONFIG.get('GAME_WIN_WAIT'),
             'GAME_END_WAIT': self.CONFIG.get('GAME_END_WAIT')
         }
+
+        print("Starting game with %d players." % len(players))
+        print(players)
 
         self.broadcast_packet(
             GameStart(players=players, options=options, timeouts=timeouts))
