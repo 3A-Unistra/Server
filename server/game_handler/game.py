@@ -792,9 +792,6 @@ class Game(Thread):
             'GAME_END_WAIT': self.CONFIG.get('GAME_END_WAIT')
         }
 
-        print("Starting game with %d players." % len(players))
-        print(players)
-
         self.broadcast_packet(
             GameStart(players=players, options=options, timeouts=timeouts))
 
@@ -1012,21 +1009,6 @@ class Game(Thread):
                     square.buy_price):
                 # Ignore packet.
                 return
-
-            # TODO: Only here for BETA TEST
-            props = [6, 8, 9]
-            for prop_id in props:
-                prop = self.board.get_property(prop_id)
-
-                if prop is None or prop.owner is not None:
-                    break
-
-                prop.owner = player
-
-                self.broadcast_packet(ActionBuyPropertySucceed(
-                    player_token=player.get_id(),
-                    property_id=prop.id_
-                ))
 
             # Set new owner
             square.owner = player
